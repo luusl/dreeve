@@ -3,11 +3,11 @@
 namespace App\Tests\Domain\Activity;
 
 use App\Domain\Activity\WorldType;
+use App\Infrastructure\Measurement\Velocity\KmPerHour;
+use App\Infrastructure\Measurement\Velocity\SecPer100Meter;
 use App\Infrastructure\ValueObject\Geography\Coordinate;
 use App\Infrastructure\ValueObject\Geography\Latitude;
 use App\Infrastructure\ValueObject\Geography\Longitude;
-use App\Infrastructure\ValueObject\Measurement\Velocity\KmPerHour;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPer100Meter;
 use PHPUnit\Framework\TestCase;
 use Spatie\Snapshots\MatchesSnapshots;
 
@@ -18,17 +18,18 @@ class ActivityTest extends TestCase
     public function testGetName(): void
     {
         $activity = ActivityBuilder::fromDefaults()
-            ->withName('Test Activity #hashtag')
+            ->withName('Zwift - Test Activity #hashtag')
             ->build();
 
         $this->assertEquals('Test Activity #hashtag', $activity->getName());
+        $this->assertEquals('Zwift - Test Activity #hashtag', $activity->getOriginalName());
 
         $activity = ActivityBuilder::fromDefaults()
-            ->withName('Test Activity #hashtag #another-one')
+            ->withName('Morning ride #sfs-chain-lubed #sfs-di-2-charged #fun')
             ->build();
-        $activity = $activity->withTags(['#hashtag', '#another-one']);
 
-        $this->assertEquals('Test Activity', $activity->getName());
+        $this->assertEquals('Morning ride #fun', $activity->getName());
+        $this->assertEquals('Morning ride #sfs-chain-lubed #sfs-di-2-charged #fun', $activity->getOriginalName());
     }
 
     public function testLeafletMapWithoutStartingCoordinate(): void

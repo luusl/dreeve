@@ -15,14 +15,17 @@ WORKDIR /var/www
 ENV APP_ENV=prod
 ENV APP_DEBUG=0
 
+# Trust reverse proxies in front of Dreeve, so the app knows the original request was HTTPS.
+# x-forwarded-for is deliberately excluded: it would make ADMIN_ALLOWED_IPS spoofable.
+ENV SYMFONY_TRUSTED_PROXIES=private_ranges
+ENV SYMFONY_TRUSTED_HEADERS=x-forwarded-proto,x-forwarded-port
+
 # hadolint ignore=DL3018
 RUN apk add --no-cache \
   bash \
   curl \
   file \
-  flock \
-  tzdata \
-  geos
+  tzdata
 
 RUN set -eux; \
 	install-php-extensions \
@@ -66,7 +69,7 @@ RUN mkdir -p /var/www/var/log
 # Install Shoutrrr.
 ARG TARGETARCH
 ENV TARGETARCH=${TARGETARCH}
-ARG SHOUTRRR_VERSION="0.16.1"
+ARG SHOUTRRR_VERSION="0.16.3"
 
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
       curl -fL -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_arm64v8_${SHOUTRRR_VERSION}.tar.gz"; \

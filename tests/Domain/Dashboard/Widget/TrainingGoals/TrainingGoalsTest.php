@@ -4,7 +4,7 @@ namespace App\Tests\Domain\Dashboard\Widget\TrainingGoals;
 
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\SportType\SportTypes;
-use App\Domain\Dashboard\Widget\TrainingGoals\InvalidTrainingGoalsConfiguration;
+use App\Domain\Dashboard\InvalidDashboardLayout;
 use App\Domain\Dashboard\Widget\TrainingGoals\TrainingGoal;
 use App\Domain\Dashboard\Widget\TrainingGoals\TrainingGoalPeriod;
 use App\Domain\Dashboard\Widget\TrainingGoals\TrainingGoals;
@@ -26,7 +26,6 @@ class TrainingGoalsTest extends TestCase
             TrainingGoals::fromArray([
                 TrainingGoal::create(
                     label: 'Cycling',
-                    isEnabled: true,
                     type: TrainingGoalType::DISTANCE,
                     period: TrainingGoalPeriod::WEEKLY,
                     goal: 200,
@@ -35,7 +34,6 @@ class TrainingGoalsTest extends TestCase
                 ),
                 TrainingGoal::create(
                     label: 'Cycling',
-                    isEnabled: true,
                     type: TrainingGoalType::ELEVATION,
                     period: TrainingGoalPeriod::WEEKLY,
                     goal: 7500,
@@ -44,7 +42,6 @@ class TrainingGoalsTest extends TestCase
                 ),
                 TrainingGoal::create(
                     label: 'Cycling',
-                    isEnabled: true,
                     type: TrainingGoalType::MOVING_TIME,
                     period: TrainingGoalPeriod::WEEKLY,
                     goal: 7500,
@@ -53,6 +50,47 @@ class TrainingGoalsTest extends TestCase
                 ),
             ]),
             TrainingGoals::fromConfig(self::getValidYml())
+        );
+    }
+
+    public function testFromConfigWithUnitLessGoalTypes(): void
+    {
+        $this->assertEquals(
+            TrainingGoals::fromArray([
+                TrainingGoal::create(
+                    label: 'Activity count',
+                    type: TrainingGoalType::NUMBER_OF_ACTIVITIES,
+                    period: TrainingGoalPeriod::WEEKLY,
+                    goal: 5,
+                    unit: TrainingGoal::SIMPLE,
+                    sportTypesToInclude: SportTypes::fromArray([SportType::RIDE]),
+                ),
+                TrainingGoal::create(
+                    label: 'Calories',
+                    type: TrainingGoalType::CALORIES,
+                    period: TrainingGoalPeriod::WEEKLY,
+                    goal: 10000,
+                    unit: TrainingGoal::SIMPLE,
+                    sportTypesToInclude: SportTypes::fromArray([SportType::RIDE]),
+                ),
+            ]),
+            TrainingGoals::fromConfig([
+                'weekly' => [
+                    [
+                        'label' => 'Activity count',
+                        'type' => 'numberOfActivities',
+                        'unit' => '',
+                        'goal' => 5,
+                        'sportTypesToInclude' => ['Ride'],
+                    ],
+                    [
+                        'label' => 'Calories',
+                        'type' => 'calories',
+                        'goal' => 10000,
+                        'sportTypesToInclude' => ['Ride'],
+                    ],
+                ],
+            ])
         );
     }
 
@@ -75,10 +113,22 @@ class TrainingGoalsTest extends TestCase
         $this->assertTrue($goal->isActiveOn(SerializableDateTime::fromString('2099-12-31')));
     }
 
+    public function testFromConfigTreatsEmptyDateRangeAsNoRestriction(): void
+    {
+        // A form always submits the date inputs, even when left blank.
+        $yml = self::getValidYml();
+        $yml['weekly'][0]['restrictToDateRange'] = ['from' => '', 'to' => ''];
+
+        $goal = TrainingGoals::fromConfig($yml)->getFirst();
+
+        $this->assertTrue($goal->isActiveOn(SerializableDateTime::fromString('2020-01-01')));
+        $this->assertTrue($goal->isActiveOn(SerializableDateTime::fromString('2099-12-31')));
+    }
+
     #[DataProvider(methodName: 'provideInvalidConfig')]
     public function testFromConfigurationItShouldThrow(array $config, string $expectedException): void
     {
-        $this->expectExceptionObject(new InvalidTrainingGoalsConfiguration($expectedException));
+        $this->expectExceptionObject(new InvalidDashboardLayout($expectedException));
         TrainingGoals::fromConfig($config);
     }
 
@@ -97,16 +147,16 @@ class TrainingGoalsTest extends TestCase
         yield 'missing "label" key' => [$yml, '"label" property is required'];
 
         $yml = self::getValidYml();
-        unset($yml['weekly'][0]['enabled']);
-        yield 'missing "enabled" key' => [$yml, '"enabled" property is required'];
-
-        $yml = self::getValidYml();
         unset($yml['weekly'][0]['type']);
         yield 'missing "type" key' => [$yml, '"type" property is required'];
 
         $yml = self::getValidYml();
         unset($yml['weekly'][0]['unit']);
-        yield 'missing "unit" key' => [$yml, '"unit" property is required'];
+        yield 'missing "unit" key' => [$yml, '"unit" property is required for goal type "distance"'];
+
+        $yml = self::getValidYml();
+        $yml['weekly'][0]['unit'] = '';
+        yield 'empty "unit"' => [$yml, '"unit" property is required for goal type "distance"'];
 
         $yml = self::getValidYml();
         unset($yml['weekly'][0]['goal']);
@@ -119,10 +169,6 @@ class TrainingGoalsTest extends TestCase
         $yml = self::getValidYml();
         $yml['weekly'][0]['label'] = '';
         yield 'empty "label"' => [$yml, '"label" property cannot be empty'];
-
-        $yml = self::getValidYml();
-        $yml['weekly'][0]['enabled'] = 'LOL';
-        yield 'invalid "enabled"' => [$yml, '"enabled" property must be a boolean'];
 
         $yml = self::getValidYml();
         $yml['weekly'][0]['goal'] = 'LOL';
@@ -155,10 +201,6 @@ class TrainingGoalsTest extends TestCase
         yield 'invalid "type and unit" combo 2' => [$yml, 'The unit "km" is not valid for goal type "movingTime"'];
 
         $yml = self::getValidYml();
-        $yml['weekly'][0]['restrictToDateRange'] = 'LOL';
-        yield 'invalid "restrictToDateRange" type' => [$yml, '"restrictToDateRange" property must be an object with "from" and "to" keys'];
-
-        $yml = self::getValidYml();
         $yml['weekly'][0]['restrictToDateRange'] = ['from' => '2026-01-01'];
         yield 'missing "to" in "restrictToDateRange"' => [$yml, '"restrictToDateRange" requires both "from" and "to" keys'];
 
@@ -177,7 +219,6 @@ class TrainingGoalsTest extends TestCase
             'weekly' => [
                 [
                     'label' => 'Cycling',
-                    'enabled' => true,
                     'type' => 'distance',
                     'unit' => 'km',
                     'goal' => 200,
@@ -185,7 +226,6 @@ class TrainingGoalsTest extends TestCase
                 ],
                 [
                     'label' => 'Cycling',
-                    'enabled' => true,
                     'type' => 'elevation',
                     'unit' => 'm',
                     'goal' => 7500,
@@ -193,7 +233,6 @@ class TrainingGoalsTest extends TestCase
                 ],
                 [
                     'label' => 'Cycling',
-                    'enabled' => true,
                     'type' => 'movingTime',
                     'unit' => 'hour',
                     'goal' => 7500,

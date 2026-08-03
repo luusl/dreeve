@@ -30,7 +30,7 @@ final readonly class WatchDirectory
         return [] !== $this->listFiles()
             ->filter(fn (StorageAttributes $file): bool => in_array(
                 Path::fromString($file->path())->getExtension(),
-                ['fit', 'tcx', 'gpx'],
+                array_map(fn (SupportedFileExtension $ext) => $ext->value, SupportedFileExtension::cases()),
             ))
             ->toArray();
     }
@@ -43,12 +43,17 @@ final readonly class WatchDirectory
 
     public function readFile(Path $filePath): string
     {
-        return $this->defaultStorage->read(self::FOLDER_NAME.'/'.$filePath->getFilename());
+        return $this->defaultStorage->read(self::FOLDER_NAME.'/'.$filePath->getBasename());
+    }
+
+    public function writeFile(string $filename, string $contents): void
+    {
+        $this->defaultStorage->write(self::FOLDER_NAME.'/'.$filename, $contents);
     }
 
     public function deleteFile(Path $filePath): void
     {
-        $this->defaultStorage->delete(self::FOLDER_NAME.'/'.$filePath->getFilename());
+        $this->defaultStorage->delete(self::FOLDER_NAME.'/'.$filePath->getBasename());
     }
 
     public function getAbsolutePathFor(StorageAttributes $file): Path

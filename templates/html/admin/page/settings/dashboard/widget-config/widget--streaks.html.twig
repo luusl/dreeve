@@ -1,0 +1,14 @@
+<div>
+    <label for="config-subtitle">{{ "Subtitle"|trans({}, 'admin') }}</label>
+    <input type="text" id="config-subtitle" name="config[subtitle]" value="{{ configuration.get('subtitle') }}" placeholder="{{ "Optional subtitle"|trans({}, 'admin') }}">
+</div>
+<div>
+    <label>{{ "Sport types to include"|trans({}, 'admin') }}</label>
+    {% include 'html/admin/component/checkbox-multiselect.html.twig' with {
+        name: 'config[sportTypesToInclude][]',
+        options: sportTypeOptions(),
+        selected: configuration.get('sportTypesToInclude'),
+        placeholder: "All sport types"|trans({}, 'admin'),
+    } only %}
+    <p class="mt-1 text-xxs text-gray-500">{{ "Leave empty to include all sport types."|trans({}, 'admin') }}</p>
+</div>

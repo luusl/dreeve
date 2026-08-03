@@ -1,0 +1,19 @@
+<div>
+    <label class="mt-0! text-xs">{{ "Operator"|trans({}, 'admin') }}</label>
+    <select name="{{ namePrefix }}[operator]" data-repeater-field="config.operator" class="mt-0">
+        {% for operator in enum('App\\Domain\\Automation\\Condition\\MatchOperator').cases()|filter(o => o.isForSet()) %}
+            <option value="{{ operator.value }}">{{ operator|trans }}</option>
+        {% endfor %}
+    </select>
+</div>
+<div class="mt-2" data-required-checkbox-group="{{ "Select at least one weekday."|trans({}, 'admin') }}">
+    <label class="mt-0! text-xs">{{ "Weekdays"|trans({}, 'admin') }}</label>
+    <div class="mt-1 grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-4">
+        {% for weekday in enum('App\\Domain\\Automation\\Condition\\WeekDay').cases() %}
+            <label class="flex items-center gap-2 text-sm cursor-pointer min-w-0">
+                <input type="checkbox" name="{{ namePrefix }}[weekdays][]" value="{{ weekday.value }}" data-repeater-field="config.weekdays">
+                <span class="truncate min-w-0">{{ weekday|trans }}</span>
+            </label>
+        {% endfor %}
+    </div>
+</div>

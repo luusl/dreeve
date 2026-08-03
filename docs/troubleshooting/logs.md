@@ -1,14 +1,14 @@
 # Logs
 
-In addition to the default Docker logs, Statistics for Strava maintains its own application logs.
-There are two types of logs, each stored in `storage/files/logs` with a 5-day rotation policy. 
+In addition to the default Docker logs, Dreeve maintains its own application logs.
+There are several types of logs, each stored in `storage/files/logs` with a 5-day rotation policy. 
 These logs can help diagnose and troubleshoot issues.
 
-## Strava API logs
+<!-- tabs:start -->
+
+#### **Strava API**
 
 These logs provide a detailed record of every API call made to Strava, including information about your rate limit usage.
-
-### Example
 
 ```log
 [2025-06-11T19:00:02.127479+00:00] strava-api.INFO: POST - oauth/token - x-ratelimit-limit:  - x-ratelimit-usage:  - x-readratelimit-limit:  - x-readratelimit-usage:  [] []
@@ -30,11 +30,9 @@ These logs provide a detailed record of every API call made to Strava, including
 [2025-06-11T19:03:49.575508+00:00] strava-api.INFO: GET - athletes/123456789 - x-ratelimit-limit:  - x-ratelimit-usage:  - x-readratelimit-limit:  - x-readratelimit-usage:  [] []
 ```
 
-## CLI output logs
+#### **CLI output**
 
 These logs capture all output from the CLI, providing a history of your imports and build processes.
-
-### Example
 
 ```log
 [2025-06-04T05:50:00.646195+00:00] console-output.INFO: Configuring locale... [] []
@@ -57,14 +55,14 @@ These logs capture all output from the CLI, providing a history of your imports 
 [2025-06-04T05:50:32.385393+00:00] console-output.INFO: <info>Time: 31.739s, Memory: 206.50 MB, Peak Memory: 212.50 MB</info> [] []
 ```
 
-## Daemon logs
+#### **Daemon**
 
 These logs capture all output from the Daemon running recurring background tasks.
 
 ```log
 [2025-11-10T09:28:55.650390+00:00] daemon.INFO:   [] []
 [2025-11-10T09:28:55.654875+00:00] daemon.INFO: <fg=black;bg=green>                                                                                                                        </> [] []
-[2025-11-10T09:28:55.655126+00:00] daemon.INFO: <fg=black;bg=green> Statistics for Strava v3.9.0 | DAEMON                                                                                  </> [] []
+[2025-11-10T09:28:55.655126+00:00] daemon.INFO: <fg=black;bg=green> Dreeve v3.9.0 | DAEMON                                                                                  </> [] []
 [2025-11-10T09:28:55.655243+00:00] daemon.INFO: <fg=black;bg=green>                                                                                                                        </> [] []
 [2025-11-10T09:28:55.655363+00:00] daemon.INFO: <fg=black;bg=green> Started on 10-11-2025 10:28:55                                                                                         </> [] []
 [2025-11-10T09:28:55.655504+00:00] daemon.INFO: <fg=black;bg=green>                                                                                                                        </> [] []
@@ -73,7 +71,7 @@ These logs capture all output from the Daemon running recurring background tasks
 ```
 
 
-## Strava webhook logs
+#### **Strava webhooks**
 
 These logs capture all incoming notifications from Strava.
 
@@ -84,3 +82,5 @@ These logs capture all incoming notifications from Strava.
 [2025-11-10T09:28:55.654875+00:00] webhooks.INFO: Validated Strava webhook request 
 [2025-11-10T09:28:55.654875+00:00] webhooks.INFO: Received Strava webhook event
 ```
+
+<!-- tabs:end -->

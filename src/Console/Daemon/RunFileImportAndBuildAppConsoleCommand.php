@@ -10,18 +10,15 @@ use App\Application\AppUrl;
 use App\Application\Build\RunBuild\RunBuild;
 use App\Application\Import\CalculateActivityMetrics\CalculateActivityMetrics;
 use App\Application\Import\FileImport\ImportActivityFiles\ImportActivityFiles;
-use App\Application\Import\FileImport\ImportAthlete\ImportAthlete;
+use App\Application\RebuildStatus;
 use App\Domain\Import\ImportMode;
 use App\Domain\Import\WatchDirectory;
 use App\Domain\Integration\Notification\SendNotification\SendNotification;
+use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\DependencyInjection\Mutex\WithMutex;
 use App\Infrastructure\Doctrine\Migrations\RequiresUpToDateDatabaseSchema;
-use App\Infrastructure\Exception\EntityNotFound;
-use App\Infrastructure\KeyValue\Key;
-use App\Infrastructure\KeyValue\KeyValue;
 use App\Infrastructure\KeyValue\KeyValueStore;
-use App\Infrastructure\KeyValue\Value;
 use App\Infrastructure\Logging\LoggableConsoleOutput;
 use App\Infrastructure\Mutex\LockIsAlreadyAcquired;
 use App\Infrastructure\Mutex\LockName;
@@ -33,7 +30,6 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
@@ -43,6 +39,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 #[AsCommand(name: RunFileImportAndBuildAppConsoleCommand::NAME, description: 'Run file import')]
 final class RunFileImportAndBuildAppConsoleCommand extends Command
 {
+    use HandlesImportAndBuild;
+
     public const string NAME = 'app:cron:run-file-import';
 
     public function __construct(
@@ -56,14 +54,15 @@ final class RunFileImportAndBuildAppConsoleCommand extends Command
         private readonly KeyValueStore $keyValueStore,
         private readonly LoggerInterface $logger,
         private readonly ImportMode $importMode,
+        private readonly RebuildStatus $rebuildStatus,
+        private readonly SettingsRepository $settingsRepository,
     ) {
         parent::__construct();
     }
 
     protected function configure(): void
     {
-        $this->addOption(RunStravaImportAndBuildAppConsoleCommand::SKIP_IMPORT_OPTION, null, InputOption::VALUE_NONE);
-        $this->addOption(RunStravaImportAndBuildAppConsoleCommand::SKIP_BUILD_OPTION, null, InputOption::VALUE_NONE);
+        $this->addImportAndBuildOptions();
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -76,17 +75,20 @@ final class RunFileImportAndBuildAppConsoleCommand extends Command
             return Command::SUCCESS;
         }
 
-        $skipImport = $input->getOption(RunStravaImportAndBuildAppConsoleCommand::SKIP_IMPORT_OPTION);
+        $phases = $this->resolvePhases($input);
+        $shouldImport = $phases[self::IMPORT_OPTION];
+        $shouldBuild = $phases[self::BUILD_OPTION];
+
         $today = $this->clock->getCurrentDateTimeImmutable()->format('Y-m-d');
-        $watchDirectoryHasFiles = $this->watchDirectory->hasFilesThatCanBeProcessed();
+        $importWillRun = $shouldImport && $this->watchDirectory->hasFilesThatCanBeProcessed();
+        $buildWillRun = ($shouldBuild && $importWillRun) || $this->buildIsRequired(
+            input: $input,
+            keyValueStore: $this->keyValueStore,
+            rebuildStatus: $this->rebuildStatus,
+            today: $today
+        );
 
-        try {
-            $alreadyBuiltToday = $today === (string) $this->keyValueStore->find(Key::APP_LAST_BUILT_ON);
-        } catch (EntityNotFound) {
-            $alreadyBuiltToday = false;
-        }
-
-        if (!$skipImport && !$watchDirectoryHasFiles && $alreadyBuiltToday) {
+        if (!$importWillRun && !$buildWillRun) {
             $output->writeln('No files left to process...');
 
             return Command::SUCCESS;
@@ -104,25 +106,24 @@ final class RunFileImportAndBuildAppConsoleCommand extends Command
         }
 
         try {
-            if (!$skipImport && $watchDirectoryHasFiles) {
+            if ($importWillRun) {
                 $this->appStatusChecker->ensureIsReadyForFileImport();
 
                 $this->commandBus->dispatch(new ImportActivityFiles($output));
                 $this->commandBus->dispatch(new CalculateActivityMetrics($output));
             }
 
-            if (!$input->getOption(RunStravaImportAndBuildAppConsoleCommand::SKIP_BUILD_OPTION)) {
-                $this->commandBus->dispatch(new ImportAthlete());
+            if ($buildWillRun) {
                 $this->appStatusChecker->ensureIsReadyForBuild();
 
                 $this->commandBus->dispatch(new RunBuild(
                     output: $output,
                 ));
 
-                $this->keyValueStore->save(KeyValue::fromState(
-                    key: Key::APP_LAST_BUILT_ON,
-                    value: Value::fromString($today),
-                ));
+                $this->markAppAsBuilt(
+                    keyValueStore: $this->keyValueStore,
+                    today: $today
+                );
             }
         } catch (AppIsNotReady $e) {
             $this->mutex->releaseLock();
@@ -138,12 +139,14 @@ final class RunFileImportAndBuildAppConsoleCommand extends Command
         $this->mutex->releaseLock();
 
         $this->resourceUsage->stopTimer();
-        $this->commandBus->dispatch(new SendNotification(
-            title: 'Build successful',
-            message: sprintf('New import and build of your stats was successful in %ss', $this->resourceUsage->getRunTimeInSeconds()),
-            tags: ['+1'],
-            actionUrl: $this->appUrl
-        ));
+        if ($this->settingsRepository->integrations()->shouldNotifyOnSuccessfulBuild()) {
+            $this->commandBus->dispatch(new SendNotification(
+                title: 'Build successful',
+                message: sprintf('New import and build of your stats was successful in %ss', $this->resourceUsage->getRunTimeInSeconds()),
+                tags: ['+1'],
+                actionUrl: $this->appUrl
+            ));
+        }
 
         $output->writeln(sprintf(
             '<info>%s</info>',

@@ -1,17 +1,34 @@
 # Updates
 
-When a new version of the app is released, you need to pull the latest Docker image:
+> [!NOTE]
+> Coming from **Statistics for Strava v4**? That upgrade needs a few manual steps, follow
+> [Migrating from v4 to v5](/getting-started/migrating-from-v4.md) instead of the instructions below.
+
+When a new version of the app is released, pull the latest Docker image:
 
 ```bash
-> docker compose pull # if available pull a new image
-> docker compose up -d # start a new container using the compose config and the new pulled image.
+> docker compose pull # if available, pull a new image
+> docker compose up -d # start new containers using the compose config and the newly pulled image
 ```
+After that, wait a few minutes for the daemon container to update the app to the new version. 
+If you don't want to wait, you can trigger a build manually:
 
-After that, run the import and build commands again to apply the changes:
+<!-- tabs:start -->
 
+#### **Files mode**
 
 ```bash
-> docker compose exec app bin/console app:data:import
-> docker compose exec app bin/console app:data:build
+> docker compose exec app bin/console app:cron:run-file-import --build
 ```
 
+#### **Strava API mode**
+
+```bash
+> docker compose exec app bin/console app:cron:run-strava-import --build
+```
+
+<!-- tabs:end -->
+
+> [!WARNING]
+> * **Backup before updates**: always back up your Docker volumes, in particular `storage/database`, before upgrading.
+> * **Check the release notes**: check the [changelog](/changelog.md) to see whether there are any breaking changes.

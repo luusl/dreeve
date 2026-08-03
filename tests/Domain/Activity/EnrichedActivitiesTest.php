@@ -13,11 +13,13 @@ use App\Domain\Activity\SportType\SportTypes;
 use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
+use App\Tests\ProvideGearMaintenanceConfig;
 use Spatie\Snapshots\MatchesSnapshots;
 
 class EnrichedActivitiesTest extends ContainerTestCase
 {
     use MatchesSnapshots;
+    use ProvideGearMaintenanceConfig;
 
     private EnrichedActivities $enrichedActivities;
     private ActivityRepository $activityRepository;
@@ -30,15 +32,6 @@ class EnrichedActivitiesTest extends ContainerTestCase
             ['raw' => 'data']
         ));
 
-        $activity = $activity->withTags([
-            '#sfs-chain-lubed',
-            '#sfs-chain-replaced',
-            '#sfs-chain-cleaned',
-            '#sfs-di-2-charged',
-            '#sfs-peddle-board',
-            '#sfs-workout-shoes',
-        ]);
-
         $persisted = $this->enrichedActivities->find($activity->getId());
         $this->assertEquals(
             $activity,
@@ -48,15 +41,16 @@ class EnrichedActivitiesTest extends ContainerTestCase
 
     public function testFindItShouldThrowWhenNotFound(): void
     {
-        $this->expectException(EntityNotFound::class);
+        $this->expectExceptionObject(new EntityNotFound('Activity "activity-1" not found'));
         $this->enrichedActivities->find(ActivityId::fromUnprefixed(1));
     }
 
-    public function testFindAll(): void
+    public function testFindAllByStartDateAndBySportTypes(): void
     {
         $activityOne = ActivityBuilder::fromDefaults()
             ->withActivityId(ActivityId::fromUnprefixed(1))
             ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 14:00:34'))
+            ->withSportType(SportType::BADMINTON)
             ->build();
         $this->activityRepository->add(ActivityWithRawData::fromState(
             $activityOne,
@@ -65,6 +59,7 @@ class EnrichedActivitiesTest extends ContainerTestCase
         $activityTwo = ActivityBuilder::fromDefaults()
             ->withActivityId(ActivityId::fromUnprefixed(2))
             ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 13:00:34'))
+            ->withSportType(SportType::RUN)
             ->build();
         $this->activityRepository->add(ActivityWithRawData::fromState(
             $activityTwo,
@@ -72,6 +67,7 @@ class EnrichedActivitiesTest extends ContainerTestCase
         ));
         $activityThree = ActivityBuilder::fromDefaults()
             ->withActivityId(ActivityId::fromUnprefixed(3))
+            ->withSportType(SportType::MOUNTAIN_BIKE_RIDE)
             ->withStartDateTime(SerializableDateTime::fromString('2023-10-09 14:00:34'))
             ->build();
         $this->activityRepository->add(ActivityWithRawData::fromState(
@@ -83,37 +79,6 @@ class EnrichedActivitiesTest extends ContainerTestCase
             [$activityOne->getId(), $activityTwo->getId(), $activityThree->getId()],
             $this->enrichedActivities->findAll()->map(fn (Activity $activity): ActivityId => $activity->getId())
         );
-    }
-
-    public function testFindByStartDate(): void
-    {
-        $activityOne = ActivityBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1))
-            ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 14:00:34'))
-            ->withSportType(SportType::BADMINTON)
-            ->build();
-        $this->activityRepository->add(ActivityWithRawData::fromState(
-            $activityOne,
-            ['raw' => 'data']
-        ));
-        $activityTwo = ActivityBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(2))
-            ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 13:00:34'))
-            ->withSportType(SportType::RUN)
-            ->build();
-        $this->activityRepository->add(ActivityWithRawData::fromState(
-            $activityTwo,
-            ['raw' => 'data']
-        ));
-        $activityThree = ActivityBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(3))
-            ->withSportType(SportType::MOUNTAIN_BIKE_RIDE)
-            ->withStartDateTime(SerializableDateTime::fromString('2023-10-09 14:00:34'))
-            ->build();
-        $this->activityRepository->add(ActivityWithRawData::fromState(
-            $activityThree,
-            ['raw' => 'data']
-        ));
 
         $this->assertEquals(
             [$activityOne->getId(), $activityTwo->getId()],
@@ -124,37 +89,6 @@ class EnrichedActivitiesTest extends ContainerTestCase
             [$activityOne->getId()],
             $this->enrichedActivities->findByStartDate(SerializableDateTime::fromString('2023-10-10'), ActivityType::RACQUET_PADDLE_SPORTS)->map(fn (Activity $activity): ActivityId => $activity->getId())
         );
-    }
-
-    public function testFindBySportTypes(): void
-    {
-        $activityOne = ActivityBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1))
-            ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 14:00:34'))
-            ->withSportType(SportType::BADMINTON)
-            ->build();
-        $this->activityRepository->add(ActivityWithRawData::fromState(
-            $activityOne,
-            ['raw' => 'data']
-        ));
-        $activityTwo = ActivityBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(2))
-            ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 13:00:34'))
-            ->withSportType(SportType::RUN)
-            ->build();
-        $this->activityRepository->add(ActivityWithRawData::fromState(
-            $activityTwo,
-            ['raw' => 'data']
-        ));
-        $activityThree = ActivityBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(3))
-            ->withSportType(SportType::MOUNTAIN_BIKE_RIDE)
-            ->withStartDateTime(SerializableDateTime::fromString('2023-10-09 14:00:34'))
-            ->build();
-        $this->activityRepository->add(ActivityWithRawData::fromState(
-            $activityThree,
-            ['raw' => 'data']
-        ));
 
         $this->assertEquals(
             [$activityTwo->getId(), $activityThree->getId()],
@@ -166,6 +100,8 @@ class EnrichedActivitiesTest extends ContainerTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        $this->importGearMaintenanceConfig();
 
         $this->enrichedActivities = $this->getContainer()->get(EnrichedActivities::class);
         $this->activityRepository = $this->getContainer()->get(ActivityRepository::class);

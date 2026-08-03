@@ -38,6 +38,14 @@ export default class Router {
         return this.determineActiveMenuLink(newUrl);
     }
 
+    determineContentUrl(page) {
+        const link = document.querySelector(
+            `a[data-router-navigate="${page}"][data-router-content-url]`
+        );
+
+        return link?.getAttribute('data-router-content-url') ?? `${page}.html`;
+    }
+
     async renderContent(page, modalId) {
         // Close mobile nav if open
         if (!this.menu.hasAttribute('aria-hidden')) {
@@ -61,7 +69,7 @@ export default class Router {
 
         this.showLoader();
 
-        const response = await fetch(`${page}.html`, {cache: 'no-store'});
+        const response = await fetch(this.determineContentUrl(page), {cache: 'no-store'});
         this.appContent.innerHTML = await response.text();
         window.scrollTo(0, 0);
 
@@ -72,7 +80,7 @@ export default class Router {
         this.registerNavItems(newNavItems);
 
         const fullPageName = page
-            .replace(window.statisticsForStrava.appUrl.basePath, '')
+            .replace(window.dreeve.appUrl.basePath, '')
             .replace(/^\/+/, '')
             .replaceAll('/', '-');
 
@@ -129,13 +137,13 @@ export default class Router {
 
     currentRoute() {
         const defaultRoute = '/dashboard';
-        if (window.statisticsForStrava.appUrl.basePath === '') {
+        if (window.dreeve.appUrl.basePath === '') {
             // App is not served from a subpath.
             return location.pathname.replace('/', '') ? location.pathname : defaultRoute;
         }
 
         // App is served from a subpath.
-        const base = '/' + window.statisticsForStrava.appUrl.basePath.replace(/^\/+|\/+$/g, '');
+        const base = '/' + window.dreeve.appUrl.basePath.replace(/^\/+|\/+$/g, '');
         const pathname = location.pathname.replace(/\/+$/, '');
 
         return pathname === base

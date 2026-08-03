@@ -2,9 +2,10 @@
 
 namespace App\Tests\Domain\Activity\Stream\CombinedStream;
 
+use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\CombinedStream\CombinedStreamProfileCharts;
 use App\Domain\Activity\Stream\CombinedStream\CombinedStreamType;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Tests\ContainerTestCase;
 use PHPUnit\Framework\Attributes\TestWith;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -26,6 +27,7 @@ class CombinedStreamProfileChartsTest extends ContainerTestCase
             grades: [],
             maximumNumberOfDigitsOnYAxis: $maxYAxisDigits,
             unitSystem: UnitSystem::METRIC,
+            sportType: SportType::RIDE,
             translator: $this->getContainer()->get(TranslatorInterface::class)
         )->build();
 
@@ -49,6 +51,7 @@ class CombinedStreamProfileChartsTest extends ContainerTestCase
             grades: [],
             maximumNumberOfDigitsOnYAxis: 3,
             unitSystem: UnitSystem::METRIC,
+            sportType: SportType::RIDE,
             translator: $this->getContainer()->get(TranslatorInterface::class)
         )->build();
     }

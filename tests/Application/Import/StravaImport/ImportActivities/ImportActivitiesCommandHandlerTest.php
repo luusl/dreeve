@@ -2,18 +2,7 @@
 
 namespace App\Tests\Application\Import\StravaImport\ImportActivities;
 
-use App\Application\Import\StravaImport\ImportActivities\ActivitiesToSkipDuringImport;
-use App\Application\Import\StravaImport\ImportActivities\ActivityVisibilitiesToImport;
 use App\Application\Import\StravaImport\ImportActivities\ImportActivities;
-use App\Application\Import\StravaImport\ImportActivities\ImportActivitiesCommandHandler;
-use App\Application\Import\StravaImport\ImportActivities\NumberOfNewActivitiesToProcessPerImport;
-use App\Application\Import\StravaImport\ImportActivities\Pipeline\ActivityImportStep;
-use App\Application\Import\StravaImport\ImportActivities\Pipeline\AnalyzeRouteGeography;
-use App\Application\Import\StravaImport\ImportActivities\Pipeline\DetermineActivityWeather;
-use App\Application\Import\StravaImport\ImportActivities\Pipeline\DownloadActivityImages;
-use App\Application\Import\StravaImport\ImportActivities\Pipeline\FetchActivityStreams;
-use App\Application\Import\StravaImport\ImportActivities\Pipeline\InitializeActivity;
-use App\Application\Import\StravaImport\ImportActivities\SkipActivitiesRecordedBefore;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIdRepository;
 use App\Domain\Activity\ActivityIds;
@@ -24,34 +13,34 @@ use App\Domain\Activity\BestEffort\ActivityBestEffortRepository;
 use App\Domain\Activity\Lap\ActivityLapRepository;
 use App\Domain\Activity\Split\ActivitySplitRepository;
 use App\Domain\Activity\SportType\SportType;
-use App\Domain\Activity\SportType\SportTypesToImport;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Gear\GearId;
-use App\Domain\Gear\ImportedGear\ImportedGearRepository;
+use App\Domain\Gear\GearRepository;
+use App\Domain\Gear\GearType;
 use App\Domain\Segment\SegmentEffort\SegmentEffortId;
 use App\Domain\Segment\SegmentEffort\SegmentEffortRepository;
 use App\Domain\Segment\SegmentId;
 use App\Domain\Segment\SegmentRepository;
+use App\Domain\Settings\SettingsGroup;
+use App\Domain\Settings\SettingsRepository;
 use App\Domain\Strava\Strava;
-use App\Infrastructure\Mutex\LockName;
-use App\Infrastructure\Mutex\Mutex;
+use App\Infrastructure\CQRS\Command\Bus\CommandBus;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Geography\Coordinate;
 use App\Infrastructure\ValueObject\Geography\Latitude;
 use App\Infrastructure\ValueObject\Geography\Longitude;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Activity\BestEffort\ActivityBestEffortBuilder;
 use App\Tests\Domain\Activity\Lap\ActivityLapBuilder;
 use App\Tests\Domain\Activity\Split\ActivitySplitBuilder;
 use App\Tests\Domain\Activity\Stream\ActivityStreamBuilder;
-use App\Tests\Domain\Gear\ImportedGear\ImportedGearBuilder;
+use App\Tests\Domain\Gear\GearBuilder;
 use App\Tests\Domain\Segment\SegmentBuilder;
 use App\Tests\Domain\Segment\SegmentEffort\SegmentEffortBuilder;
 use App\Tests\Domain\Strava\SpyStrava;
 use App\Tests\Infrastructure\FileSystem\provideAssertFileSystem;
-use App\Tests\Infrastructure\Time\Clock\PausedClock;
 use App\Tests\ProvideSnapshotAssertion;
 use App\Tests\SpyOutput;
 use Spatie\Snapshots\MatchesSnapshots;
@@ -62,7 +51,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
     use provideAssertFileSystem;
     use ProvideSnapshotAssertion;
 
-    private ImportActivitiesCommandHandler $importActivitiesCommandHandler;
+    private CommandBus $commandBus;
     private SpyStrava $strava;
 
     public function testHandleWithTooManyRequestsWhileInitializing(): void
@@ -70,7 +59,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         $output = new SpyOutput();
         $this->strava->setMaxNumberOfCallsBeforeTriggering429(0);
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
 
         $this->assertMatchesTextSnapshot((string) $output);
     }
@@ -80,7 +69,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         $output = new SpyOutput();
         $this->strava->setMaxNumberOfCallsBeforeTriggering429(12);
 
-        $this->getContainer()->get(ImportedGearRepository::class)->save(ImportedGearBuilder::fromDefaults()
+        $this->getContainer()->get(GearRepository::class)->add(GearBuilder::fromDefaults()
             ->withGearId(GearId::fromString('gear-b12659861'))
             ->build()
         );
@@ -101,7 +90,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         ));
         $this->getContainer()->get(ActivityRepository::class)->markActivityStreamsAsImported(ActivityId::fromUnprefixed(4));
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
 
         $this->assertMatchesTextSnapshot((string) $output);
         $this->assertFileSystemWrites($this->getContainer()->get('file.storage'));
@@ -118,7 +107,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
         $this->strava->triggerExceptionOnNextCall();
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
         $this->assertMatchesTextSnapshot((string) $output);
     }
 
@@ -128,12 +117,12 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
         $this->strava->triggerExceptionOnNextActivityCall();
 
-        $this->getContainer()->get(ImportedGearRepository::class)->save(ImportedGearBuilder::fromDefaults()
+        $this->getContainer()->get(GearRepository::class)->add(GearBuilder::fromDefaults()
             ->withGearId(GearId::fromString('gear-b12659861'))
             ->build()
         );
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
         $this->assertMatchesTextSnapshot((string) $output);
     }
 
@@ -212,7 +201,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
             ->withActivityId(ActivityId::fromUnprefixed(1001))
             ->build());
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
 
         $this->assertMatchesTextSnapshot($output);
         $this->assertCount(
@@ -241,7 +230,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         ));
 
         $this->expectExceptionObject(new \RuntimeException('All activities appear to be marked for deletion. This seems like a configuration issue. Aborting to prevent data loss'));
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
     }
 
     public function testHandleWithoutActivityDelete(): void
@@ -255,9 +244,107 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
                 ->build(), []
         ));
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
 
         $this->assertMatchesTextSnapshot($output);
+    }
+
+    public function testHandleKeepsManuallyAssignedCustomGearWhenStravaHasNoGear(): void
+    {
+        $output = new SpyOutput();
+        $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
+        $this->strava->emptyGearIdOnActivities();
+
+        $this->getContainer()->get(GearRepository::class)->add(GearBuilder::fromDefaults()
+            ->withGearId(GearId::fromUnprefixed('custom-one'))
+            ->withGearType(GearType::CUSTOM)
+            ->build()
+        );
+
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withGearId(GearId::fromUnprefixed('custom-one'))
+                ->build(), []
+        ));
+
+        $this->commandBus->dispatch(new ImportActivities($output, null));
+
+        $this->assertEquals(
+            GearId::fromUnprefixed('custom-one'),
+            $this->getContainer()->get(ActivityRepository::class)->find(ActivityId::fromUnprefixed(4))->getGearId()
+        );
+    }
+
+    public function testHandleOverwritesCustomGearWhenStravaHasGear(): void
+    {
+        $output = new SpyOutput();
+        $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
+
+        $this->getContainer()->get(GearRepository::class)->add(GearBuilder::fromDefaults()
+            ->withGearId(GearId::fromUnprefixed('custom-one'))
+            ->withGearType(GearType::CUSTOM)
+            ->build()
+        );
+
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withGearId(GearId::fromUnprefixed('custom-one'))
+                ->build(), []
+        ));
+
+        $this->commandBus->dispatch(new ImportActivities($output, null));
+
+        // A gear assigned in Strava always wins over a manually assigned custom gear.
+        $this->assertEquals(
+            GearId::fromUnprefixed('b12659861'),
+            $this->getContainer()->get(ActivityRepository::class)->find(ActivityId::fromUnprefixed(4))->getGearId()
+        );
+    }
+
+    public function testHandleOverwritesImportedGearFromStravaPayload(): void
+    {
+        $output = new SpyOutput();
+        $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
+
+        $this->getContainer()->get(GearRepository::class)->add(GearBuilder::fromDefaults()
+            ->withGearId(GearId::fromUnprefixed('b12659743'))
+            ->build()
+        );
+
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withGearId(GearId::fromUnprefixed('b12659743'))
+                ->build(), []
+        ));
+
+        $this->commandBus->dispatch(new ImportActivities($output, null));
+
+        $this->assertEquals(
+            GearId::fromUnprefixed('b12659861'),
+            $this->getContainer()->get(ActivityRepository::class)->find(ActivityId::fromUnprefixed(4))->getGearId()
+        );
+    }
+
+    public function testHandleEmptiesGearWhenAssignedGearDoesNotExist(): void
+    {
+        $output = new SpyOutput();
+        $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
+        $this->strava->emptyGearIdOnActivities();
+
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withGearId(GearId::fromUnprefixed('does-not-exist'))
+                ->build(), []
+        ));
+
+        $this->commandBus->dispatch(new ImportActivities($output, null));
+        $this->assertNull(
+            $this->getContainer()->get(ActivityRepository::class)->find(ActivityId::fromUnprefixed(4))->getGearId()
+        );
     }
 
     public function testHandleWhenNoSegmentEffortsDefined(): void
@@ -267,28 +354,12 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         $this->strava->returnActivityWithoutSegmentEfforts();
 
         $this->expectExceptionObject(new \RuntimeException('Activity 2 is expected to include segment_efforts in the raw Strava data. This appears to be a regression introduced in a recent version. Please report this as a bug on GitHub.'));
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
     }
 
     public function testHandleWithActivityVisibilitiesToImport(): void
     {
-        $this->importActivitiesCommandHandler = new ImportActivitiesCommandHandler(
-            strava: $this->strava = $this->getContainer()->get(Strava::class),
-            activityRepository: $this->getContainer()->get(ActivityRepository::class),
-            activityIdRepository: $this->getContainer()->get(ActivityIdRepository::class),
-            activityStreamRepository: $this->getContainer()->get(ActivityStreamRepository::class),
-            numberOfNewActivitiesToProcessPerImport: $this->getContainer()->get(NumberOfNewActivitiesToProcessPerImport::class),
-            sportTypesToImport: $this->getContainer()->get(SportTypesToImport::class),
-            activityVisibilitiesToImport: ActivityVisibilitiesToImport::from([ActivityVisibility::EVERYONE->value]),
-            activitiesToSkipDuringImport: $this->getContainer()->get(ActivitiesToSkipDuringImport::class),
-            skipActivitiesRecordedBefore: $this->getContainer()->get(SkipActivitiesRecordedBefore::class),
-            mutex: new Mutex(
-                connection: $this->getConnection(),
-                clock: PausedClock::fromString('2025-12-04'),
-                lockName: LockName::IMPORT_DATA_OR_BUILD_APP,
-            ),
-            steps: $this->getPipelineSteps(),
-        );
+        $this->seedImportSettings(['activityVisibilitiesToImport' => [ActivityVisibility::EVERYONE->value]]);
 
         $output = new SpyOutput();
         $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
@@ -299,7 +370,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
                 ->build(), []
         ));
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
 
         $this->assertMatchesTextSnapshot($output);
 
@@ -310,23 +381,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
     public function testHandleWithTooManyActivitiesToProcessInOneImport(): void
     {
-        $this->importActivitiesCommandHandler = new ImportActivitiesCommandHandler(
-            strava: $this->strava = $this->getContainer()->get(Strava::class),
-            activityRepository: $this->getContainer()->get(ActivityRepository::class),
-            activityIdRepository: $this->getContainer()->get(ActivityIdRepository::class),
-            activityStreamRepository: $this->getContainer()->get(ActivityStreamRepository::class),
-            numberOfNewActivitiesToProcessPerImport: NumberOfNewActivitiesToProcessPerImport::fromInt(1),
-            sportTypesToImport: $this->getContainer()->get(SportTypesToImport::class),
-            activityVisibilitiesToImport: $this->getContainer()->get(ActivityVisibilitiesToImport::class),
-            activitiesToSkipDuringImport: $this->getContainer()->get(ActivitiesToSkipDuringImport::class),
-            skipActivitiesRecordedBefore: $this->getContainer()->get(SkipActivitiesRecordedBefore::class),
-            mutex: new Mutex(
-                connection: $this->getConnection(),
-                clock: PausedClock::fromString('2025-12-04'),
-                lockName: LockName::IMPORT_DATA_OR_BUILD_APP,
-            ),
-            steps: $this->getPipelineSteps(),
-        );
+        $this->seedImportSettings(['numberOfNewActivitiesToProcessPerImport' => 1]);
 
         $output = new SpyOutput();
         $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
@@ -337,7 +392,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
                 ->build(), []
         ));
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
 
         $this->assertMatchesTextSnapshot($output);
 
@@ -353,23 +408,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
     public function testHandleWithSkipActivitiesRecordedBefore(): void
     {
-        $this->importActivitiesCommandHandler = new ImportActivitiesCommandHandler(
-            strava: $this->strava = $this->getContainer()->get(Strava::class),
-            activityRepository: $this->getContainer()->get(ActivityRepository::class),
-            activityIdRepository: $this->getContainer()->get(ActivityIdRepository::class),
-            activityStreamRepository: $this->getContainer()->get(ActivityStreamRepository::class),
-            numberOfNewActivitiesToProcessPerImport: $this->getContainer()->get(NumberOfNewActivitiesToProcessPerImport::class),
-            sportTypesToImport: $this->getContainer()->get(SportTypesToImport::class),
-            activityVisibilitiesToImport: $this->getContainer()->get(ActivityVisibilitiesToImport::class),
-            activitiesToSkipDuringImport: $this->getContainer()->get(ActivitiesToSkipDuringImport::class),
-            skipActivitiesRecordedBefore: SkipActivitiesRecordedBefore::fromOptionalString('2023-09-01'),
-            mutex: new Mutex(
-                connection: $this->getConnection(),
-                clock: PausedClock::fromString('2025-12-04'),
-                lockName: LockName::IMPORT_DATA_OR_BUILD_APP,
-            ),
-            steps: $this->getPipelineSteps(),
-        );
+        $this->seedImportSettings(['skipActivitiesRecordedBefore' => '2023-09-01']);
 
         $output = new SpyOutput();
         $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
@@ -380,30 +419,14 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
                 ->build(), []
         ));
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
 
         $this->assertMatchesTextSnapshot($output);
     }
 
     public function testHandleWithSportTypeIsNotIncluded(): void
     {
-        $this->importActivitiesCommandHandler = new ImportActivitiesCommandHandler(
-            strava: $this->strava = $this->getContainer()->get(Strava::class),
-            activityRepository: $this->getContainer()->get(ActivityRepository::class),
-            activityIdRepository: $this->getContainer()->get(ActivityIdRepository::class),
-            activityStreamRepository: $this->getContainer()->get(ActivityStreamRepository::class),
-            numberOfNewActivitiesToProcessPerImport: $this->getContainer()->get(NumberOfNewActivitiesToProcessPerImport::class),
-            sportTypesToImport: SportTypesToImport::from(['Ride']),
-            activityVisibilitiesToImport: $this->getContainer()->get(ActivityVisibilitiesToImport::class),
-            activitiesToSkipDuringImport: $this->getContainer()->get(ActivitiesToSkipDuringImport::class),
-            skipActivitiesRecordedBefore: $this->getContainer()->get(SkipActivitiesRecordedBefore::class),
-            mutex: new Mutex(
-                connection: $this->getConnection(),
-                clock: PausedClock::fromString('2025-12-04'),
-                lockName: LockName::IMPORT_DATA_OR_BUILD_APP,
-            ),
-            steps: $this->getPipelineSteps(),
-        );
+        $this->seedImportSettings(['sportTypesToImport' => ['Ride']]);
 
         $output = new SpyOutput();
         $this->strava->setMaxNumberOfCallsBeforeTriggering429(1000);
@@ -415,7 +438,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
                 ->build(), []
         ));
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, null));
+        $this->commandBus->dispatch(new ImportActivities($output, null));
 
         $this->assertMatchesTextSnapshot($output);
     }
@@ -465,7 +488,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
             []
         ));
 
-        $this->importActivitiesCommandHandler->handle(new ImportActivities($output, ActivityIds::fromArray([ActivityId::fromUnprefixed(4)])));
+        $this->commandBus->dispatch(new ImportActivities($output, ActivityIds::fromArray([ActivityId::fromUnprefixed(4)])));
 
         $this->assertMatchesTextSnapshot($output);
     }
@@ -480,36 +503,24 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
             ['key' => 'lock.importDataOrBuildApp', 'value' => '{"lockAcquiredBy": "test"}']
         );
 
-        $this->importActivitiesCommandHandler = new ImportActivitiesCommandHandler(
-            strava: $this->strava = $this->getContainer()->get(Strava::class),
-            activityRepository: $this->getContainer()->get(ActivityRepository::class),
-            activityIdRepository: $this->getContainer()->get(ActivityIdRepository::class),
-            activityStreamRepository: $this->getContainer()->get(ActivityStreamRepository::class),
-            numberOfNewActivitiesToProcessPerImport: $this->getContainer()->get(NumberOfNewActivitiesToProcessPerImport::class),
-            sportTypesToImport: $this->getContainer()->get(SportTypesToImport::class),
-            activityVisibilitiesToImport: $this->getContainer()->get(ActivityVisibilitiesToImport::class),
-            activitiesToSkipDuringImport: $this->getContainer()->get(ActivitiesToSkipDuringImport::class),
-            skipActivitiesRecordedBefore: $this->getContainer()->get(SkipActivitiesRecordedBefore::class),
-            mutex: new Mutex(
-                connection: $this->getConnection(),
-                clock: PausedClock::fromString('2025-12-04'),
-                lockName: LockName::IMPORT_DATA_OR_BUILD_APP,
-            ),
-            steps: $this->getPipelineSteps(),
-        );
+        $this->commandBus = $this->getContainer()->get(CommandBus::class);
+        $this->strava = $this->getContainer()->get(Strava::class);
     }
 
     /**
-     * @return ActivityImportStep[]
+     * @param array<string, mixed> $overrides
      */
-    private function getPipelineSteps(): array
+    private function seedImportSettings(array $overrides): void
     {
-        return [
-            $this->getContainer()->get(InitializeActivity::class),
-            $this->getContainer()->get(FetchActivityStreams::class),
-            $this->getContainer()->get(AnalyzeRouteGeography::class),
-            $this->getContainer()->get(DetermineActivityWeather::class),
-            $this->getContainer()->get(DownloadActivityImages::class),
-        ];
+        $this->getContainer()->get(SettingsRepository::class)->save(SettingsGroup::IMPORT, [
+            'numberOfNewActivitiesToProcessPerImport' => 250,
+            'sportTypesToImport' => [],
+            'activityVisibilitiesToImport' => [],
+            'skipActivitiesRecordedBefore' => null,
+            'activitiesToSkipDuringImport' => ['skip'],
+            'optInToSegmentDetailImport' => true,
+            'webhooks' => ['enabled' => true, 'verifyToken' => 'ffc26d52-d3ff-4797-a2b7-780a593a3547'],
+            ...$overrides,
+        ]);
     }
 }

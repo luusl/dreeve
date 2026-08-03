@@ -9,32 +9,37 @@ use App\Domain\Activity\Eddington\Eddington;
 use App\Domain\Activity\EnrichedActivities;
 use App\Domain\Activity\Stream\StreamBasedActivityHeartRateRepository;
 use App\Domain\Activity\Stream\StreamBasedActivityPowerRepository;
+use App\Domain\Import\ImportMode;
 use App\Infrastructure\Twig\HtmlTwigExtension;
 use Carbon\Carbon;
 use Doctrine\DBAL\Connection;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Doctrine\ORM\Tools\ToolsException;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\Translation\LocaleSwitcher;
 
 abstract class ContainerTestCase extends KernelTestCase
 {
+    use ProvideSettings;
+
     protected static ?Connection $ourDbalConnection = null;
 
-    /**
-     * @throws ToolsException
-     */
+    private ?string $originalImportMode = null;
+
+    protected function importMode(): ImportMode
+    {
+        return ImportMode::STRAVA_API;
+    }
+
     protected function setUp(): void
     {
+        $this->originalImportMode = $_ENV['IMPORT_MODE'] ?? null;
+        $_SERVER['IMPORT_MODE'] = $_ENV['IMPORT_MODE'] = $this->importMode()->value;
+
         parent::setUp();
 
         if (!self::$ourDbalConnection instanceof Connection) {
             self::bootKernel();
             self::$ourDbalConnection = self::getContainer()->get(Connection::class);
         }
-
-        $this->createTestDatabase();
 
         // Empty the static cache between tests.
         EnrichedActivities::reset();
@@ -67,20 +72,21 @@ abstract class ContainerTestCase extends KernelTestCase
         $localeSwitcher = $this->getContainer()->get(LocaleSwitcher::class);
         $localeSwitcher->reset();
         Carbon::setLocale($localeSwitcher->getLocale());
+
+        // Seed settings.
+        $this->provideSettings();
     }
 
-    /**
-     * @throws ToolsException
-     */
-    private function createTestDatabase(): void
+    protected function tearDown(): void
     {
-        /** @var EntityManagerInterface $entityManager */
-        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        parent::tearDown();
 
-        $schemaTool = new SchemaTool($entityManager);
-        $classes = $entityManager->getMetadataFactory()->getAllMetadata();
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($classes);
+        if (null === $this->originalImportMode) {
+            unset($_SERVER['IMPORT_MODE'], $_ENV['IMPORT_MODE']);
+
+            return;
+        }
+        $_SERVER['IMPORT_MODE'] = $_ENV['IMPORT_MODE'] = $this->originalImportMode;
     }
 
     protected function getConnection(): Connection

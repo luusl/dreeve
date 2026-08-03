@@ -7,10 +7,11 @@ namespace App\Domain\Dashboard\Widget\YearlyStats;
 use App\Domain\Activity\ActivityType;
 use App\Domain\Dashboard\StatsContext;
 use App\Domain\Dashboard\Widget\YearlyStats\FindYearlyStatsPerDay\FindYearlyStatsPerDayResponse;
-use App\Infrastructure\ValueObject\Measurement\Length\Kilometer;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\Time\Hour;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Length\Kilometer;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Time\Hour;
+use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Theme\Theme;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Infrastructure\ValueObject\Time\Years;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -127,6 +128,9 @@ final readonly class YearlyStatisticsChart
                 'type' => 'line',
                 'smooth' => true,
                 'showSymbol' => false,
+                'itemStyle' => [
+                    'color' => Theme::getColorForYear($year),
+                ],
                 'data' => $data,
             ];
         }

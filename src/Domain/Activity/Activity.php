@@ -8,11 +8,21 @@ use App\Domain\Activity\Stream\ActivityPowerRepository;
 use App\Domain\Activity\Stream\PowerOutput;
 use App\Domain\Activity\Stream\PowerOutputs;
 use App\Domain\Gear\GearId;
+use App\Domain\Gear\RecordingDevice\RecordingDeviceId;
 use App\Domain\Integration\AI\SupportsAITooling;
 use App\Domain\Integration\Weather\OpenMeteo\Weather;
 use App\Domain\Zwift\CouldNotDetermineZwiftMap;
 use App\Domain\Zwift\ZwiftMap;
 use App\Infrastructure\Eventing\RecordsEvents;
+use App\Infrastructure\Measurement\Length\Kilometer;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Length\NauticalMile;
+use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Velocity\KmPerHour;
+use App\Infrastructure\Measurement\Velocity\Knot;
+use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
+use App\Infrastructure\Measurement\Velocity\SecPer100Meter;
+use App\Infrastructure\Measurement\Velocity\SecPerKm;
 use App\Infrastructure\Serialization\Escape;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
@@ -20,15 +30,7 @@ use App\Infrastructure\ValueObject\Geography\Coordinate;
 use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
 use App\Infrastructure\ValueObject\Geography\Latitude;
 use App\Infrastructure\ValueObject\Geography\Longitude;
-use App\Infrastructure\ValueObject\Measurement\Length\Kilometer;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\Measurement\Velocity\KmPerHour;
-use App\Infrastructure\ValueObject\Measurement\Velocity\MetersPerSecond;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPer100Meter;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPerKm;
 use App\Infrastructure\ValueObject\String\ExternalReferenceId;
-use App\Infrastructure\ValueObject\String\Name;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Infrastructure\ValueObject\Time\SerializableTimezone;
 use Doctrine\ORM\Mapping as ORM;
@@ -50,8 +52,6 @@ final class Activity implements SupportsAITooling
     private ?PowerOutputs $bestPowerOutputs = null;
     private ?int $normalizedPower = null;
     private ?string $gearName = null;
-    /** @var string[] */
-    private array $tags = [];
 
     #[ORM\Column(type: 'string', nullable: true)]
     // @phpstan-ignore-next-line
@@ -267,6 +267,13 @@ final class Activity implements SupportsAITooling
         return $this->startDateTime;
     }
 
+    public function withStartDateTime(SerializableDateTime $startDateTime): self
+    {
+        return clone ($this, [
+            'startDateTime' => $startDateTime,
+        ]);
+    }
+
     public function getSportType(): SportType
     {
         return $this->sportType;
@@ -275,6 +282,13 @@ final class Activity implements SupportsAITooling
     public function getWorldType(): WorldType
     {
         return $this->worldType;
+    }
+
+    public function withWorldType(WorldType $worldType): self
+    {
+        return clone ($this, [
+            'worldType' => $worldType,
+        ]);
     }
 
     public function getImportSource(): ImportSource
@@ -322,11 +336,6 @@ final class Activity implements SupportsAITooling
         return clone ($this, [
             'gearId' => $gearId,
         ]);
-    }
-
-    public function withEmptyGear(): self
-    {
-        return $this->withGear();
     }
 
     public function getGearName(): ?string
@@ -418,16 +427,16 @@ final class Activity implements SupportsAITooling
 
     public function getOriginalName(): string
     {
-        return trim(str_replace('Zwift - ', '', (string) $this->name));
+        return $this->name;
     }
 
     public function getName(): string
     {
-        if ([] === $this->tags) {
-            return $this->getOriginalName();
-        }
+        $name = str_replace('Zwift - ', '', $this->getOriginalName());
+        // Strip legacy gear-maintenance hashtags (e.g. "#sfs-chain-lubed") from the display name.
+        $name = (string) preg_replace('/\s*#sfs-\S+/', '', $name);
 
-        return trim(str_replace($this->tags, '', $this->getOriginalName()));
+        return trim($name);
     }
 
     public function getSanitizedName(): string
@@ -447,6 +456,13 @@ final class Activity implements SupportsAITooling
         return trim($this->description ?? '');
     }
 
+    public function withDescription(?string $description): self
+    {
+        return clone ($this, [
+            'description' => $description,
+        ]);
+    }
+
     public function getDistance(): Kilometer
     {
         return $this->distance;
@@ -457,6 +473,11 @@ final class Activity implements SupportsAITooling
         return clone ($this, [
             'distance' => $distance,
         ]);
+    }
+
+    public function getDistanceInDisplayUnit(): NauticalMile|Kilometer
+    {
+        return $this->getSportType()->toDisplayDistance($this->getDistance());
     }
 
     public function getElevation(): Meter
@@ -503,6 +524,11 @@ final class Activity implements SupportsAITooling
         ]);
     }
 
+    public function getAverageSpeedInDisplayUnit(): Knot|KmPerHour
+    {
+        return $this->getSportType()->toDisplaySpeed($this->getAverageSpeed());
+    }
+
     public function getPaceInSecPerKm(): SecPerKm
     {
         return $this->getAverageSpeed()->toMetersPerSecond()->toSecPerKm();
@@ -523,6 +549,11 @@ final class Activity implements SupportsAITooling
         return clone ($this, [
             'maxSpeed' => $maxSpeed,
         ]);
+    }
+
+    public function getMaxSpeedInDisplayUnit(): Knot|KmPerHour
+    {
+        return $this->getSportType()->toDisplaySpeed($this->getMaxSpeed());
     }
 
     public function getAverageHeartRate(): ?int
@@ -579,6 +610,13 @@ final class Activity implements SupportsAITooling
         return $this->elapsedTimeInSeconds;
     }
 
+    public function withElapsedTimeInSeconds(int $elapsedTimeInSeconds): self
+    {
+        return clone ($this, [
+            'elapsedTimeInSeconds' => $elapsedTimeInSeconds,
+        ]);
+    }
+
     public function getElapsedTimeFormatted(): string
     {
         return $this->formatDurationAsClock($this->getElapsedTimeInSeconds());
@@ -606,9 +644,16 @@ final class Activity implements SupportsAITooling
         return $this->deviceName;
     }
 
-    public function getDeviceId(): string
+    public function withDeviceName(?string $deviceName): self
     {
-        return Name::fromString($this->getDeviceName() ?? 'device-none')->kebabCase();
+        return clone ($this, [
+            'deviceName' => $deviceName,
+        ]);
+    }
+
+    public function getDeviceId(): RecordingDeviceId
+    {
+        return RecordingDeviceId::fromName($this->getDeviceName() ?? 'none');
     }
 
     public function isCommute(): bool
@@ -692,16 +737,6 @@ final class Activity implements SupportsAITooling
     {
         return clone ($this, [
             'normalizedPower' => $normalizedPower,
-        ]);
-    }
-
-    /**
-     * @param string[] $tags
-     */
-    public function withTags(array $tags): self
-    {
-        return clone ($this, [
-            'tags' => $tags,
         ]);
     }
 

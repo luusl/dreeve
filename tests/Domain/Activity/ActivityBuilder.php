@@ -13,10 +13,10 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Gear\GearId;
+use App\Infrastructure\Measurement\Length\Kilometer;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\ValueObject\Geography\Coordinate;
-use App\Infrastructure\ValueObject\Measurement\Length\Kilometer;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\ValueObject\String\ExternalReferenceId;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 
@@ -35,12 +35,12 @@ final class ActivityBuilder
     private ?Coordinate $startingCoordinate = null;
     private int $calories;
     private ?int $averagePower = null;
-    private readonly ?int $maxPower;
+    private ?int $maxPower;
     private KmPerHour $averageSpeed;
-    private readonly KmPerHour $maxSpeed;
+    private KmPerHour $maxSpeed;
     private ?int $averageHeartRate = null;
-    private readonly ?int $maxHeartRate;
-    private readonly ?int $averageCadence;
+    private ?int $maxHeartRate;
+    private ?int $averageCadence;
     private int $movingTimeInSeconds = 10;
     private int $elapsedTimeInSeconds = 10;
     private int $totalImageCount = 0;
@@ -51,8 +51,8 @@ final class ActivityBuilder
     private RouteGeography $routeGeography;
     private readonly ?string $weather;
     private ?GearId $gearId = null;
-    private readonly bool $isCommute;
-    private readonly ?WorkoutType $workoutType;
+    private bool $isCommute;
+    private ?WorkoutType $workoutType;
 
     private function __construct()
     {
@@ -215,6 +215,13 @@ final class ActivityBuilder
         return $this;
     }
 
+    public function withIsCommute(bool $isCommute): self
+    {
+        $this->isCommute = $isCommute;
+
+        return $this;
+    }
+
     public function withSportType(SportType $sportType): self
     {
         $this->sportType = $sportType;
@@ -281,6 +288,41 @@ final class ActivityBuilder
     public function withExternalReferenceId(?ExternalReferenceId $externalReferenceId): self
     {
         $this->externalReferenceId = $externalReferenceId;
+
+        return $this;
+    }
+
+    public function withMaxPower(int $maxPower): self
+    {
+        $this->maxPower = $maxPower;
+
+        return $this;
+    }
+
+    public function withMaxSpeed(KmPerHour $maxSpeed): self
+    {
+        $this->maxSpeed = $maxSpeed;
+
+        return $this;
+    }
+
+    public function withMaxHeartRate(int $maxHeartRate): self
+    {
+        $this->maxHeartRate = $maxHeartRate;
+
+        return $this;
+    }
+
+    public function withAverageCadence(int $averageCadence): self
+    {
+        $this->averageCadence = $averageCadence;
+
+        return $this;
+    }
+
+    public function withWorkoutType(WorkoutType $workoutType): self
+    {
+        $this->workoutType = $workoutType;
 
         return $this;
     }

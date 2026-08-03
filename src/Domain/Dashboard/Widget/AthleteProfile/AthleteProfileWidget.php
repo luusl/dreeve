@@ -8,8 +8,8 @@ use App\Domain\Dashboard\Widget\AthleteProfile\FindAthleteProfileMetrics\FindAth
 use App\Domain\Dashboard\Widget\Widget;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
+use App\Infrastructure\Measurement\Time\Seconds;
 use App\Infrastructure\Serialization\Json;
-use App\Infrastructure\ValueObject\Measurement\Time\Seconds;
 use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -23,6 +23,16 @@ final readonly class AthleteProfileWidget implements Widget
         private Environment $twig,
         private TranslatorInterface $translator,
     ) {
+    }
+
+    public function getLabel(): string
+    {
+        return $this->translator->trans('Athlete profile');
+    }
+
+    public function getTemplateName(): string
+    {
+        return 'widget--athlete-profile';
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -89,7 +99,7 @@ final readonly class AthleteProfileWidget implements Widget
             return null;
         }
 
-        return $this->twig->load('html/dashboard/widget/widget--athlete-profile.html.twig')->render([
+        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
             'athleteProfileChart' => Json::encode(
                 AthleteProfileChart::create(
                     chartData: $chartData,

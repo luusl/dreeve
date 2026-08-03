@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Tests\Domain\Import\FileParser;
 
 use App\Domain\Activity\SportType\SportType;
+use App\Domain\Import\FileParser\ActivityStreamsMapper;
 use App\Domain\Import\FileParser\CouldNotParseActivityFile;
 use App\Domain\Import\FileParser\GpxFileParser;
 use App\Domain\Import\FileParser\RawActivityFile;
+use App\Domain\Import\SupportedFileExtension;
 use App\Infrastructure\ValueObject\String\Path;
 use App\Infrastructure\ValueObject\Time\SerializableTimezone;
 use App\Tests\Domain\Activity\IncrementingActivityIdFactory;
@@ -20,7 +22,7 @@ class GpxFileParserTest extends ActivityFileParserTestCase
 
     public function testSupportedExtensions(): void
     {
-        $this->assertSame('gpx', $this->parser->supportedExtension());
+        $this->assertSame(SupportedFileExtension::GPX, $this->parser->supportedExtension());
     }
 
     public function testParse(): void
@@ -30,51 +32,50 @@ class GpxFileParserTest extends ActivityFileParserTestCase
         );
     }
 
+    public function testParseFillsGapsInSparseTrackpoints(): void
+    {
+        $this->assertParsedFileMatchesSnapshot(
+            $this->parser->parse($this->rawFileFromFixture('activity-sparse.gpx'))
+        );
+    }
+
     public function testParseEmptyContentsThrows(): void
     {
-        $this->expectException(CouldNotParseActivityFile::class);
-        $this->parser->parse(RawActivityFile::from(Path::fromString('does-not-exist.gpx'), ''));
+        $rawActivityFile = RawActivityFile::from(Path::fromString('does-not-exist.gpx'), '');
+
+        $this->expectExceptionObject(new CouldNotParseActivityFile('Could not read "does-not-exist.gpx"', $rawActivityFile));
+        $this->parser->parse($rawActivityFile);
     }
 
     public function testParseUnknownSportDefaultsToWorkout(): void
     {
-        $xml = <<<'XML'
-            <?xml version="1.0" encoding="UTF-8"?>
-            <gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">
-              <trk>
-                <type>Other</type>
-                <trkseg>
-                  <trkpt lat="45.0" lon="22.5">
-                    <time>2021-09-08T00:00:00Z</time>
-                  </trkpt>
-                  <trkpt lat="45.001" lon="22.501">
-                    <time>2021-09-08T00:00:10Z</time>
-                  </trkpt>
-                </trkseg>
-              </trk>
-            </gpx>
-            XML;
-
-        $parsed = $this->parser->parse(RawActivityFile::from(Path::fromString('other-sport.gpx'), $xml));
+        $parsed = $this->parser->parse($this->rawFileFromFixture('activity-other-sport.gpx'));
 
         $this->assertSame(SportType::WORKOUT, $parsed->getActivity()->getSportType());
     }
 
     public function testParseWithoutTimedTrackpointsThrows(): void
     {
-        $xml = <<<'XML'
-            <?xml version="1.0" encoding="UTF-8"?>
-            <gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1">
-              <trk>
-                <trkseg>
-                  <trkpt lat="45.0" lon="22.5"><ele>100</ele></trkpt>
-                </trkseg>
-              </trk>
-            </gpx>
-            XML;
+        $rawActivityFile = $this->rawFileFromFixture('activity-without-timed-trackpoints.gpx');
 
-        $this->expectException(CouldNotParseActivityFile::class);
-        $this->parser->parse(RawActivityFile::from(Path::fromString('no-time.gpx'), $xml));
+        $this->expectExceptionObject(new CouldNotParseActivityFile('No trackpoints with a timestamp found in "activity-without-timed-trackpoints.gpx"', $rawActivityFile));
+        $this->parser->parse($rawActivityFile);
+    }
+
+    public function testParseMovingTimeExcludesRecordingGaps(): void
+    {
+        $parsed = $this->parser->parse($this->rawFileFromFixture('activity-with-recording-gap.gpx'));
+
+        $this->assertSame(310, $parsed->getActivity()->getElapsedTimeInSeconds());
+        // The 290s recording gap must not count as moving time.
+        $this->assertSame(20, $parsed->getActivity()->getMovingTimeInSeconds());
+    }
+
+    public function testParseSportTypeComesFromFirstTrack(): void
+    {
+        $parsed = $this->parser->parse($this->rawFileFromFixture('activity-multi-track.gpx'));
+
+        $this->assertSame(SportType::RUN, $parsed->getActivity()->getSportType());
     }
 
     #[\Override]
@@ -85,7 +86,7 @@ class GpxFileParserTest extends ActivityFileParserTestCase
         $this->parser = new GpxFileParser(
             new IncrementingActivityIdFactory(),
             new IncrementingActivityLapIdFactory(),
-            PausedClock::fromString('2023-10-17 16:15:04'),
+            new ActivityStreamsMapper(PausedClock::fromString('2023-10-17 16:15:04')),
             SerializableTimezone::UTC(),
         );
     }

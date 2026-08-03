@@ -2,15 +2,15 @@
 
 Several users have reported unexpected "JSON Syntax" errors when importing or building the HTML files:
 
-* https://github.com/robiningelbrecht/statistics-for-strava/issues/1621
-* https://github.com/robiningelbrecht/statistics-for-strava/issues/1623
-* https://github.com/robiningelbrecht/statistics-for-strava/issues/1357
-* https://github.com/robiningelbrecht/statistics-for-strava/issues/1288
-* https://github.com/robiningelbrecht/statistics-for-strava/issues/1180
+* https://github.com/dreeveapp/dreeve/issues/1621
+* https://github.com/dreeveapp/dreeve/issues/1623
+* https://github.com/dreeveapp/dreeve/issues/1357
+* https://github.com/dreeveapp/dreeve/issues/1288
+* https://github.com/dreeveapp/dreeve/issues/1180
 
-![Import error](../assets/images/troubleshoot-import-error.png ':size=700')
+![Import error](../assets/images/troubleshoot-import-error.png 'A JSON syntax error during an import run :size=700')
 
-![Build error](../assets/images/troubleshoot-build-error.png ':size=700')
+![Build error](../assets/images/troubleshoot-build-error.png 'The same error during a build :size=700')
 
 All of these issues share the same root cause: at some point, data became corrupted. 
 Unfortunately, we still don’t know exactly how or why this corruption occurs.

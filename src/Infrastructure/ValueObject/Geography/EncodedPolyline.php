@@ -11,9 +11,9 @@ final readonly class EncodedPolyline extends NonEmptyStringLiteral
     private const int PRECISION = 5;
 
     /**
-     * @param array<int, array{float, float}> $coordinates Ordered [latitude, longitude] pairs
+     * @param array<int, array{float, float}> $coordinates
      */
-    public static function encode(array $coordinates): self
+    public static function fromCoordinates(array $coordinates): self
     {
         $encoded = '';
         $previousLat = $previousLng = 0;
@@ -64,18 +64,7 @@ final readonly class EncodedPolyline extends NonEmptyStringLiteral
     }
 
     /**
-     * @return array<int, array<float, float>>
-     */
-    public function decodeAndPairLngLat(): array
-    {
-        return array_map(
-            fn (array $pair): array => [$pair[1], $pair[0]],
-            array_chunk($this->decode(), 2)
-        );
-    }
-
-    /**
-     * @return array<int, array<float, float>>
+     * @return array<int, array{float, float}>
      */
     public function decodeAndPairLatLng(): array
     {

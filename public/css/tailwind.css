@@ -1,15 +1,23 @@
 @import "tailwindcss" source(none);
 @import "../../node_modules/flowbite/src/themes/default.css";
+@import "./components/alert.css";
+@import "./components/autocomplete.css";
 @import "./components/chat.css";
-@import "./components/dark-mode.css";
+@import "./components/checkbox-multiselect.css";
+@import "./components/combobox.css";
 @import "./components/data-table.css";
 @import "./components/filter-dropdown.css";
-@import "./components/tabs.css";
-@import "./components/popover.css";
+@import "./components/form.css";
 @import "./components/modal.css";
-@import "./components/leaflet.css";
-@import "./components/sidebar.css";
+@import "./components/pill.css";
+@import "./components/popover.css";
 @import "./components/scroll-to.css";
+@import "./components/tabs.css";
+@import "./components/toast.css";
+@import "./layout/dashboard-layout.css";
+@import "./layout/sidebar.css";
+@import "./theme/dark-mode.css";
+@import "./vendor/leaflet.css";
 
 @source "../../templates/**/*.html.twig";
 @source "../../templates/**/*.svg";
@@ -36,6 +44,7 @@
 @custom-variant sidebar-collapsed (&:where([data-sidebar-collapsed], [data-sidebar-collapsed] *));
 @custom-variant fullscreen-enabled (&:where([data-fullscreen-enabled], [data-fullscreen-enabled] *));
 @custom-variant drawer-open (&:where(body:has(#drawer-navigation[aria-modal="true"]) *));
+@custom-variant authenticated (&:where([data-authenticated], [data-authenticated] *));
 
 @layer base {
     *,

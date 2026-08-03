@@ -9,13 +9,13 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Gear\GearId;
 use App\Domain\Integration\Weather\OpenMeteo\Weather;
 use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\Repository\DbalRepository;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Geography\Coordinate;
 use App\Infrastructure\ValueObject\Geography\Latitude;
 use App\Infrastructure\ValueObject\Geography\Longitude;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\ValueObject\String\ExternalReferenceId;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Doctrine\DBAL\ArrayParameterType;
@@ -129,14 +129,19 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
 
     public function update(ActivityWithRawData $activityWithRawData): void
     {
-        $sql = 'UPDATE Activity SET 
-                    name = :name, 
-                    sportType = :sportType, 
-                    activityType = :activityType, 
-                    distance = :distance, 
+        $sql = 'UPDATE Activity SET
+                    startDateTime = :startDateTime,
+                    name = :name,
+                    description = :description,
+                    deviceName = :deviceName,
+                    sportType = :sportType,
+                    activityType = :activityType,
+                    worldType = :worldType,
+                    distance = :distance,
                     averageSpeed = :averageSpeed,
                     maxSpeed = :maxSpeed,
                     movingTimeInSeconds = :movingTimeInSeconds,
+                    elapsedTimeInSeconds = :elapsedTimeInSeconds,
                     elevation = :elevation,
                     polyline = :polyline,
                     startingCoordinateLatitude = :startingCoordinateLatitude,
@@ -153,14 +158,19 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
         $activity = $activityWithRawData->getActivity();
         $this->connection->executeStatement($sql, [
             'activityId' => $activity->getId(),
+            'startDateTime' => $activity->getStartDate(),
             'sportType' => $activity->getSportType()->value,
             'activityType' => $activity->getSportType()->getActivityType()->value,
+            'worldType' => $activity->getWorldType()->value,
             'name' => $activity->getOriginalName(),
+            'description' => $activity->getDescription(),
+            'deviceName' => $activity->getDeviceName(),
             'distance' => $activity->getDistance()->toMeter()->toInt(),
             'elevation' => $activity->getElevation()->toInt(),
             'averageSpeed' => $activity->getAverageSpeed()->toFloat(),
             'maxSpeed' => $activity->getMaxSpeed()->toFloat(),
             'movingTimeInSeconds' => $activity->getMovingTimeInSeconds(),
+            'elapsedTimeInSeconds' => $activity->getElapsedTimeInSeconds(),
             'polyline' => $activity->getEncodedPolyline(),
             'startingCoordinateLatitude' => $activity->getStartingCoordinate()?->getLatitude()->toFloat(),
             'startingCoordinateLongitude' => $activity->getStartingCoordinate()?->getLongitude()->toFloat(),
@@ -221,14 +231,17 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
      */
     private function hydrate(array $result): Activity
     {
+        $startDateTime = SerializableDateTime::fromString($result['startDateTime']);
+        $sportType = SportType::from($result['sportType']);
+
         return Activity::fromState(
             activityId: ActivityId::fromString($result['activityId']),
-            startDateTime: SerializableDateTime::fromString($result['startDateTime']),
-            sportType: SportType::from($result['sportType']),
+            startDateTime: $startDateTime,
+            sportType: $sportType,
             worldType: WorldType::from($result['worldType']),
             importSource: ImportSource::from($result['importSource']),
             externalReferenceId: ExternalReferenceId::fromOptionalString($result['externalReferenceId'] ?? null),
-            name: ActivityName::fromString($result['name']),
+            name: '' !== trim((string) $result['name']) ? ActivityName::fromString($result['name']) : ActivityName::from($startDateTime, $sportType),
             description: $result['description'] ?: '',
             distance: Meter::from($result['distance'])->toKilometer(),
             elevation: Meter::from($result['elevation'] ?: 0),
