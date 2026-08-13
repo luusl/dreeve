@@ -3,7 +3,6 @@ import {eventBus, Events} from "./core/event-bus";
 import {FilterStorage} from "./features/data-table/storage";
 import Router from "./core/router";
 import {updateGithubLatestRelease} from "./services/github";
-import {initAuthState} from "./core/auth";
 import initSidebar from "./components/sidebar";
 import ChartManager from "./features/charts/chart-manager";
 import {registerEchartsCallbacks} from "./features/charts/echarts-callbacks";
@@ -14,6 +13,7 @@ import initTabs from "./components/tabs";
 import LazyLoad from "../libraries/lazyload.min";
 import initDataTables from "./features/data-table/data-table-manager";
 import initFullscreen from "./components/fullscreen";
+import initAsyncContent, {abortPendingAsyncContent} from "./components/async-content";
 import ScrollTo from "./components/scroll-to";
 import MilestoneFilter from "./features/milestones/milestone-filter";
 import DarkModeManager from "./components/dark-mode";
@@ -53,6 +53,7 @@ const initElements = (rootNode) => {
     initLeafletMaps(rootNode);
     initFullscreen(rootNode);
     scrollTo.init(rootNode);
+    initAsyncContent(rootNode);
 }
 
 initSidebar();
@@ -66,6 +67,7 @@ eventBus.on(Events.DARK_MODE_TOGGLED, ({darkModeEnabled}) => {
 eventBus.on(Events.PAGE_LOADED, async ({page, modalId}) => {
     modalManager.close();
 
+    abortPendingAsyncContent();
     chartManager.reset();
     initElements(document);
 
@@ -103,6 +105,9 @@ eventBus.on(Events.NAVIGATION_CLICKED, ({link}) => {
         FilterStorage.set(tableName, tableFilters);
     });
 });
+eventBus.on(Events.ASYNC_CONTENT_LOADED, ({node}) => {
+    initElements(node);
+});
 eventBus.on(Events.MODAL_LOADED, async ({node, modalName}) => {
     initElements(node);
 
@@ -125,6 +130,5 @@ if ($modalAIChat) {
 }
 
 (async () => {
-    await initAuthState();
     await updateGithubLatestRelease();
 })();

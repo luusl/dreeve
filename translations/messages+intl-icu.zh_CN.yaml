@@ -58,6 +58,7 @@ Challenges: 挑战
 'Clear all filters': 'Clear all filters'
 'Clear chat': 'Clear chat'
 'Close modal': 关闭模态框
+Columns: Columns
 Commutes: 通勤
 'Commutes only': 仅通勤
 Compare: 对比
@@ -70,6 +71,7 @@ Consistency: Consistency
 Country: Country
 Cricket: Cricket
 Crossfit: 交叉健身
+'Crunching the numbers...': 'Crunching the numbers...'
 'Current Status': 'Current Status'
 'Current streaks': 'Current streaks'
 Cycling: 骑行
@@ -97,6 +99,7 @@ Distance: 距离
 'Distance per month per gear': 每个装备每月的距离
 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.': 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.'
 Duration: Duration
+'Dusting off the record books...': 'Dusting off the record books...'
 'E-Bike Rides': 电动自行车骑行
 'E-Mountain Bike Rides': 电动山地车骑行
 Eddington: 愛丁頓數
@@ -120,6 +123,7 @@ Evening: 晚上
 'FTP history': FTP历史
 Favourite: 收藏夹
 Feb: 二月
+'Filling up the bottles...': 'Filling up the bottles...'
 'Filter on KOM segments': 筛选KOM路段
 'Filter on country': 按国家筛选
 'Filter on sport type': 按运动类型筛选
@@ -170,7 +174,6 @@ History: 历史
 'How much training you do in total on days you train.': 'How much training you do in total on days you train.'
 'How often do you train': 'How often do you train'
 'Ice Skate': 冰刀
-Id: Id
 Imperial: Imperial
 "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉.": '在那段时间里，我走了{totalDistance}，相当于环游世界{numberOfTripsAroundTheWorld}次🌍，或者说是到达月球的{numberOfTripsToTheMoonPercent}%🌕，并且攀登了{totalElevation}，相当于珠穆朗玛峰的{timesMountEverest}倍🏔。总而言之，我走了{totalTimeRecorded}的路🎉。'
 'Individual thresholds vary based on fitness level.': 个人阈值因体能水平而异。
@@ -196,7 +199,6 @@ Lifetime: Lifetime
 'Light fatigue with good readiness. A great balance for quality training or longer efforts': 'Light fatigue with good readiness. A great balance for quality training or longer efforts'
 Load: Load
 'Load (CTL/ATL)': '负荷 (CTL/ATL)'
-'Loading data...': 加载数据中...
 Loading...: 加载中...
 'Locations over the globe': 全球位置
 'Long run': 长跑
@@ -255,6 +257,7 @@ Oct: 十月
 'Older effort': 'Older effort'
 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.': '平均而言，每天的平均值为 {dailyAverage}，每周的平均值为 {weeklyAverage}，每月的平均值为 {monthlyAverage} 🐣。'
 'One of your gear maintenance tasks is due': 您有装备需维护
+'Open Water Swim': 'Open Water Swim'
 'Optimal training range': 最佳训练范围
 Other: 其他
 'Outdoor Sports': 户外运动
@@ -276,6 +279,7 @@ Photos: 照片
 Pilates: 普拉提
 'Pizza slices': 'Pizza slices'
 'Polarised training (last 30 days)': 极化训练（过去30天）
+'Pool Swim': 'Pool Swim'
 Power: 功率
 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.': '消耗了约{caloriesBurned}卡路里，或大约{numberOfPizzaSlices}片披萨🍕。'
 'Prev year': 去年
@@ -290,9 +294,9 @@ Ranking: Ranking
 'Reached {threshold} hours total moving time': 'Reached {threshold} hours total moving time'
 'Reached {threshold} total distance': 'Reached {threshold} total distance'
 'Reached {threshold} total elevation': 'Reached {threshold} total elevation'
+'Recalculating your suffer score...': 'Recalculating your suffer score...'
 'Recent effort': 'Recent effort'
 'Recording devices': 'Recording devices'
-'Recording devices details': 'Recording devices details'
 'Recovery Timeline': 'Recovery Timeline'
 'Recovery forecast': 'Recovery forecast'
 'Reduced carbon emission by commuting': 通勤减少的碳排放
@@ -319,9 +323,10 @@ Search: 搜索
 'Search segment...': 搜索路段...
 Segments: 路段
 Sep: 九月
+'Show all columns': 'Show all columns'
 'Show information': 显示信息
 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.': 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.'
-"Since I began using Strava {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": '从{startDate}算起，我已使用Strava {numberOfDaysAgo}多天​，我已经记录了{totalDaysOfWorkingOut}天的训练和冒险活动。'
+"Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
 Skateboard: 滑板
 Skating: 滑冰
 'Slightly fresh': 'Slightly fresh'
@@ -344,7 +349,6 @@ Streaks: 连续记录
 Sun: 周日
 Sun.: Sun.
 Surfing: 冲浪
-Swim: 游泳
 'TSB (Form)': 'TSB (状态)'
 'TSB positive in': 'TSB positive in'
 'Table Tennis': 乒乓球
@@ -452,7 +456,7 @@ Time: 时间
 'Time in zone': 'Time in zone'
 'Times completed': 完成次数
 Title: Title
-'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect': 'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect'
+'To enable it, configure this in the admin panel': 'To enable it, configure this in the admin panel'
 'Toggle sidebar': 切换侧边栏
 'Top 10': 前10名
 'Total distance per month': 每月总距离
@@ -471,7 +475,6 @@ Title: Title
 Tue: 周二
 Tue.: Tue.
 Unspecified: 未指定
-'Updated on': 更新于
 'User badge': 用户徽章
 'Velo Mobiles': 躺车
 'Very high': 非常高
@@ -487,6 +490,7 @@ Volume: Volume
 Walking: 健步
 Walks: 散步
 'Water Sports': 水上运动
+'Waxing the chain...': 'Waxing the chain...'
 'We detected following issues': 检测到以下问题
 Wed: 周三
 Wed.: Wed.
@@ -509,8 +513,8 @@ Year: 年
 Yearly: Yearly
 'Yearly stats': 年度统计
 Yoga: 瑜伽
+'Your Dreeve badge': Dreeve徽章
 'Your PB badge': PB徽章
-'Your Strava badge': Strava徽章
 'Your Zwift badge': Zwift徽章
 'Your badge(s)': 徽章
 Z1: Z1
@@ -533,7 +537,6 @@ activities: 活动
 and: 和
 avg: 平均
 bpm: 拍子数
-challenges: challenges
 clear: 清除
 compare: 对比
 countries: countries

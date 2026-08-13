@@ -8,13 +8,13 @@
     <meta name="mobile-web-app-title" content="Dreeve">
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/x-icon" href="/assets/images/logo.svg">
-    <link href="/css/dist/tailwind.min.css?0025176c-5652-11ee-923d-02424dd627d5" rel="stylesheet">
+    <link href="/css/dist/tailwind.min.css?v5.2.1" rel="stylesheet">
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
 <nav class="text-gray-900 bg-white border-b border-gray-200 px-4 py-2.5 fixed left-0 right-0 top-0 z-1100 group">
     <div class="flex flex-wrap justify-between items-center">
         <div class="flex justify-start items-center">
-                        <a href="#" data-router-navigate="/dashboard" class="flex items-center justify-between mr-4">
+                        <a href="/dashboard" data-router-content-url="/api/fragment/page/dashboard" class="flex items-center justify-between mr-4">
                 <img src="/assets/images/logo.svg" class="rounded-full mr-3 h-8" alt="Logo">
                 <div class="flex gap-x-1 sm:text-lg font-extrabold whitespace-nowrap">
                     <div>Dreeve</div>
@@ -72,36 +72,12 @@
                     </div>
                     <div class="flex items-center gap-2 px-4 py-3 font-mono text-sm">
                         <span class="select-none text-primary">&rsaquo;</span>
-                        <code class="flex-1 overflow-x-auto whitespace-nowrap text-gray-800">docker compose exec app bin/console app:data:import</code>
+                        <code class="flex-1 overflow-x-auto whitespace-nowrap text-gray-800">docker compose exec app bin/console app:import:strava</code>
                     </div>
                 </div>
-            </div>
-            <div class="mt-6">
-                <div class="flex items-center gap-2.5">
-                    <span class="grid size-6 place-items-center rounded-md bg-orange-100 text-xs font-bold text-primary">2</span>
-                    <h3 class="font-semibold">Build static HTML files</h3>
-                </div>
-                <div class="mt-3 overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-                    <div class="flex items-center justify-between border-b border-gray-200 bg-gray-100/70 px-3 py-1.5">
-                        <div class="flex items-center gap-1.5">
-                            <span class="size-2.5 rounded-full bg-red-400"></span>
-                            <span class="size-2.5 rounded-full bg-yellow-400"></span>
-                            <span class="size-2.5 rounded-full bg-green-400"></span>
-                        </div>
-                        <span class="font-mono text-[11px] text-gray-400">terminal</span>
-                    </div>
-                    <div class="flex items-center gap-2 px-4 py-3 font-mono text-sm">
-                        <span class="select-none text-primary">&rsaquo;</span>
-                        <code class="flex-1 overflow-x-auto whitespace-nowrap text-gray-800">docker compose exec app bin/console app:data:build</code>
-                    </div>
-                </div>
-                <p class="mt-2.5 flex items-start gap-2 text-xs text-gray-500">
-                    <svg class="mt-px size-3.5 shrink-0 text-amber-500" fill="currentColor" viewbox="0 0 20 20"><path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"></path></svg>
-                    Requires at least one imported activity before it will run.
-                </p>
             </div>
             <div class="mt-10 bg-gray-50/50 px-4 py-3 text-sm text-gray-500">
-                Refresh this page after you've run the commands.
+                Refresh this page after you've run the command.
             </div>
             </div>
 </section>

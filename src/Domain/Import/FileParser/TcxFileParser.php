@@ -99,7 +99,7 @@ final readonly class TcxFileParser implements ActivityFileParser
         $activityId = $this->activityIdFactory->random();
         $startDateTime = SerializableDateTime::fromTimestamp($startTimestamp)->toTimezone($this->timezone ?? SerializableTimezone::UTC());
         $activityLaps = $this->buildActivityLaps($laps, $activityId);
-        $activity = Activity::fromState(
+        $activity = Activity::create(
             activityId: $activityId,
             startDateTime: $startDateTime,
             sportType: $sportType,
@@ -181,7 +181,7 @@ final readonly class TcxFileParser implements ActivityFileParser
                     $altitude = $this->floatChild($trackpoint, 'AltitudeMeters');
                     // Suunto exports interleave spurious 0-altitudes between real
                     // values; treat exact zeros as missing, but only when the file
-                    // has real altitude data (an all-zero file is kept as-is).
+                    // has real altitude data to gap fill them from.
                     if ($hasNonZeroAltitude && 0.0 === $altitude) {
                         $altitude = null;
                     }

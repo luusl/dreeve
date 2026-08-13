@@ -37,7 +37,7 @@
         <div class="grid grid-cols-1 gap-y-1">
             {% if leaflet %}
                 {% set leafletOptions = {
-                    'polylineUrl': relativeUrl('api/' ~ leaflet.polylineUrl),
+                    'polylineUrl': relativeUrl('api/fragment/data/' ~ leaflet.polylineUrl),
                     'tileLayer': leaflet.map.getTileLayer(),
                     'minZoom': leaflet.map.getMinZoom(),
                     'maxZoom': leaflet.map.getMaxZoom(),
@@ -104,7 +104,8 @@
                             </thead>
                             <tbody>
                             {% for segmentEffort in segmentEffortsTopTen %}
-                                {% set activity = enrichedActivities.find(segmentEffort.getActivityId()) %}
+                                {% set enrichedActivity = enrichedActivitiesPerSegmentEffortId[segmentEffort.getId()] %}
+                                {% set activity = enrichedActivity.getActivity() %}
                                 <tr>
                                     <td class="truncate lg:sticky lg:left-0">
                                         {{ loop.index }}
@@ -150,9 +151,9 @@
                                         {% endif %}
                                     </td>
                                     <td class="truncate">
-                                        {% set gearName = activity.getGearName() %}
+                                        {% set gearName = enrichedActivity.getGearName() %}
                                         {% if gearName %}
-                                            {{ activity.getGearName() }}
+                                            {{ gearName }}
                                         {% else %}
                                             {{ "Unspecified"|trans }}
                                         {% endif %}

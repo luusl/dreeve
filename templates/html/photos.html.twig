@@ -84,7 +84,7 @@
     <div class="flex flex-wrap gap-2 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
         <div id="images" class="flex flex-wrap gap-2">
             {% for image in images %}
-                {% set activity = enrichedActivities.find(image.getActivityId()) %}
+                {% set activity = activitiesPerActivityId[image.getActivityId()] %}
                 {% set lightGalleryElement = {
                     'src': securedImageUrl(image.getImageUrl()),
                     'subHtml': '<p>' ~ activity.getSanitizedName() ~ '</p>',
@@ -92,7 +92,7 @@
                 } %}
                 <a data-image data-filterables='{{ image.getFilterables()|json_encode }}' data-light-gallery-element='{{ lightGalleryElement|json_encode }}'
                    class="no-dark grow h-[25vh] relative group/image overflow-hidden rounded-lg shadow-sm"
-                   href="#" data-model-content-url="{{ relativeUrl('activity/' ~ image.getActivityId() ~ '.html') }}">
+                   href="#" data-model-content-url="{{ relativeUrl('api/fragment/page/activity/' ~ image.getActivityId()) }}">
                     <img class="h-full w-full object-cover align-bottom transition-transform duration-500 group-hover/image:scale-105 lazy"
                          data-src="{{ securedImageUrl(image.getImageUrl()) }}" alt="{{ activity.getName() }}" src="{{ placeholderImage(image.getOrientation()) }}" />
                     <div class="absolute inset-0 bg-black/0 group-hover/image:bg-black/20 transition-colors duration-300"></div>

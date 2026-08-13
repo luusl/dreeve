@@ -4,28 +4,30 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity;
 
-use App\Domain\Activity\Route\RouteGeography;
 use App\Domain\Activity\SportType\SportType;
-use App\Domain\Gear\GearId;
+use App\Domain\Activity\SportType\SportTypes;
 use App\Domain\Integration\Weather\OpenMeteo\Weather;
+use App\Infrastructure\Eventing\EventBus;
 use App\Infrastructure\Exception\EntityNotFound;
-use App\Infrastructure\Measurement\Length\Meter;
-use App\Infrastructure\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\Repository\DbalRepository;
 use App\Infrastructure\Serialization\Json;
-use App\Infrastructure\ValueObject\Geography\Coordinate;
-use App\Infrastructure\ValueObject\Geography\Latitude;
-use App\Infrastructure\ValueObject\Geography\Longitude;
-use App\Infrastructure\ValueObject\String\ExternalReferenceId;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\Connection;
 
 final readonly class DbalActivityRepository extends DbalRepository implements ActivityRepository
 {
+    public function __construct(
+        Connection $connection,
+        private EventBus $eventBus,
+    ) {
+        parent::__construct($connection);
+    }
+
     public function find(ActivityId $activityId): Activity
     {
         $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('*')
+        $queryBuilder->select(ActivityHydrator::columns())
             ->from('Activity')
             ->andWhere('activityId = :activityId')
             ->setParameter('activityId', $activityId);
@@ -34,22 +36,77 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             throw new EntityNotFound(sprintf('Activity "%s" not found', $activityId));
         }
 
-        return $this->hydrate($result);
+        return ActivityHydrator::hydrate($result);
     }
 
     public function findAll(): Activities
     {
         $results = $this->connection->executeQuery(
-            'SELECT * FROM Activity ORDER BY startDateTime DESC'
+            'SELECT '.ActivityHydrator::columns().' FROM Activity ORDER BY startDateTime DESC'
         )->fetchAllAssociative();
 
-        return Activities::fromArray(array_map($this->hydrate(...), $results));
+        return Activities::fromArray(array_map(ActivityHydrator::hydrate(...), $results));
+    }
+
+    public function findMostRecent(int $limit, ?SportTypes $restrictToSportTypes = null): Activities
+    {
+        $queryBuilder = $this->connection->createQueryBuilder();
+        $queryBuilder->select(ActivityHydrator::columns())
+            ->from('Activity')
+            ->orderBy('startDateTime', 'DESC')
+            ->setMaxResults($limit);
+
+        if ($restrictToSportTypes instanceof SportTypes && !$restrictToSportTypes->isEmpty()) {
+            $queryBuilder->andWhere('sportType IN (:sportTypes)')
+                ->setParameter(
+                    key: 'sportTypes',
+                    value: array_map(fn (SportType $sportType): string => $sportType->value, $restrictToSportTypes->toArray()),
+                    type: ArrayParameterType::STRING
+                );
+        }
+
+        return Activities::fromArray(array_map(
+            ActivityHydrator::hydrate(...),
+            $queryBuilder->executeQuery()->fetchAllAssociative()
+        ));
+    }
+
+    public function findByIds(ActivityIds $activityIds): Activities
+    {
+        if ($activityIds->isEmpty()) {
+            return Activities::empty();
+        }
+
+        $results = $this->connection->executeQuery(
+            'SELECT '.ActivityHydrator::columns().' FROM Activity WHERE activityId IN (:activityIds) ORDER BY startDateTime DESC',
+            [
+                'activityIds' => array_map(strval(...), $activityIds->toArray()),
+            ],
+            [
+                'activityIds' => ArrayParameterType::STRING,
+            ]
+        )->fetchAllAssociative();
+
+        return Activities::fromArray(array_map(ActivityHydrator::hydrate(...), $results));
+    }
+
+    public function findByDateRange(SerializableDateTime $from, SerializableDateTime $till): Activities
+    {
+        $results = $this->connection->executeQuery(
+            'SELECT '.ActivityHydrator::columns().' FROM Activity WHERE startDateTime >= :from AND startDateTime < :till ORDER BY startDateTime DESC',
+            [
+                'from' => $from->format('Y-m-d H:i:s'),
+                'till' => $till->format('Y-m-d H:i:s'),
+            ]
+        )->fetchAllAssociative();
+
+        return Activities::fromArray(array_map(ActivityHydrator::hydrate(...), $results));
     }
 
     public function findWithRawData(ActivityId $activityId): ActivityWithRawData
     {
         $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('*')
+        $queryBuilder->select(ActivityHydrator::columns().', data')
             ->from('Activity')
             ->andWhere('activityId = :activityId')
             ->setParameter('activityId', $activityId);
@@ -59,7 +116,7 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
         }
 
         return ActivityWithRawData::fromState(
-            activity: $this->hydrate($result),
+            activity: ActivityHydrator::hydrate($result),
             rawData: Json::decode($result['data']),
         );
     }
@@ -125,6 +182,8 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'streamsAreImported' => 0,
             'workoutType' => $activity->getWorkoutType()?->value,
         ]);
+
+        $this->eventBus->publishEvents($activity->getRecordedEvents());
     }
 
     public function update(ActivityWithRawData $activityWithRawData): void
@@ -182,14 +241,34 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'workoutType' => $activity->getWorkoutType()?->value,
             'data' => Json::encode($this->cleanData($activityWithRawData->getRawData())),
         ]);
+
+        $this->eventBus->publishEvents($activity->getRecordedEvents());
     }
 
     public function delete(ActivityId $activityId): void
     {
+        // The start date determines which year scoped cache tags need to be invalidated,
+        // so it has to be read before the row is gone.
+        $startDateTime = $this->connection->executeQuery(
+            'SELECT startDateTime FROM Activity WHERE activityId = :activityId',
+            ['activityId' => (string) $activityId],
+        )->fetchOne();
+
         $sql = 'DELETE FROM Activity WHERE activityId = :activityId';
 
         $this->connection->executeStatement($sql, [
             'activityId' => $activityId,
+        ]);
+
+        if (false === $startDateTime) {
+            return;
+        }
+
+        $this->eventBus->publishEvents([
+            new ActivityWasDeleted(
+                activityId: $activityId,
+                startDate: SerializableDateTime::fromString((string) $startDateTime)
+            ),
         ]);
     }
 
@@ -224,52 +303,6 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             [
                 'activityIds' => ArrayParameterType::STRING,
             ]);
-    }
-
-    /**
-     * @param array<string, mixed> $result
-     */
-    private function hydrate(array $result): Activity
-    {
-        $startDateTime = SerializableDateTime::fromString($result['startDateTime']);
-        $sportType = SportType::from($result['sportType']);
-
-        return Activity::fromState(
-            activityId: ActivityId::fromString($result['activityId']),
-            startDateTime: $startDateTime,
-            sportType: $sportType,
-            worldType: WorldType::from($result['worldType']),
-            importSource: ImportSource::from($result['importSource']),
-            externalReferenceId: ExternalReferenceId::fromOptionalString($result['externalReferenceId'] ?? null),
-            name: '' !== trim((string) $result['name']) ? ActivityName::fromString($result['name']) : ActivityName::from($startDateTime, $sportType),
-            description: $result['description'] ?: '',
-            distance: Meter::from($result['distance'])->toKilometer(),
-            elevation: Meter::from($result['elevation'] ?: 0),
-            startingCoordinate: Coordinate::createFromOptionalLatAndLng(
-                Latitude::fromOptionalString((string) $result['startingCoordinateLatitude']),
-                Longitude::fromOptionalString((string) $result['startingCoordinateLongitude'])
-            ),
-            calories: (int) ($result['calories'] ?? 0),
-            kilojoules: ((int) $result['kilojoules']) ?: null,
-            averagePower: ((int) $result['averagePower']) ?: null,
-            maxPower: ((int) $result['maxPower']) ?: null,
-            averageSpeed: KmPerHour::from($result['averageSpeed']),
-            maxSpeed: KmPerHour::from($result['maxSpeed']),
-            averageHeartRate: isset($result['averageHeartRate']) ? (int) round($result['averageHeartRate']) : null,
-            maxHeartRate: isset($result['maxHeartRate']) ? (int) round($result['maxHeartRate']) : null,
-            averageCadence: isset($result['averageCadence']) ? (int) round($result['averageCadence']) : null,
-            movingTimeInSeconds: $result['movingTimeInSeconds'] ?: 0,
-            elapsedTimeInSeconds: $result['elapsedTimeInSeconds'] ?: 0,
-            deviceName: $result['deviceName'],
-            totalImageCount: $result['totalImageCount'] ?: 0,
-            localImagePaths: $result['localImagePaths'] ? explode(',', (string) $result['localImagePaths']) : [],
-            polyline: $result['polyline'],
-            routeGeography: RouteGeography::create(Json::decode($result['routeGeography'] ?? '[]')),
-            weather: $result['weather'],
-            gearId: GearId::fromOptionalString($result['gearId']),
-            isCommute: (bool) $result['isCommute'],
-            workoutType: WorkoutType::tryFrom($result['workoutType'] ?? ''),
-        );
     }
 
     /**

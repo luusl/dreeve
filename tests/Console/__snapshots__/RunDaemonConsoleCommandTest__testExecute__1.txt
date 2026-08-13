@@ -1,0 +1,15 @@
+
+Dreevev5.2.1|DAEMON
+
+Startedon0811202514:47:03
+
+
+
+Runtime:PHP8.5.x(cli)Symfony8.1.4Linux
+
+Configuredimportmode:stravaApi
+
+
+
+Cronconfigured
+Periodictimeradded

@@ -66,7 +66,7 @@ class CalculateCombinedStreamsTest extends ContainerTestCase
             mutex: new Mutex(
                 connection: $this->getConnection(),
                 clock: PausedClock::fromString('2025-12-04'),
-                lockName: LockName::IMPORT_DATA_OR_BUILD_APP,
+                lockName: LockName::IMPORT_DATA,
             )
         )->process($output);
 
@@ -129,7 +129,7 @@ class CalculateCombinedStreamsTest extends ContainerTestCase
             mutex: new Mutex(
                 connection: $this->getConnection(),
                 clock: PausedClock::fromString('2025-12-04'),
-                lockName: LockName::IMPORT_DATA_OR_BUILD_APP,
+                lockName: LockName::IMPORT_DATA,
             )
         )->process($output);
 
@@ -193,6 +193,53 @@ class CalculateCombinedStreamsTest extends ContainerTestCase
         $this->assertEquals(
             [0, 10.0, 10.0, 10.0],
             $combinedStream->getChartStreamData(CombinedStreamType::VELOCITY)
+        );
+    }
+
+    public function testProcessWithoutAMovingStreamFallsBackToElapsedTime(): void
+    {
+        $output = new SpyOutput();
+
+        $activityRepository = $this->getContainer()->get(ActivityRepository::class);
+        $streamRepository = $this->getContainer()->get(ActivityStreamRepository::class);
+
+        $activityId = ActivityId::fromUnprefixed('one');
+        $activityRepository->add(
+            ActivityWithRawData::fromState(
+                ActivityBuilder::fromDefaults()
+                    ->withSportType(SportType::WEIGHT_TRAINING)
+                    ->withActivityId($activityId)
+                    ->build(),
+                []
+            )
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::TIME)
+                ->withData([0, 4, 9, 15, 105, 110])
+                ->build()
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::HEART_RATE)
+                ->withData([91, 95, 125, 129, 128, 117])
+                ->build()
+        );
+
+        $this->calculateCombinedStreams->process($output);
+
+        $combinedStream = $this->getContainer()->get(CombinedActivityStreamRepository::class)
+            ->findOneForActivityAndUnitSystem($activityId, UnitSystem::METRIC);
+
+        $this->assertEquals(
+            ['4s', '9s', '15s', '15s', '20s', '20s'],
+            $combinedStream->getTimes()
+        );
+        $this->assertEquals(
+            [91, 95, 125, 129, 128, 117],
+            $combinedStream->getChartStreamData(CombinedStreamType::HEART_RATE)
         );
     }
 
@@ -350,7 +397,7 @@ class CalculateCombinedStreamsTest extends ContainerTestCase
         $this->calculateCombinedStreams = $this->getContainer()->get(CalculateCombinedStreams::class);
         $this->getConnection()->executeStatement(
             'INSERT INTO KeyValue (`key`, `value`) VALUES (:key, :value)',
-            ['key' => 'lock.importDataOrBuildApp', 'value' => '{"lockAcquiredBy": "test"}']
+            ['key' => 'lock.importData', 'value' => '{"lockAcquiredBy": "test"}']
         );
     }
 }

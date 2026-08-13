@@ -9,13 +9,10 @@ use App\Domain\Settings\SettingsRepository;
 use App\Domain\Settings\UpdateSettings\UpdateSettings;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\CacheableRenderer;
-use App\Infrastructure\Cache\CacheTag;
-use App\Infrastructure\Cache\CacheTags;
-use App\Infrastructure\Cache\RenderCache;
+use App\Infrastructure\Cache\Render\RenderCache;
+use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
-use App\Infrastructure\KeyValue\Key;
-use App\Infrastructure\KeyValue\KeyValueStore;
 use App\Tests\ContainerTestCase;
 use App\Tests\Infrastructure\Cache\CacheableStub;
 
@@ -23,10 +20,9 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
 {
     private CommandBus $commandBus;
     private SettingsRepository $settingsRepository;
-    private KeyValueStore $keyValueStore;
     private CacheableRenderer $cacheableRenderer;
 
-    public function testItUpdatesGeneralSettingsAndFlagsForceRebuild(): void
+    public function testItUpdatesGeneralSettings(): void
     {
         $data = [
             'profilePictureUrl' => null,
@@ -46,10 +42,9 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]));
 
         $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::GENERAL));
-        $this->assertSame('1', (string) $this->keyValueStore->find(Key::FORCE_REBUILD));
     }
 
-    public function testItUpdatesAppearanceSettingsAndFlagsForceRebuild(): void
+    public function testItUpdatesAppearanceSettings(): void
     {
         $data = [
             'unitSystem' => 'imperial',
@@ -70,10 +65,9 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]));
 
         $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::APPEARANCE));
-        $this->assertSame('1', (string) $this->keyValueStore->find(Key::FORCE_REBUILD));
     }
 
-    public function testItUpdatesImportSettingsAndFlagsForceRebuild(): void
+    public function testItUpdatesImportSettings(): void
     {
         $data = [
             'numberOfNewActivitiesToProcessPerImport' => 100,
@@ -94,17 +88,15 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]));
 
         $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::IMPORT));
-        $this->assertSame('1', (string) $this->keyValueStore->find(Key::FORCE_REBUILD));
     }
 
-    public function testItUpdatesMetricsSettingsAndFlagsForceRebuild(): void
+    public function testItUpdatesMetricsSettings(): void
     {
         $data = [
             'excludeActivitiesFromPeakPowerOutputs' => ['123456'],
             'eddington' => [
                 [
                     'label' => 'Ride',
-                    'showInNavBar' => true,
                     'showInDashboardWidget' => false,
                     'sportTypesToInclude' => ['Ride', 'VirtualRide'],
                 ],
@@ -117,10 +109,9 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]));
 
         $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::METRICS));
-        $this->assertSame('1', (string) $this->keyValueStore->find(Key::FORCE_REBUILD));
     }
 
-    public function testItUpdatesIntegrationsSettingsAndFlagsForceRebuild(): void
+    public function testItUpdatesIntegrationsSettings(): void
     {
         $data = [
             'ai' => [
@@ -148,12 +139,11 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]));
 
         $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::INTEGRATIONS));
-        $this->assertSame('1', (string) $this->keyValueStore->find(Key::FORCE_REBUILD));
     }
 
     public function testItOnlyInvalidatesRendersOfTheGroupThatWasSaved(): void
     {
-        $cacheable = CacheableStub::for(Cacheability::for(CacheTags::of(CacheTag::SETTINGS_APPEARANCE)));
+        $cacheable = CacheableStub::for(Cacheability::for('stub', CacheTags::empty()));
         $this->cacheableRenderer->render($cacheable);
 
         $this->commandBus->dispatch(UpdateSettings::fromPayload([
@@ -191,7 +181,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]);
     }
 
-    public function testItUpdatesZwiftSettingsAndFlagsForceRebuild(): void
+    public function testItUpdatesZwiftSettings(): void
     {
         $data = [
             'level' => 100,
@@ -204,10 +194,9 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]));
 
         $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::ZWIFT));
-        $this->assertSame('1', (string) $this->keyValueStore->find(Key::FORCE_REBUILD));
     }
 
-    public function testItUpdatesDaemonSettingsAndFlagsForceRebuild(): void
+    public function testItUpdatesDaemonSettings(): void
     {
         $data = [
             'cron' => [
@@ -223,7 +212,6 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]));
 
         $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::DAEMON));
-        $this->assertSame('1', (string) $this->keyValueStore->find(Key::FORCE_REBUILD));
     }
 
     public function testItRejectsInvalidDaemonSettings(): void
@@ -247,7 +235,6 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
 
         $this->commandBus = $this->getContainer()->get(CommandBus::class);
         $this->settingsRepository = $this->getContainer()->get(SettingsRepository::class);
-        $this->keyValueStore = $this->getContainer()->get(KeyValueStore::class);
         $this->cacheableRenderer = $this->getContainer()->get(CacheableRenderer::class);
         $this->getContainer()->get(RenderCache::class)->clear();
     }

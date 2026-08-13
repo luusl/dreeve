@@ -67,7 +67,7 @@ final readonly class UrlTwigExtension
 
         return sprintf(
             '<a href="#" data-model-content-url="%s" class="flex items-center gap-x-1 font-medium text-blue-600 hover:underline" rel="nofollow">%s<span class="%s">%s</span></a>',
-            $this->toRelativeUrl('activity/'.$activity->getId().'.html'),
+            $this->toRelativeUrl('api/fragment/page/activity/'.$activity->getId()),
             $activityIcon,
             $truncate ? 'truncate' : '',
             $ellipses ? $this->stringTwigExtension->doEllipses($activityTitle, $ellipses) : $activityTitle
@@ -89,7 +89,7 @@ final readonly class UrlTwigExtension
 
         return sprintf(
             '<a href="#" data-model-content-url="%s" class="flex items-center gap-x-1 font-medium text-blue-600 hover:underline" rel="nofollow">%s<span class="truncate">%s</span></a>',
-            $this->toRelativeUrl('segment/'.$segment->getId().'.html'),
+            $this->toRelativeUrl('api/fragment/page/segment/'.$segment->getId()),
             $segmentIcon,
             $this->stringTwigExtension->doEllipses((string) $segmentTitle, 50)
         );

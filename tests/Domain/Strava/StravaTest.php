@@ -36,9 +36,18 @@ class StravaTest extends TestCase
 
     private Strava $strava;
 
+    /**
+     * @var MockObject&Client
+     */
     private MockObject $client;
+    /**
+     * @var MockObject&FilesystemOperator
+     */
     private MockObject $filesystemOperator;
     private NullSleep $sleep;
+    /**
+     * @var MockObject&LoggerInterface
+     */
     private MockObject $logger;
 
     public function testGetAccessToken(): void
@@ -193,7 +202,7 @@ class StravaTest extends TestCase
             ->method('fileExists');
 
         $this->expectException(RequestException::class);
-        $this->expectExceptionMessage('The error');
+        $this->expectExceptionMessageIsOrContains('The error');
 
         $matcher = $this->exactly(2);
         $this->client
@@ -224,7 +233,7 @@ class StravaTest extends TestCase
             ->method('fileExists');
 
         $this->expectException(RequestException::class);
-        $this->expectExceptionMessage('The error');
+        $this->expectExceptionMessageIsOrContains('The error');
 
         $matcher = $this->exactly(2);
         $this->client
@@ -255,7 +264,7 @@ class StravaTest extends TestCase
             ->method('fileExists');
 
         $this->expectException(RequestException::class);
-        $this->expectExceptionMessage('The error');
+        $this->expectExceptionMessageIsOrContains('The error');
 
         $matcher = $this->exactly(2);
         $this->client

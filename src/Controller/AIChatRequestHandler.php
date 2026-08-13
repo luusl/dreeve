@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Application\AppUrl;
+use App\Domain\Activity\ActivityIdRepository;
 use App\Domain\Integration\AI\Chat\AddChatMessage\AddChatMessage;
 use App\Domain\Integration\AI\Chat\ChatRepository;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
+use App\Infrastructure\Http\HtmlResponse;
 use App\Infrastructure\Http\ServerSentEvent;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\String\RelativeUrl;
 use GuzzleHttp\Exception\ClientException;
-use League\Flysystem\FilesystemOperator;
 use NeuronAI\Agent\AgentInterface;
 use NeuronAI\Chat\Enums\MessageRole;
 use NeuronAI\Chat\Messages\Stream\Chunks\TextChunk;
@@ -33,7 +34,7 @@ use Twig\Environment;
 final readonly class AIChatRequestHandler
 {
     public function __construct(
-        private FilesystemOperator $buildHtmlStorage,
+        private ActivityIdRepository $activityIdRepository,
         private AgentInterface $neuronAIAgent,
         private ChatRepository $chatRepository,
         private CommandBus $commandBus,
@@ -47,7 +48,7 @@ final readonly class AIChatRequestHandler
     #[Route(path: '/ai/chat', name: 'ai_chat', methods: ['GET'], priority: 2)]
     public function handle(): Response
     {
-        if (!$this->buildHtmlStorage->fileExists('index.html')) {
+        if ($this->activityIdRepository->count() <= 0) {
             return new RedirectResponse(RelativeUrl::from('/', $this->appUrl)->toRelativeUrl(), Response::HTTP_FOUND);
         }
         if (!$this->settingsRepository->integrations()->isAIIntegrationWithUIEnabled()) {
@@ -63,11 +64,11 @@ final readonly class AIChatRequestHandler
             ->add('submit', SubmitType::class)
             ->getForm();
 
-        return new Response($this->twig->render('html/chat/chat.html.twig', [
+        return new HtmlResponse($this->twig->render('html/chat/chat.html.twig', [
             'chatHistory' => $this->chatRepository->findAll(),
             'form' => $form->createView(),
             'chatCommands' => Json::encode($this->settingsRepository->integrations()->getChatCommands()),
-        ]), Response::HTTP_OK);
+        ]));
     }
 
     #[Route(path: '/chat/clear', name: 'ai_chat_clear', methods: ['POST'], priority: 2)]

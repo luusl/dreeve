@@ -58,6 +58,7 @@ Challenges: Utmaningar
 'Clear all filters': 'Clear all filters'
 'Clear chat': 'Clear chat'
 'Close modal': 'Close modal'
+Columns: Columns
 Commutes: Pendling
 'Commutes only': 'Endast pendling'
 Compare: Jämför
@@ -70,6 +71,7 @@ Consistency: Consistency
 Country: Country
 Cricket: Cricket
 Crossfit: Crossfit
+'Crunching the numbers...': 'Crunching the numbers...'
 'Current Status': 'Current Status'
 'Current streaks': 'Current streaks'
 Cycling: Cykling
@@ -97,6 +99,7 @@ Distance: Distans
 'Distance per month per gear': 'Distans per månad per utrustning'
 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.': 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.'
 Duration: Duration
+'Dusting off the record books...': 'Dusting off the record books...'
 'E-Bike Rides': 'E-Cykel Turer'
 'E-Mountain Bike Rides': 'E-Mountain Bike Turer'
 Eddington: Eddington
@@ -120,6 +123,7 @@ Evening: Kväll
 'FTP history': 'FTP historik'
 Favourite: Favoriter
 Feb: Feb
+'Filling up the bottles...': 'Filling up the bottles...'
 'Filter on KOM segments': 'Filtrera på KOM segment'
 'Filter on country': 'Filtrera på land'
 'Filter on sport type': 'Filtrera på sport'
@@ -170,7 +174,6 @@ History: Historik
 'How much training you do in total on days you train.': 'How much training you do in total on days you train.'
 'How often do you train': 'How often do you train'
 'Ice Skate': Skridskor
-Id: Id
 Imperial: Imperial
 "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉.": "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉."
 'Individual thresholds vary based on fitness level.': 'Individuella trösklar varierar beroende på hur vältränad du är.'
@@ -196,7 +199,6 @@ Lifetime: Lifetime
 'Light fatigue with good readiness. A great balance for quality training or longer efforts': 'Light fatigue with good readiness. A great balance for quality training or longer efforts'
 Load: Load
 'Load (CTL/ATL)': 'Belastning (CTL/ATL)'
-'Loading data...': 'Laddar datan...'
 Loading...: Laddar...
 'Locations over the globe': 'Platser runt jorden'
 'Long run': Långdistanslöpning
@@ -255,6 +257,7 @@ Oct: Okt
 'Older effort': 'Older effort'
 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.': 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.'
 'One of your gear maintenance tasks is due': 'En av dina underhållsuppgifter behöver uppmärksamhet'
+'Open Water Swim': 'Open Water Swim'
 'Optimal training range': 'Optimal träning'
 Other: Annat
 'Outdoor Sports': 'Utomhus sport'
@@ -276,6 +279,7 @@ Photos: Bilder
 Pilates: Pilates
 'Pizza slices': 'Pizza slices'
 'Polarised training (last 30 days)': 'Polariserad träning (senaste 30 dagarna)'
+'Pool Swim': 'Pool Swim'
 Power: Effekt
 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.': 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.'
 'Prev year': 'Tidigare år'
@@ -290,9 +294,9 @@ Ranking: Rankning
 'Reached {threshold} hours total moving time': 'Reached {threshold} hours total moving time'
 'Reached {threshold} total distance': 'Reached {threshold} total distance'
 'Reached {threshold} total elevation': 'Reached {threshold} total elevation'
+'Recalculating your suffer score...': 'Recalculating your suffer score...'
 'Recent effort': 'Recent effort'
 'Recording devices': 'Recording devices'
-'Recording devices details': 'Recording devices details'
 'Recovery Timeline': 'Recovery Timeline'
 'Recovery forecast': 'Recovery forecast'
 'Reduced carbon emission by commuting': 'Minskade koldioxidutsläpp tack vare pendling'
@@ -319,9 +323,10 @@ Search: Sök
 'Search segment...': 'Sök segment...'
 Segments: Segment
 Sep: Sep
+'Show all columns': 'Show all columns'
 'Show information': 'Visa information'
 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.': 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.'
-"Since I began using Strava {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began using Strava {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
+"Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
 Skateboard: Skateboard
 Skating: Skridskoåkning
 'Slightly fresh': 'Slightly fresh'
@@ -344,7 +349,6 @@ Streaks: Serie
 Sun: Sön
 Sun.: Sun.
 Surfing: Surfning
-Swim: Simmning
 'TSB (Form)': 'TSB (Form)'
 'TSB positive in': 'TSB positive in'
 'Table Tennis': Bordtennis
@@ -452,7 +456,7 @@ Time: Tid
 'Time in zone': 'Time in zone'
 'Times completed': 'Antal gånger avklarade'
 Title: Title
-'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect': 'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect'
+'To enable it, configure this in the admin panel': 'To enable it, configure this in the admin panel'
 'Toggle sidebar': 'Visa/Dölj sidofält'
 'Top 10': '10 bästa'
 'Total distance per month': 'Total distans per månad'
@@ -471,7 +475,6 @@ Title: Title
 Tue: Tis
 Tue.: Tue.
 Unspecified: Ospecificerad
-'Updated on': Uppdaterades
 'User badge': Användarmärke
 'Velo Mobiles': Velomobil
 'Very high': 'Väldigt hög'
@@ -487,6 +490,7 @@ Volume: Volume
 Walking: Promenad
 Walks: Promenader
 'Water Sports': Vattensport
+'Waxing the chain...': 'Waxing the chain...'
 'We detected following issues': 'Vi har upptäckt följande problem'
 Wed: Ons
 Wed.: Wed.
@@ -509,8 +513,8 @@ Year: År
 Yearly: Yearly
 'Yearly stats': Årsstatistik
 Yoga: Yoga
+'Your Dreeve badge': 'Ditt Dreeve märke'
 'Your PB badge': 'Ditt PB märke'
-'Your Strava badge': 'Ditt strava märke'
 'Your Zwift badge': 'Ditt Zwift märke'
 'Your badge(s)': 'Ditt/Dina märke(n)'
 Z1: Z1
@@ -533,7 +537,6 @@ activities: aktiviteter
 and: och
 avg: snitt
 bpm: bpm
-challenges: challenges
 clear: rensa
 compare: jämför
 countries: countries

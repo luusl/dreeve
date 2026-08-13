@@ -20,7 +20,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
 {
     public function testAnonymousUsersAreRedirectedToTheLoginPage(): void
     {
-        $this->markAppAsBuilt();
+        $this->seedActivity();
 
         $this->client->request('GET', '/admin/activities');
 
@@ -45,7 +45,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
     public function testRendersTheTableWithoutPaginationForASinglePage(): void
     {
         $this->seedActivities(3);
-        $this->markAppAsBuilt();
+        $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/activities');
@@ -78,15 +78,10 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertSame('Trail Shoes', $gearOption->text());
     }
 
-    public function testLinksToTheDetailPageOnlyOnceItHasBeenBuilt(): void
+    public function testLinksEveryActivityToItsDetailPage(): void
     {
         $this->seedActivities(2);
-        $this->markAppAsBuilt();
-        // Only the first activity made it into a build, the second one was added afterwards.
-        static::getContainer()->get('build_html.storage')->write(
-            'activity/'.ActivityId::fromUnprefixed('1').'.html',
-            'I am the activity page'
-        );
+        $this->seedActivity();
 
         $this->client->loginUser($this->adminUser());
 
@@ -94,19 +89,13 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
 
         $this->assertResponseIsSuccessful();
 
-        $detailLinks = $crawler->filter('table.data-table tbody a[href*="#/activity/"]');
-        $this->assertCount(1, $detailLinks);
+        $detailLinks = $crawler->filter('table.data-table tbody a[href*="#/api/fragment/page/activity/"]');
+        $this->assertCount(2, $detailLinks);
         $this->assertStringContainsString(
-            '/activities#/activity/'.ActivityId::fromUnprefixed('1').'.html',
+            '/activities#/api/fragment/page/activity/'.ActivityId::fromUnprefixed('1'),
             $detailLinks->first()->attr('href')
         );
         $this->assertSame('Activity 1', trim($detailLinks->first()->text()));
-
-        // The unbuilt one renders as plain text with an explanatory pill instead.
-        $pendingPills = $crawler->filter('table.data-table tbody td:first-child span.pill');
-        $this->assertCount(1, $pendingPills);
-        $this->assertSame('Pending build', trim($pendingPills->first()->text()));
-        $this->assertStringContainsString('Activity 2', $crawler->filter('table.data-table')->text());
     }
 
     #[DataProvider('provideSportTypeFilterScenarios')]
@@ -116,7 +105,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         ?string $expectedSelectedOption,
     ): void {
         $this->seedActivities(3);
-        $this->markAppAsBuilt();
+        $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/activities?filters[sportType]='.$sportTypeFilter);
@@ -151,7 +140,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
     public function testRendersTheFilterFormWhenActiveFiltersMatchNothing(): void
     {
         $this->seedActivities(3);
-        $this->markAppAsBuilt();
+        $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/activities?filters[device]=Nonexistent');
@@ -169,7 +158,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
     public function testRendersTheTableWithPaginationWhenResultsExceedASinglePage(): void
     {
         $this->seedActivities(30);
-        $this->markAppAsBuilt();
+        $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/activities');
@@ -240,7 +229,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
     }
 
     #[\Override]
-    protected function shouldMarkAppAsBuilt(): bool
+    protected function shouldSeedActivity(): bool
     {
         return false;
     }

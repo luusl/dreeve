@@ -58,6 +58,7 @@ Challenges: Kihívások
 'Clear all filters': 'Clear all filters'
 'Clear chat': 'Chat törlése'
 'Close modal': Bezárás
+Columns: Columns
 Commutes: Ingázások
 'Commutes only': 'Csak ingázások'
 Compare: Összehasonlítás
@@ -70,6 +71,7 @@ Consistency: Következetesség
 Country: Ország
 Cricket: Krikett
 Crossfit: Crossfit
+'Crunching the numbers...': 'Crunching the numbers...'
 'Current Status': 'Jelenlegi állapot'
 'Current streaks': 'Aktuális sorozatok'
 Cycling: Kerékpározás
@@ -97,6 +99,7 @@ Distance: Távolság
 'Distance per month per gear': 'Havi távolság felszerelésenkén'
 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.': 'A kerékpározás, futás, úszás és erőedzés vegyítése növeli a változatossági pontszámodat.'
 Duration: Időtartam
+'Dusting off the record books...': 'Dusting off the record books...'
 'E-Bike Rides': 'E-Bike túrák'
 'E-Mountain Bike Rides': 'E-MTB túrák'
 Eddington: Eddington
@@ -120,6 +123,7 @@ Evening: Este
 'FTP history': 'FTP előzmények'
 Favourite: Kedvenc
 Feb: Feb
+'Filling up the bottles...': 'Filling up the bottles...'
 'Filter on KOM segments': 'Szűrés KOM szegmensekre'
 'Filter on country': 'Szűrés országra'
 'Filter on sport type': 'Szűrés sporttípusra'
@@ -170,7 +174,6 @@ History: Előzmények
 'How much training you do in total on days you train.': 'Mennyi összes edzést végzel az edzésnapjaidon.'
 'How often do you train': 'Milyen gyakran edzel'
 'Ice Skate': Jégkorcsolya
-Id: Azonosító
 Imperial: Angolszász
 "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉.": 'Ez idő alatt {totalDistance}-t tettem meg, ami {numberOfTripsAroundTheWorld} körülutazás a Föld körül, vagy {numberOfTripsToTheMoonPercent}% az úton a Hold felé, és {totalElevation} szintemelkedést győztem le, ami {timesMountEverest}-szer a Mount Everest magassága. Összesen {totalTimeRecorded} mozgásban töltött idő.'
 'Individual thresholds vary based on fitness level.': 'Az egyéni küszöbértékek a fitnesz szinttől függően változnak.'
@@ -196,7 +199,6 @@ Lifetime: 'Teljes időszak'
 'Light fatigue with good readiness. A great balance for quality training or longer efforts': 'Enyhe fáradtság jó készenléti állapottal. Kiváló egyensúly a minőségi edzéshez vagy hosszabb erőfeszítésekhez'
 Load: Terhelés
 'Load (CTL/ATL)': 'Terhelés (CTL/ATL)'
-'Loading data...': 'Adatok betöltése...'
 Loading...: Betöltés...
 'Locations over the globe': 'Helyszínek a Földön'
 'Long run': 'Hosszú futás'
@@ -255,6 +257,7 @@ Oct: Okt
 'Older effort': 'Korábbi teljesítmény'
 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.': 'Átlagosan ez {dailyAverage} naponta, heti átlag {weeklyAverage} és havi átlag {monthlyAverage}.'
 'One of your gear maintenance tasks is due': 'Az egyik felszerelés karbantartási feladatod esedékes'
+'Open Water Swim': 'Open Water Swim'
 'Optimal training range': 'Optimális edzéstartomány'
 Other: Egyéb
 'Outdoor Sports': 'Szabadtéri sportok'
@@ -276,6 +279,7 @@ Photos: Fotók
 Pilates: Pilates
 'Pizza slices': 'Pizza slices'
 'Polarised training (last 30 days)': 'Polarizált edzés (utolsó 30 nap)'
+'Pool Swim': 'Pool Swim'
 Power: Teljesítmény
 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.': 'Ezt becsült {caloriesBurned} kalória hajtotta, ami nagyjából {numberOfPizzaSlices} szelet pizza.'
 'Prev year': 'Előző év'
@@ -290,9 +294,9 @@ Ranking: Ranglista
 'Reached {threshold} hours total moving time': '{threshold} óra összes mozgásidő elérve'
 'Reached {threshold} total distance': '{threshold} összes távolság elérve'
 'Reached {threshold} total elevation': '{threshold} összes szintemelkedés elérve'
+'Recalculating your suffer score...': 'Recalculating your suffer score...'
 'Recent effort': 'Közelmúltbeli teljesítmény'
 'Recording devices': 'Rögzítő eszközök'
-'Recording devices details': 'Rögzítő eszközök részletei'
 'Recovery Timeline': 'Regenerációs idővonal'
 'Recovery forecast': 'Regenerációs előrejelzés'
 'Reduced carbon emission by commuting': 'Csökkentett szén-dioxid kibocsátás ingázással'
@@ -319,9 +323,10 @@ Search: Keresés
 'Search segment...': 'Szegmens keresése...'
 Segments: Szegmensek
 Sep: Szept
+'Show all columns': 'Show all columns'
 'Show information': 'Információ megjelenítése'
 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.': 'Megmutatja, hogyan fog a TSB (Forma) és az A:C arány idővel helyreállni, ha teljes pihenőnapokat tartasz.'
-"Since I began using Strava {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": 'Mióta {numberOfDaysAgo} napja, {startDate}-én elkezdem használni a Stravát, {totalDaysOfWorkingOut} aktív edzés- és kalandnapot rögzítettem.'
+"Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
 Skateboard: Gördeszkázás
 Skating: Korcsolyázás
 'Slightly fresh': 'Kissé friss'
@@ -344,7 +349,6 @@ Streaks: Sorozatok
 Sun: V
 Sun.: Sun.
 Surfing: Szörfözés
-Swim: Úszás
 'TSB (Form)': 'TSB (Forma)'
 'TSB positive in': 'TSB pozitív ezután:'
 'Table Tennis': Asztalitenisz
@@ -452,7 +456,7 @@ Time: Idő
 'Time in zone': 'Time in zone'
 'Times completed': 'Teljesítések száma'
 Title: Title
-'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect': 'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect'
+'To enable it, configure this in the admin panel': 'To enable it, configure this in the admin panel'
 'Toggle sidebar': 'Oldalsáv ki/be'
 'Top 10': 'Top 10'
 'Total distance per month': 'Havi össztávolság'
@@ -471,7 +475,6 @@ Title: Title
 Tue: K
 Tue.: Tue.
 Unspecified: Meghatározatlan
-'Updated on': 'Frissítve:'
 'User badge': 'Felhasználói kitűző'
 'Velo Mobiles': Velomobil
 'Very high': 'Nagyon magas'
@@ -487,6 +490,7 @@ Volume: Mennyiség
 Walking: Gyaloglás
 Walks: Séták
 'Water Sports': 'Vízi sportok'
+'Waxing the chain...': 'Waxing the chain...'
 'We detected following issues': 'A következő problémákat észleltük'
 Wed: Sze
 Wed.: Wed.
@@ -509,8 +513,8 @@ Year: Év
 Yearly: Éves
 'Yearly stats': 'Éves statisztikák'
 Yoga: Jóga
+'Your Dreeve badge': 'Dreeve kitűződ'
 'Your PB badge': 'Személyes rekord kitűződ'
-'Your Strava badge': 'Strava kitűződ'
 'Your Zwift badge': 'Zwift kitűződ'
 'Your badge(s)': Kitűződ(ök)
 Z1: Z1
@@ -533,7 +537,6 @@ activities: tevékenységek
 and: és
 avg: átl
 bpm: bpm
-challenges: challenges
 clear: törlés
 compare: összehasonlítás
 countries: countries

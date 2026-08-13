@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Dashboard\Widget;
 
-use App\Domain\Activity\EnrichedActivities;
+use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\SportType\SportTypes;
+use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\InvalidDashboardLayout;
 use App\Domain\Rewind\FindStreaks\FindStreaks;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
 use App\Infrastructure\Time\Clock\Clock;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
@@ -16,11 +19,11 @@ use App\Infrastructure\ValueObject\Time\Years;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
-final readonly class StreaksWidget implements Widget
+final readonly class StreaksWidget implements Widget, DependsOnCurrentDay
 {
     public function __construct(
         private TranslatorInterface $translator,
-        private EnrichedActivities $enrichedActivities,
+        private ActivityRepository $activityRepository,
         private QueryBus $queryBus,
         private Clock $clock,
         private Environment $twig,
@@ -35,6 +38,11 @@ final readonly class StreaksWidget implements Widget
     public function getTemplateName(): string
     {
         return 'widget--streaks';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -61,7 +69,7 @@ final readonly class StreaksWidget implements Widget
         }
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): string
     {
         $sportTypesToInclude = SportTypes::fromArray(array_map(
             SportType::from(...),
@@ -72,18 +80,8 @@ final readonly class StreaksWidget implements Widget
             restrictToSportTypes: $sportTypesToInclude,
         ));
 
-        $activities = $this->enrichedActivities->findAll();
-        $mostRecentActivity = $activities->getFirst();
-        if (!$sportTypesToInclude->isEmpty()) {
-            foreach ($activities as $activity) {
-                if (!$sportTypesToInclude->has($activity->getSportType())) {
-                    continue;
-                }
-
-                $mostRecentActivity = $activity;
-                break;
-            }
-        }
+        $mostRecentActivity = $this->activityRepository->findMostRecent(1, $sportTypesToInclude)->getFirst()
+            ?? $this->activityRepository->findMostRecent(1)->getFirst();
 
         return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
             'subtitle' => $configuration->get('subtitle'),

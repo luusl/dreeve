@@ -4,23 +4,29 @@ declare(strict_types=1);
 
 namespace App\Domain\Dashboard\Widget\WeeklyStats;
 
+use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityType;
-use App\Domain\Activity\EnrichedActivities;
+use App\Domain\Activity\ActivityTypeRepository;
 use App\Domain\Calendar\Weeks;
+use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\InvalidDashboardLayout;
 use App\Domain\Dashboard\StatsContext;
+use App\Domain\Dashboard\Widget\DependsOnCurrentDay;
 use App\Domain\Dashboard\Widget\Widget;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
 use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
-final readonly class WeeklyStatsWidget implements Widget
+final readonly class WeeklyStatsWidget implements Widget, DependsOnCurrentDay
 {
     public function __construct(
-        private EnrichedActivities $enrichedActivities,
+        private ActivityRepository $activityRepository,
+        private ActivityTypeRepository $activityTypeRepository,
         private SettingsRepository $settingsRepository,
         private Environment $twig,
         private TranslatorInterface $translator,
@@ -35,6 +41,11 @@ final readonly class WeeklyStatsWidget implements Widget
     public function getTemplateName(): string
     {
         return 'widget--weekly-stats';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -61,10 +72,10 @@ final readonly class WeeklyStatsWidget implements Widget
         }
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): string
     {
         $weeklyDistanceTimeCharts = $weeksPerActivityType = [];
-        $activitiesPerActivityType = $this->enrichedActivities->findGroupedByActivityType();
+        $activitiesPerActivityType = $this->activityRepository->findAll()->groupByActivityType($this->activityTypeRepository->findAll());
 
         /** @var string[] $metricsDisplayOrder */
         $metricsDisplayOrder = $configuration->get('metricsDisplayOrder');
@@ -101,6 +112,7 @@ final readonly class WeeklyStatsWidget implements Widget
         }
 
         return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+            'uniqueId' => $dashboardWidgetId->toHtmlIdSuffix(),
             'weeklyDistanceCharts' => $weeklyDistanceTimeCharts,
             'weeksPerActivityType' => $weeksPerActivityType,
         ]);

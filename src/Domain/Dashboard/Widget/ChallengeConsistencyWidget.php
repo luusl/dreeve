@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Domain\Dashboard\Widget;
 
-use App\Domain\Activity\EnrichedActivities;
+use App\Domain\Activity\FindFirstActivityStartDate\FindFirstActivityStartDate;
 use App\Domain\Calendar\Months;
 use App\Domain\Challenge\Consistency\ConsistencyChallengeCalculator;
 use App\Domain\Challenge\Consistency\ConsistencyChallenges;
+use App\Domain\Dashboard\DashboardWidgetId;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
+use App\Infrastructure\CQRS\Query\Bus\QueryBus;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
@@ -16,7 +20,7 @@ final readonly class ChallengeConsistencyWidget implements Widget, HasWideConfig
 {
     public function __construct(
         private TranslatorInterface $translator,
-        private EnrichedActivities $enrichedActivities,
+        private QueryBus $queryBus,
         private ConsistencyChallengeCalculator $consistencyChallengeCalculator,
         private Environment $twig,
     ) {
@@ -32,6 +36,11 @@ final readonly class ChallengeConsistencyWidget implements Widget, HasWideConfig
         return 'widget--challenge-consistency';
     }
 
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES, RootCacheTag::CHALLENGES);
+    }
+
     public function getDefaultConfiguration(): WidgetConfiguration
     {
         return WidgetConfiguration::empty()
@@ -45,12 +54,10 @@ final readonly class ChallengeConsistencyWidget implements Widget, HasWideConfig
         ConsistencyChallenges::fromConfig($config);
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): string
     {
-        $allActivities = $this->enrichedActivities->findAll();
-
         $allMonths = Months::create(
-            startDate: $allActivities->getFirstActivityStartDate(),
+            startDate: $this->queryBus->ask(new FindFirstActivityStartDate())->getStartDate(),
             endDate: $now
         );
         /** @var array<int, mixed> $config */

@@ -6,8 +6,10 @@
 @import "./components/checkbox-multiselect.css";
 @import "./components/combobox.css";
 @import "./components/data-table.css";
+@import "./components/drag-sort.css";
 @import "./components/filter-dropdown.css";
 @import "./components/form.css";
+@import "./components/loader.css";
 @import "./components/modal.css";
 @import "./components/pill.css";
 @import "./components/popover.css";
@@ -44,7 +46,6 @@
 @custom-variant sidebar-collapsed (&:where([data-sidebar-collapsed], [data-sidebar-collapsed] *));
 @custom-variant fullscreen-enabled (&:where([data-fullscreen-enabled], [data-fullscreen-enabled] *));
 @custom-variant drawer-open (&:where(body:has(#drawer-navigation[aria-modal="true"]) *));
-@custom-variant authenticated (&:where([data-authenticated], [data-authenticated] *));
 
 @layer base {
     *,
@@ -75,53 +76,10 @@
     }
 }
 
-@theme{
-    @keyframes rainbow-bg {
-        0% {
-            background-color: #ff6b6b;
-        }
-        16% {
-            background-color: #ffa36c;
-        }
-        33% {
-            background-color: #fff56d;
-        }
-        50% {
-            background-color: #6bff95;
-        }
-        66% {
-            background-color: #6bdfff;
-        }
-        83% {
-            background-color: #8a6bff;
-        }
-        100% {
-            background-color: #ff6b6b;
-        }
-    }
-}
-
 @layer components {
     div[data-datatable-settings] {
         .clusterize-data-empty td {
             @apply text-left p-4;
-        }
-    }
-
-    body:has(.rainbow-bg) {
-        @apply animate-[rainbow-bg_10s_linear_infinite];
-
-        nav {
-            @apply animate-[rainbow-bg_10s_linear_infinite];
-        }
-
-        aside,
-        #toggle-sidebar-collapsed-state {
-            @apply hidden!;
-        }
-
-        main {
-            @apply ml-0!;
         }
     }
 }

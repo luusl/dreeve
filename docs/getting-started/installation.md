@@ -67,8 +67,8 @@ networks:
 ```
 
 > [!IMPORTANT]
-> **Important** Both containers must mount the **same** volumes. They share one database, one build
-> directory and one watch folder.
+> **Important** Both containers must mount the **same** volumes. They share one database, one render cache
+> (`./build`) and one watch folder.
 
 ## .env
 
@@ -83,6 +83,7 @@ This is the minimal `.env` to get started.
 IMPORT_MODE=files
 
 # The URL you will reach the app on. Include the port if you use one.
+# Must point at the root of a (sub)domain, subdirectories are not (fully) supported.
 APP_URL=http://localhost:8080
 # Valid timezones can be found under the TZ Identifier column here:
 # https://en.wikipedia.org/wiki/List_of_tz_database_time_zones#List
@@ -109,6 +110,11 @@ ADMIN_PASSWORD_HASH='replace-me'
 # PUID=your host UID
 # PGID=your host GID
 
+# How many requests Dreeve can serve at the same time. Defaults to 4.
+# Each worker holds a booted copy of the app in memory, so raise it if pages feel
+# queued up on a machine with cores to spare, and lower it to 2 on a low-memory NAS.
+# FRANKENPHP_NUM_WORKERS=4
+
 # !! IMPORTANT If you want to serve Dreeve via a reverse proxy, 
 # uncomment the following lines and configure them accordingly:
 
@@ -117,6 +123,11 @@ ADMIN_PASSWORD_HASH='replace-me'
 # The port on which the app will be served.
 # PROXY_PORT=8080
 ```
+
+> [!WARNING]
+> **Subdirectory hosting is not fully supported.** 
+> `APP_URL` should point at the root of a domain or subdomain, for example `https://dreeve.your-domain.com` or `http://localhost:8080`. 
+> Serving Dreeve from a subdirectory such as `https://your-domain.com/dreeve/` is not supported.
 
 ## Admin password
 

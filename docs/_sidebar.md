@@ -19,13 +19,14 @@
   - [AI assistant](integrations/ai.md "Dreeve | AI assistant")
   - [Garmin Connect](integrations/garmin-connect.md "Dreeve | Garmin Connect")
   - [Polar Flow](integrations/polar-flow.md "Dreeve | Polar Flow")
+  - [Wahoo Connector](integrations/wahoo-connector.md "Dreeve | Wahoo Connector")
   - [Notifications](integrations/notifications.md "Dreeve | Notifications")
 
 - Troubleshooting
 
   - [FAQ](troubleshooting/faq.md "Dreeve | FAQ")
   - [Logs](troubleshooting/logs.md "Dreeve | Logs")
-  - [Import/build fails with syntax error](troubleshooting/import-build-fails.md "Dreeve | Import/build fails with syntax error")
+  - [Import fails with syntax error](troubleshooting/import-build-fails.md "Dreeve | Import fails with syntax error")
   - [Strava API errors](troubleshooting/strava-api-errors.md "Dreeve | Strava API errors")
   - [Notification issues](troubleshooting/shoutrrr-notifications.md "Dreeve | Notification issues")
 

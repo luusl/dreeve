@@ -2,27 +2,30 @@
 
 namespace App\Tests\Controller;
 
+use App\Application\IndexPage;
 use App\Controller\AppRequestHandler;
+use App\Domain\Activity\ActivityIdRepository;
+use App\Infrastructure\Http\Fragment\FragmentRenderer;
 use App\Tests\ContainerTestCase;
+use App\Tests\ProvideTestData;
 use Spatie\Snapshots\MatchesSnapshots;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class AppRequestHandlerTest extends ContainerTestCase
 {
     use MatchesSnapshots;
+    use ProvideTestData;
 
     private AppRequestHandler $appRequestHandler;
 
     public function testHandle(): void
     {
-        /** @var \League\Flysystem\InMemory\InMemoryFilesystemAdapter $buildStorage */
-        $buildStorage = $this->getContainer()->get('build_html.storage');
-        $buildStorage->write('index.html', 'I am the index', []);
+        $this->provideFullTestSet();
 
         $this->assertMatchesHtmlSnapshot($this->appRequestHandler->handle()->getContent());
     }
 
-    public function testHandleThrowsWhenTheAppHasNotBeenBuilt(): void
+    public function testHandleThrowsWhenNoActivitiesHaveBeenImported(): void
     {
         $this->expectExceptionObject(new NotFoundHttpException('Not found'));
 
@@ -32,8 +35,12 @@ class AppRequestHandlerTest extends ContainerTestCase
     #[\Override]
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->appRequestHandler = new AppRequestHandler(
-            $this->getContainer()->get('build_html.storage'),
+            $this->getContainer()->get(ActivityIdRepository::class),
+            $this->getContainer()->get(IndexPage::class),
+            $this->getContainer()->get(FragmentRenderer::class),
         );
     }
 }

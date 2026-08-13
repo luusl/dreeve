@@ -12,10 +12,14 @@ interface CombinedActivityStreamRepository
 {
     public function add(CombinedActivityStream $combinedActivityStream): void;
 
+    public function deleteForActivity(ActivityId $activityId): void;
+
     public function findOneForActivityAndUnitSystem(
         ActivityId $activityId,
         UnitSystem $unitSystem,
     ): CombinedActivityStream;
 
     public function findActivityIdsThatNeedStreamCombining(UnitSystem $unitSystem): ActivityIds;
+
+    public function countChartableStreamTypesFor(ActivityId $activityId, UnitSystem $unitSystem): int;
 }

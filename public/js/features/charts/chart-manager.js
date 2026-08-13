@@ -1,4 +1,4 @@
-import {fetchJson} from "../../utils";
+import {basePath, fetchJson} from "../../utils";
 import {resolveEchartsCallbacks} from "./echarts-callbacks";
 import {v5Theme, v5DarkTheme} from "./echarts-themes";
 import {FilterStorage, FilterName} from "../data-table/storage";
@@ -24,13 +24,13 @@ export default class ChartManager {
     init(rootNode, isDarkMode) {
         const handlers = this.getClickHandlers();
         const connectedCharts = [];
-        rootNode.querySelectorAll('[data-echarts-options]').forEach(chartNode => {
+        rootNode.querySelectorAll('[data-echarts-options], [data-echarts-options-url]').forEach(chartNode => {
             const chart = echarts.init(chartNode, isDarkMode ? 'v5-dark' : 'v5');
-            const rawChartOptions = chartNode.getAttribute('data-echarts-options');
+            const chartOptionsUrl = chartNode.getAttribute('data-echarts-options-url');
 
-            const loadOptions = rawChartOptions.toLowerCase().endsWith('.json')
-                ? fetchJson(rawChartOptions)
-                : Promise.resolve(JSON.parse(rawChartOptions));
+            const loadOptions = chartOptionsUrl
+                ? fetchJson(chartOptionsUrl)
+                : Promise.resolve(JSON.parse(chartNode.getAttribute('data-echarts-options')));
             chart.showLoading();
 
             loadOptions.then(chartOptions => {
@@ -66,7 +66,7 @@ export default class ChartManager {
                     return;
                 }
                 const month = (params.dataIndex + 1).toString().padStart(2, "0");
-                const modalId = `month/month-${params.seriesName}-${month}.html`;
+                const modalId = `${basePath()}/api/fragment/page/month/${params.seriesName}-${month}`;
 
                 this.modalManager.open(modalId);
                 this.router.pushCurrentRouteToHistoryState(modalId);

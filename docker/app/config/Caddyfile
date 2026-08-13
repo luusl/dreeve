@@ -7,9 +7,10 @@
 	}
 
 	frankenphp {
-		num_threads 3
+		# Let FrankenPHP size the thread pool itself. It scales up under load.
+		max_threads auto
 		worker {
-			num 2
+			num {$FRANKENPHP_NUM_WORKERS:4}
 			file ./public/index.php
 		}
 	}
@@ -33,7 +34,7 @@ import /etc/frankenphp/snippets/paths.caddyfile
 		?Permissions-Policy "browsing-topics=()"
 	}
 
-	# Path-routing rules (static html, /files/*, /gear-maintenance/*, /assets/*).
+	# Path-routing rules (/files/*, /assets/*).
 	import paths
 
 	# Serve everything else trough Symfony.

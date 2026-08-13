@@ -18,10 +18,12 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Gear\DbalGearRepository;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
+use App\Infrastructure\Eventing\EventBus;
 use App\Infrastructure\Repository\Pagination;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Gear\GearBuilder;
+use App\Tests\Infrastructure\Eventing\SpyEventBus;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -396,7 +398,7 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('300'))
                 ->withName('Morning Swim')
-                ->withSportType(SportType::SWIM)
+                ->withSportType(SportType::POOL_SWIM)
                 ->withStartDateTime(SerializableDateTime::fromString('2026-06-03 08:00:00'))
                 ->build(),
             [],
@@ -409,13 +411,15 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         parent::setUp();
 
         $this->activityRepository = new DbalActivityRepository(
-            $this->getConnection()
+            $this->getConnection(),
+            new SpyEventBus(),
         );
         $this->activityOverviewRepository = new DbalActivityOverviewRepository(
             $this->getConnection()
         );
         $this->gearRepository = new DbalGearRepository(
-            $this->getConnection()
+            $this->getConnection(),
+            $this->getContainer()->get(EventBus::class),
         );
     }
 }

@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\CQRS\Command\Bus;
 
-use App\Infrastructure\Cache\InvalidateRenderCacheMiddleware;
-use App\Infrastructure\Cache\RenderCache;
 use App\Infrastructure\CQRS\Command\Command;
 use App\Infrastructure\CQRS\Command\CommandHandler;
 use App\Infrastructure\CQRS\HandlerBuilder;
 use App\Infrastructure\CQRS\HandlerBuilderType;
-use App\Infrastructure\Eventing\EventBus;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 use Symfony\Component\Messenger\Exception\HandlerFailedException;
 use Symfony\Component\Messenger\Exception\NoHandlerForMessageException;
@@ -29,8 +26,6 @@ final class InMemoryCommandBus implements CommandBus
     public function __construct(
         #[AutowireIterator('app.command_handler')]
         private readonly iterable $commandHandlers,
-        private readonly EventBus $eventBus,
-        private readonly RenderCache $renderCache,
     ) {
     }
 
@@ -40,8 +35,6 @@ final class InMemoryCommandBus implements CommandBus
         // Otherwise, we end up with infinite recursion in the container.
         if (!isset($this->bus)) {
             $this->bus = new MessageBus([
-                new PublishRebuildIsRequiredMiddleware($this->eventBus),
-                new InvalidateRenderCacheMiddleware($this->renderCache),
                 new HandleMessageMiddleware(
                     new HandlersLocator(
                         new HandlerBuilder(HandlerBuilderType::COMMAND_HANDLER)

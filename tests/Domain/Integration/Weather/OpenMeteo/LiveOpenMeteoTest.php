@@ -21,6 +21,9 @@ class LiveOpenMeteoTest extends TestCase
     use MatchesSnapshots;
 
     private LiveOpenMeteo $liveOpenMeteo;
+    /**
+     * @var MockObject&Client
+     */
     private MockObject $client;
     private Clock $clock;
 

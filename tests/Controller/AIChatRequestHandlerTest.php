@@ -4,6 +4,9 @@ namespace App\Tests\Controller;
 
 use App\Application\AppUrl;
 use App\Controller\AIChatRequestHandler;
+use App\Domain\Activity\ActivityIdRepository;
+use App\Domain\Activity\ActivityRepository;
+use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Integration\AI\Chat\AddChatMessage\AddChatMessage;
 use App\Domain\Integration\AI\Chat\ChatMessage;
 use App\Domain\Integration\AI\Chat\ChatMessageId;
@@ -19,9 +22,10 @@ use App\Infrastructure\KeyValue\Value;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
+use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Infrastructure\CQRS\Command\Bus\SpyCommandBus;
+use App\Tests\Infrastructure\Eventing\SpyEventBus;
 use App\Tests\Infrastructure\Time\Clock\PausedClock;
-use League\Flysystem\FilesystemOperator;
 use NeuronAI\Agent\Agent;
 use NeuronAI\Agent\AgentInterface;
 use NeuronAI\Chat\Enums\MessageRole;
@@ -36,17 +40,27 @@ use Symfony\Component\HttpFoundation\EventStreamResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
 
+#[AllowMockObjectsWithoutExpectations]
 class AIChatRequestHandlerTest extends ContainerTestCase
 {
     use MatchesSnapshots;
 
-    private FilesystemOperator $buildStorage;
+    private KeyValueStore $keyValueStore;
+    /**
+     * @var Stub&AgentInterface
+     */
     private Stub $neuronAIAgent;
+    /**
+     * @var MockObject&ChatRepository
+     */
     private MockObject $chatRepository;
 
     public function testHandle(): void
     {
-        $this->buildStorage->write('index.html', 'I am the index', []);
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()->build(),
+            [],
+        ));
 
         $this->chatRepository
             ->expects($this->once())
@@ -65,7 +79,7 @@ class AIChatRequestHandlerTest extends ContainerTestCase
         $this->assertMatchesHtmlSnapshot($requestHandler->handle()->getContent());
     }
 
-    public function testHandleNoIndexFound(): void
+    public function testHandleWhenNoActivitiesHaveBeenImportedYet(): void
     {
         $this->chatRepository
             ->expects($this->never())
@@ -80,7 +94,10 @@ class AIChatRequestHandlerTest extends ContainerTestCase
 
     public function testHandleAINotEnabled(): void
     {
-        $this->buildStorage->write('index.html', 'I am the index', []);
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()->build(),
+            [],
+        ));
 
         $this->chatRepository
             ->expects($this->never())
@@ -209,7 +226,7 @@ class AIChatRequestHandlerTest extends ContainerTestCase
     private function buildRequestHandler(bool $aiUIEnabled): AIChatRequestHandler
     {
         return new AIChatRequestHandler(
-            buildHtmlStorage: $this->buildStorage,
+            activityIdRepository: $this->getContainer()->get(ActivityIdRepository::class),
             neuronAIAgent: $this->neuronAIAgent,
             chatRepository: $this->chatRepository,
             commandBus: $this->getContainer()->get(CommandBus::class),
@@ -226,7 +243,7 @@ class AIChatRequestHandlerTest extends ContainerTestCase
         CommandBus $commandBus,
     ): AIChatRequestHandler {
         return new AIChatRequestHandler(
-            buildHtmlStorage: $this->buildStorage,
+            activityIdRepository: $this->getContainer()->get(ActivityIdRepository::class),
             neuronAIAgent: $agent,
             chatRepository: $chatRepository,
             commandBus: $commandBus,
@@ -256,7 +273,7 @@ class AIChatRequestHandlerTest extends ContainerTestCase
             ])),
         ));
 
-        return new KeyValueBasedSettingsRepository($keyValueStore);
+        return new KeyValueBasedSettingsRepository($keyValueStore, new SpyEventBus());
     }
 
     #[\Override]
@@ -264,7 +281,7 @@ class AIChatRequestHandlerTest extends ContainerTestCase
     {
         parent::setUp();
 
-        $this->buildStorage = $this->getContainer()->get('build_html.storage');
+        $this->keyValueStore = $this->getContainer()->get(KeyValueStore::class);
         $this->neuronAIAgent = $this->createStub(AgentInterface::class);
         $this->chatRepository = $this->createMock(ChatRepository::class);
     }

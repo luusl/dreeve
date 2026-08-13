@@ -58,6 +58,7 @@ Challenges: Desafios
 'Clear all filters': 'Clear all filters'
 'Clear chat': 'Clear chat'
 'Close modal': 'Fechar modal'
+Columns: Columns
 Commutes: 'Viagens Escritório'
 'Commutes only': 'Apenas viagens Escritório'
 Compare: Comparar
@@ -70,6 +71,7 @@ Consistency: Consistency
 Country: Country
 Cricket: Cricket
 Crossfit: Crossfit
+'Crunching the numbers...': 'Crunching the numbers...'
 'Current Status': 'Current Status'
 'Current streaks': 'Current streaks'
 Cycling: Cycling
@@ -97,6 +99,7 @@ Distance: Distância
 'Distance per month per gear': 'Distância por mês por equipamento'
 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.': 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.'
 Duration: Duration
+'Dusting off the record books...': 'Dusting off the record books...'
 'E-Bike Rides': 'Passeios de E-Bike'
 'E-Mountain Bike Rides': 'Passeios de E-MTB'
 Eddington: Eddington
@@ -120,6 +123,7 @@ Evening: 'Fim da tarde'
 'FTP history': 'Histórico de FTP'
 Favourite: Favorito
 Feb: Fev
+'Filling up the bottles...': 'Filling up the bottles...'
 'Filter on KOM segments': 'Filtrar por segmentos KOM'
 'Filter on country': 'Filtrar por país'
 'Filter on sport type': 'Filtrar por tipo de desporto'
@@ -170,7 +174,6 @@ History: Histórico
 'How much training you do in total on days you train.': 'How much training you do in total on days you train.'
 'How often do you train': 'How often do you train'
 'Ice Skate': 'Patinagem no Gelo'
-Id: Id
 Imperial: Imperial
 "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉.": "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉."
 'Individual thresholds vary based on fitness level.': 'Thresholds individuais variam consoante o nível de forma.'
@@ -196,7 +199,6 @@ Lifetime: Lifetime
 'Light fatigue with good readiness. A great balance for quality training or longer efforts': 'Light fatigue with good readiness. A great balance for quality training or longer efforts'
 Load: Load
 'Load (CTL/ATL)': 'Carga (CTL/ATL)'
-'Loading data...': 'A carregar dados...'
 Loading...: 'A carregar...'
 'Locations over the globe': 'Locais pelo globo'
 'Long run': 'Corrida longa'
@@ -255,6 +257,7 @@ Oct: Out
 'Older effort': 'Older effort'
 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.': 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.'
 'One of your gear maintenance tasks is due': 'Uma das tarefas de manutenção de equipamento está atrasada'
+'Open Water Swim': 'Open Water Swim'
 'Optimal training range': 'Intervalo de treino ideal'
 Other: Outro
 'Outdoor Sports': 'Desportos ao Ar Livre'
@@ -276,6 +279,7 @@ Photos: Fotos
 Pilates: Pilates
 'Pizza slices': 'Pizza slices'
 'Polarised training (last 30 days)': 'Polarised training (last 30 days)'
+'Pool Swim': 'Pool Swim'
 Power: Potência
 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.': 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.'
 'Prev year': 'Ano anterior'
@@ -290,9 +294,9 @@ Ranking: Ranking
 'Reached {threshold} hours total moving time': 'Reached {threshold} hours total moving time'
 'Reached {threshold} total distance': 'Reached {threshold} total distance'
 'Reached {threshold} total elevation': 'Reached {threshold} total elevation'
+'Recalculating your suffer score...': 'Recalculating your suffer score...'
 'Recent effort': 'Recent effort'
 'Recording devices': 'Recording devices'
-'Recording devices details': 'Recording devices details'
 'Recovery Timeline': 'Recovery Timeline'
 'Recovery forecast': 'Recovery forecast'
 'Reduced carbon emission by commuting': 'Reduced carbon emission by commuting'
@@ -319,9 +323,10 @@ Search: Pesquisar
 'Search segment...': 'Pesquisar segmento...'
 Segments: Segmentos
 Sep: Set
+'Show all columns': 'Show all columns'
 'Show information': 'Mostrar informação'
 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.': 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.'
-"Since I began using Strava {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began using Strava {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
+"Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
 Skateboard: Skate
 Skating: Patinagem
 'Slightly fresh': 'Slightly fresh'
@@ -344,7 +349,6 @@ Streaks: Sequências
 Sun: Dom
 Sun.: Sun.
 Surfing: Surf
-Swim: Natação
 'TSB (Form)': 'TSB (Forma)'
 'TSB positive in': 'TSB positive in'
 'Table Tennis': 'Ténis de Mesa'
@@ -452,7 +456,7 @@ Time: Hora
 'Time in zone': 'Time in zone'
 'Times completed': 'Vezes concluído'
 Title: Title
-'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect': 'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect'
+'To enable it, configure this in the admin panel': 'To enable it, configure this in the admin panel'
 'Toggle sidebar': 'Ativar/desativar barra lateral'
 'Top 10': 'Top 10'
 'Total distance per month': 'Distância total por mês'
@@ -471,7 +475,6 @@ Title: Title
 Tue: Ter
 Tue.: Tue.
 Unspecified: 'Não especificado'
-'Updated on': 'Atualizado em'
 'User badge': 'User badge'
 'Velo Mobiles': 'Velo Móveis'
 'Very high': 'Muito alta'
@@ -487,6 +490,7 @@ Volume: Volume
 Walking: Walking
 Walks: Passeios
 'Water Sports': 'Desportos Aquáticos'
+'Waxing the chain...': 'Waxing the chain...'
 'We detected following issues': 'Foram detectadas as seguintes situações'
 Wed: Qua
 Wed.: Wed.
@@ -509,8 +513,8 @@ Year: Ano
 Yearly: Yearly
 'Yearly stats': 'Yearly stats'
 Yoga: Yoga
+'Your Dreeve badge': 'O teu emblema do Dreeve'
 'Your PB badge': 'Medalha de Recordes'
-'Your Strava badge': 'O teu emblema do Strava'
 'Your Zwift badge': 'O teu emblema do Zwift'
 'Your badge(s)': 'O(s) teu(s) emblema(s)'
 Z1: Z1
@@ -533,7 +537,6 @@ activities: actividades
 and: e
 avg: avg
 bpm: bpm
-challenges: challenges
 clear: limpar
 compare: comparar
 countries: countries
