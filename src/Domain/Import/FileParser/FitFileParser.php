@@ -5,21 +5,21 @@ declare(strict_types=1);
 namespace App\Domain\Import\FileParser;
 
 use App\Domain\Activity\Activity;
-use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIdFactory;
 use App\Domain\Activity\ActivityName;
 use App\Domain\Activity\ImportSource;
-use App\Domain\Activity\Lap\ActivityLap;
-use App\Domain\Activity\Lap\ActivityLapIdFactory;
-use App\Domain\Activity\Lap\ActivityLaps;
 use App\Domain\Activity\Math;
 use App\Domain\Activity\Route\RouteGeography;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\StreamType;
 use App\Domain\Activity\WorldType;
+use App\Domain\Gear\Sensor\ConnectedSensor;
+use App\Domain\Gear\Sensor\ConnectedSensors;
+use App\Domain\Import\FileParser\Fit\FitDeviceType;
 use App\Domain\Import\FileParser\Fit\FitManufacturer;
 use App\Domain\Import\FileParser\Fit\FitProduct;
 use App\Domain\Import\FileParser\Fit\FitSportType;
+use App\Domain\Import\FileParser\Fit\FitStrapHeartRate;
 use App\Domain\Import\SupportedFileExtension;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
@@ -43,7 +43,7 @@ final readonly class FitFileParser implements ActivityFileParser
 
     public function __construct(
         private ActivityIdFactory $activityIdFactory,
-        private ActivityLapIdFactory $activityLapIdFactory,
+        private ActivityLapsMapper $activityLapsMapper,
         private ProcessFactory $processFactory,
         private ActivityStreamsMapper $activityStreamsMapper,
         private ?SerializableTimezone $timezone,
@@ -72,6 +72,8 @@ final readonly class FitFileParser implements ActivityFileParser
         $lapMessages = [];
         /** @var list<array<string, mixed>> $hrMessages */
         $hrMessages = [];
+        /** @var list<array<string, mixed>> $deviceInfoMessages */
+        $deviceInfoMessages = [];
         /** @var array<string, mixed>|null $session */
         $session = null;
         /** @var array<string, mixed>|null $workout */
@@ -98,6 +100,9 @@ final readonly class FitFileParser implements ActivityFileParser
                     break;
                 case 'hr':
                     $hrMessages[] = $fields;
+                    break;
+                case 'device_info':
+                    $deviceInfoMessages[] = $fields;
                     break;
                 case 'session':
                     $session ??= $fields;
@@ -139,7 +144,8 @@ final readonly class FitFileParser implements ActivityFileParser
 
         $sportType = FitSportType::resolve(
             sport: $session['sport'] ?? null,
-            subSport: $session['sub_sport'] ?? null
+            subSport: $session['sub_sport'] ?? null,
+            sportProfileName: is_string($session['sport_profile_name'] ?? null) ? trim($session['sport_profile_name']) : null
         );
 
         if (!$sportType instanceof SportType) {
@@ -147,9 +153,9 @@ final readonly class FitFileParser implements ActivityFileParser
         }
 
         $streamMap = $this->buildStreams(
-            records: $this->mergeStrapHeartRate(
+            records: FitStrapHeartRate::mergeIntoRecords(
                 records: $this->mergeRecordsByTimestamp($records),
-                strapHrSamples: $this->expandStrapHeartRateSamples($hrMessages),
+                hrMessages: $hrMessages,
             ),
             startTimestamp: $startTimestamp
         );
@@ -194,6 +200,7 @@ final readonly class FitFileParser implements ActivityFileParser
             movingTimeInSeconds: is_numeric($session['total_timer_time'] ?? null) ? (int) round((float) $session['total_timer_time']) : 0,
             elapsedTimeInSeconds: is_numeric($session['total_elapsed_time'] ?? null) ? (int) round((float) $session['total_elapsed_time']) : 0,
             deviceName: $deviceName,
+            connectedSensors: $this->resolveConnectedSensors($deviceInfoMessages),
             totalImageCount: 0,
             localImagePaths: [],
             polyline: StreamMath::encodePolyline($streamMap),
@@ -207,56 +214,123 @@ final readonly class FitFileParser implements ActivityFileParser
         return ParsedActivityFile::create(
             activity: $activity,
             streams: $this->activityStreamsMapper->fromStreamMap($streamMap, $activityId),
-            laps: $this->buildActivityLaps($lapMessages, $activityId),
+            laps: $this->activityLapsMapper->map($this->buildParsedLaps($lapMessages), $activityId),
         );
     }
 
     /**
      * @param list<array<string, mixed>> $lapMessages
+     *
+     * @return list<ParsedActivityLap>
      */
-    private function buildActivityLaps(array $lapMessages, ActivityId $activityId): ActivityLaps
+    private function buildParsedLaps(array $lapMessages): array
     {
-        $averageSpeeds = array_map(
-            static function (array $lap): float {
-                if (is_numeric($lap['enhanced_avg_speed'] ?? $lap['avg_speed'] ?? null)) {
-                    return (float) ($lap['enhanced_avg_speed'] ?? $lap['avg_speed']);
-                }
+        return array_map(
+            function (array $lap, int $index): ParsedActivityLap {
+                $averageHeartRate = $lap['avg_heart_rate'] ?? null;
 
-                // Laps without a speed summary (e.g. Huawei Health exports) still
-                // carry distance and timer time; derive the average from those.
-                $totalDistance = is_numeric($lap['total_distance'] ?? null) ? (float) $lap['total_distance'] : null;
-                $totalTimerTime = is_numeric($lap['total_timer_time'] ?? null) ? (float) $lap['total_timer_time'] : null;
-                if (null !== $totalDistance && null !== $totalTimerTime && $totalTimerTime > 0.0) {
-                    return $totalDistance / $totalTimerTime;
-                }
-
-                return 0.0;
+                return ParsedActivityLap::create(
+                    lapNumber: $index + 1,
+                    name: sprintf('Lap %d', $index + 1),
+                    elapsedTimeInSeconds: is_numeric($lap['total_elapsed_time'] ?? null) ? (int) round((float) $lap['total_elapsed_time']) : 0,
+                    movingTimeInSeconds: is_numeric($lap['total_timer_time'] ?? null) ? (int) round((float) $lap['total_timer_time']) : 0,
+                    distance: Meter::from(is_numeric($lap['total_distance'] ?? null) ? (float) $lap['total_distance'] : 0.0),
+                    averageSpeed: MetersPerSecond::from($this->resolveLapAverageSpeed($lap)),
+                    maxSpeed: MetersPerSecond::from(is_numeric($lap['enhanced_max_speed'] ?? $lap['max_speed'] ?? null) ? (float) ($lap['enhanced_max_speed'] ?? $lap['max_speed'] ?? null) : 0.0),
+                    elevationDifference: Meter::from(is_numeric($lap['total_ascent'] ?? null) ? (float) $lap['total_ascent'] : 0.0),
+                    averageHeartRate: empty($averageHeartRate) ? null : (int) round((float) $averageHeartRate),
+                );
             },
-            $lapMessages
+            $lapMessages,
+            array_keys($lapMessages),
         );
-        $minAverageSpeed = MetersPerSecond::from([] !== $averageSpeeds ? min($averageSpeeds) : 0.0);
-        $maxAverageSpeed = MetersPerSecond::from([] !== $averageSpeeds ? max($averageSpeeds) : 0.0);
+    }
 
-        $laps = ActivityLaps::empty();
-        foreach ($lapMessages as $index => $lap) {
-            $laps->add(ActivityLap::create(
-                lapId: $this->activityLapIdFactory->random(),
-                activityId: $activityId,
-                lapNumber: $index + 1,
-                name: sprintf('Lap %d', $index + 1),
-                elapsedTimeInSeconds: is_numeric($lap['total_elapsed_time'] ?? null) ? (int) round((float) $lap['total_elapsed_time']) : 0,
-                movingTimeInSeconds: is_numeric($lap['total_timer_time'] ?? null) ? (int) round((float) $lap['total_timer_time']) : 0,
-                distance: Meter::from(is_numeric($lap['total_distance'] ?? null) ? (float) $lap['total_distance'] : 0.0),
-                averageSpeed: MetersPerSecond::from($averageSpeeds[$index]),
-                minAverageSpeed: $minAverageSpeed,
-                maxAverageSpeed: $maxAverageSpeed,
-                maxSpeed: MetersPerSecond::from(is_numeric($lap['enhanced_max_speed'] ?? $lap['max_speed'] ?? null) ? (float) ($lap['enhanced_max_speed'] ?? $lap['max_speed'] ?? null) : 0.0),
-                elevationDifference: Meter::from(is_numeric($lap['total_ascent'] ?? null) ? (float) $lap['total_ascent'] : 0.0),
-                averageHeartRate: empty($lap['avg_heart_rate']) ? null : (int) round((float) $lap['avg_heart_rate']),
-            ));
+    /**
+     * @param array<string, mixed> $lap
+     */
+    private function resolveLapAverageSpeed(array $lap): float
+    {
+        if (is_numeric($lap['enhanced_avg_speed'] ?? $lap['avg_speed'] ?? null)) {
+            return (float) ($lap['enhanced_avg_speed'] ?? $lap['avg_speed']);
         }
 
-        return $laps;
+        // Laps without a speed summary (e.g. Huawei Health exports) still
+        // carry distance and timer time; derive the average from those.
+        $totalDistance = is_numeric($lap['total_distance'] ?? null) ? (float) $lap['total_distance'] : null;
+        $totalTimerTime = is_numeric($lap['total_timer_time'] ?? null) ? (float) $lap['total_timer_time'] : null;
+        if (null !== $totalDistance && null !== $totalTimerTime && $totalTimerTime > 0.0) {
+            return $totalDistance / $totalTimerTime;
+        }
+
+        return 0.0;
+    }
+
+    /**
+     * @param list<array<string, mixed>> $deviceInfoMessages
+     */
+    private function resolveConnectedSensors(array $deviceInfoMessages): ?ConnectedSensors
+    {
+        if ([] === $deviceInfoMessages) {
+            return null;
+        }
+
+        return ConnectedSensors::fromSensors(...array_filter(array_map(
+            $this->toConnectedSensor(...),
+            $this->mergeDeviceInfoByDeviceIndex($deviceInfoMessages),
+        )));
+    }
+
+    /**
+     * @param array<string, mixed> $fields
+     */
+    private function toConnectedSensor(array $fields): ?ConnectedSensor
+    {
+        if (!($sensorType = FitDeviceType::resolveSensorType($fields)) instanceof \App\Domain\Gear\Sensor\SensorType) {
+            return null;
+        }
+        if (null === $manufacturer = $this->toInt($fields['manufacturer'] ?? null)) {
+            return null;
+        }
+
+        $product = $this->toInt($fields['product'] ?? null);
+
+        return ConnectedSensor::create(
+            $manufacturer,
+            $product,
+            $this->toInt($fields['serial_number'] ?? null),
+            (null !== $product ? FitProduct::name($manufacturer, $product) : null) ?? FitManufacturer::name($manufacturer),
+            $sensorType,
+        );
+    }
+
+    /**
+     * @param list<array<string, mixed>> $deviceInfoMessages
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function mergeDeviceInfoByDeviceIndex(array $deviceInfoMessages): array
+    {
+        $merged = [];
+
+        foreach ($deviceInfoMessages as $position => $fields) {
+            $deviceIndex = $this->toInt($fields['device_index'] ?? null);
+            $key = null !== $deviceIndex ? 'index-'.$deviceIndex : 'unindexed-'.$position;
+
+            foreach ($fields as $field => $value) {
+                if (null === $value) {
+                    continue;
+                }
+                $merged[$key][$field] ??= $value;
+            }
+        }
+
+        return array_values($merged);
+    }
+
+    private function toInt(mixed $value): ?int
+    {
+        return is_numeric($value) ? (int) round((float) $value) : null;
     }
 
     /**
@@ -291,139 +365,6 @@ final readonly class FitFileParser implements ActivityFileParser
         }
 
         return $merged;
-    }
-
-    /**
-     * Chest straps cannot broadcast heart rate through water. During swims the
-     * strap stores its samples and the watch downloads them afterwards into
-     * "hr" messages, while the "record" messages only carry the (far less
-     * accurate) wrist reading. Each hr message batches filtered_bpm samples
-     * paired with event_timestamp values.
-     *
-     * @param list<array<string, mixed>> $hrMessages
-     *
-     * @return list<array{float, int}> chronological [timestamp in seconds since the FIT epoch, bpm] pairs
-     */
-    private function expandStrapHeartRateSamples(array $hrMessages): array
-    {
-        $anchorTimestamp = null;
-        $anchorEventTimestamp = null;
-        /** @var list<array{float, int}> $samples */
-        $samples = [];
-
-        foreach ($hrMessages as $hrMessage) {
-            $eventTimestamps = array_values(is_array($hrMessage['event_timestamp'] ?? null) ? $hrMessage['event_timestamp'] : [$hrMessage['event_timestamp'] ?? null]);
-            $bpms = array_values(is_array($hrMessage['filtered_bpm'] ?? null) ? $hrMessage['filtered_bpm'] : [$hrMessage['filtered_bpm'] ?? null]);
-
-            if (is_numeric($hrMessage['timestamp'] ?? null) && 1 === count($eventTimestamps) && is_numeric($eventTimestamps[0] ?? null)) {
-                $anchorTimestamp = (float) $hrMessage['timestamp'] + (is_numeric($hrMessage['fractional_timestamp'] ?? null) ? (float) $hrMessage['fractional_timestamp'] : 0.0);
-                $anchorEventTimestamp = (float) $eventTimestamps[0];
-            }
-            if (null === $anchorTimestamp) {
-                continue;
-            }
-            if (null === $anchorEventTimestamp) {
-                continue;
-            }
-            if (count($eventTimestamps) !== count($bpms)) {
-                continue;
-            }
-
-            foreach ($eventTimestamps as $index => $eventTimestamp) {
-                $bpm = $bpms[$index];
-                if (!is_numeric($eventTimestamp)) {
-                    continue;
-                }
-                if (!is_numeric($bpm)) {
-                    continue;
-                }
-                $bpm = (int) round((float) $bpm);
-                if ($bpm <= 0) {
-                    // 0xFF is the FIT "invalid" sentinel for uint8 fields.
-                    continue;
-                }
-                if ($bpm >= 255) {
-                    // 0xFF is the FIT "invalid" sentinel for uint8 fields.
-                    continue;
-                }
-                $eventTimestamp = (float) $eventTimestamp;
-                if ($eventTimestamp < $anchorEventTimestamp) {
-                    // The 32 bit event_timestamp counter has a 1/1024s resolution, so it wraps every 2^32/1024 seconds.
-                    $eventTimestamp += 4194304.0;
-                }
-
-                $timestamp = $anchorTimestamp + ($eventTimestamp - $anchorEventTimestamp);
-
-                // Carry the previous sample forward across gaps in 250ms increments, capped at 5s.
-                if ([] !== $samples) {
-                    [$previousTimestamp, $previousBpm] = array_last($samples);
-                    $gap = $timestamp - $previousTimestamp;
-                    for ($step = 1; $gap > 0.25 && $step <= 20; ++$step) {
-                        $samples[] = [$previousTimestamp + $step * 0.25, $previousBpm];
-                        $gap -= 0.25;
-                    }
-                }
-
-                $samples[] = [$timestamp, $bpm];
-            }
-        }
-
-        return $samples;
-    }
-
-    /**
-     * Overwrite the (wrist based) heart_rate of each record with the average
-     * of the strap samples taken between the previous record and this one.
-     * Records without nearby strap samples keep their wrist reading. Mirrors
-     * Garmin's reference implementation (HrMesgUtils.mergeHeartRates in the
-     * FIT SDK).
-     *
-     * @param list<array<string, mixed>> $records
-     * @param list<array{float, int}>    $strapHrSamples
-     *
-     * @return list<array<string, mixed>>
-     */
-    private function mergeStrapHeartRate(array $records, array $strapHrSamples): array
-    {
-        if ([] === $strapHrSamples) {
-            return $records;
-        }
-
-        $sampleIndex = 0;
-        $countSamples = count($strapHrSamples);
-        $rangeStart = null;
-
-        foreach ($records as $key => $record) {
-            if (!is_numeric($record['timestamp'] ?? null)) {
-                continue;
-            }
-            $rangeEnd = (float) $record['timestamp'];
-            if (null === $rangeStart || $rangeStart >= $rangeEnd) {
-                $rangeStart = $rangeEnd - 1.0;
-                $sampleIndex = max(0, $sampleIndex - 1);
-            }
-
-            $sum = 0;
-            $count = 0;
-            while ($sampleIndex < $countSamples) {
-                [$timestamp, $bpm] = $strapHrSamples[$sampleIndex];
-                if ($timestamp > $rangeEnd) {
-                    break;
-                }
-                if ($timestamp > $rangeStart) {
-                    $sum += $bpm;
-                    ++$count;
-                }
-                ++$sampleIndex;
-            }
-
-            if ($count > 0) {
-                $records[$key]['heart_rate'] = (int) round($sum / $count);
-            }
-            $rangeStart = $rangeEnd;
-        }
-
-        return $records;
     }
 
     /**

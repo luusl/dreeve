@@ -6,6 +6,7 @@ namespace App\Tests\Domain\Import\FileParser;
 
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Import\FileParser\ActivityLapsMapper;
 use App\Domain\Import\FileParser\ActivityStreamsMapper;
 use App\Domain\Import\FileParser\CouldNotParseActivityFile;
 use App\Domain\Import\FileParser\FitFileParser;
@@ -81,7 +82,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
     {
         $parser = new FitFileParser(
             new IncrementingActivityIdFactory(),
-            new IncrementingActivityLapIdFactory(),
+            new ActivityLapsMapper(new IncrementingActivityLapIdFactory()),
             new SymfonyProcessFactory(),
             new ActivityStreamsMapper(PausedClock::fromString('2023-10-17 16:15:04')),
             SerializableTimezone::UTC(),
@@ -96,7 +97,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
     {
         $parser = new FitFileParser(
             new IncrementingActivityIdFactory(),
-            new IncrementingActivityLapIdFactory(),
+            new ActivityLapsMapper(new IncrementingActivityLapIdFactory()),
             new SymfonyProcessFactory(),
             new ActivityStreamsMapper(PausedClock::fromString('2023-10-17 16:15:04')),
             SerializableTimezone::UTC(),
@@ -178,6 +179,26 @@ class FitFileParserTest extends ActivityFileParserTestCase
         $this->assertSame(SportType::TRAIL_RUN, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getSportType());
     }
 
+    public function testParseGenericSportWithCustomProfileName(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-generic-sport-profile.json'));
+
+        $this->assertSame(SportType::WORKOUT, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getSportType());
+    }
+
+    public function testParseResolvesGenericSportFromSportProfileName(): void
+    {
+        $document = $this->minimalFitDocument(sessionFields: [
+            ['name' => 'sport', 'value' => 0], // generic
+            ['name' => 'sub_sport', 'value' => 0], // generic
+            ['name' => 'sport_profile_name', 'value' => 'Indoor Rowing'],
+            ['name' => 'start_time', 'value' => self::START_FIT_SECONDS],
+        ]);
+        $this->givenFitToolReturns(Json::encode($document));
+
+        $this->assertSame(SportType::VIRTUAL_ROW, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getSportType());
+    }
+
     public function testParseUnsuccessfulProcessThrows(): void
     {
         $process = $this->createStub(Process::class);
@@ -242,7 +263,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
 
         $this->parser = new FitFileParser(
             new IncrementingActivityIdFactory(),
-            new IncrementingActivityLapIdFactory(),
+            new ActivityLapsMapper(new IncrementingActivityLapIdFactory()),
             $this->processFactory = $this->createStub(ProcessFactory::class),
             new ActivityStreamsMapper(PausedClock::fromString('2023-10-17 16:15:04')),
             SerializableTimezone::UTC(),

@@ -1108,6 +1108,9 @@
   .ms-auto {
     margin-inline-start: auto;
   }
+  .me-1 {
+    margin-inline-end: var(--spacing);
+  }
   .me-1\.5 {
     margin-inline-end: calc(var(--spacing) * 1.5);
   }
@@ -2937,12 +2940,6 @@
   .bg-red-50 {
     background-color: var(--color-red-50);
   }
-  .bg-red-50\/60 {
-    background-color: color-mix(in srgb, #FEF2F2 60%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-red-50) 60%, transparent);
-    }
-  }
   .bg-red-100 {
     background-color: var(--color-red-100);
   }
@@ -3520,6 +3517,9 @@
   .text-white {
     color: var(--color-white);
   }
+  .text-white\! {
+    color: var(--color-white) !important;
+  }
   .text-yellow-500 {
     color: var(--color-yellow-500);
   }
@@ -3541,6 +3541,9 @@
   .tabular-nums {
     --tw-numeric-spacing: tabular-nums;
     font-variant-numeric: var(--tw-ordinal,) var(--tw-slashed-zero,) var(--tw-numeric-figure,) var(--tw-numeric-spacing,) var(--tw-numeric-fraction,);
+  }
+  .no-underline\! {
+    text-decoration-line: none !important;
   }
   .underline {
     text-decoration-line: underline;
@@ -3603,6 +3606,10 @@
     --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
+  .ring-2 {
+    --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
   .ring-8 {
     --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(8px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
@@ -3615,6 +3622,9 @@
   }
   .ring-green-600 {
     --tw-ring-color: var(--color-green-600);
+  }
+  .ring-primary {
+    --tw-ring-color: var(--color-primary);
   }
   .ring-primary\/20 {
     --tw-ring-color: color-mix(in srgb, #F26722 20%, transparent);
@@ -3736,6 +3746,9 @@
     }
     .group-hover\/menu-item\:fill-gray-900:is(:where(.group\/menu-item):hover *) {
       fill: var(--color-gray-900);
+    }
+    .group-hover\/route-match\:text-primary:is(:where(.group\/route-match):hover *) {
+      color: var(--color-primary);
     }
     .group-hover\/section\:text-primary:is(:where(.group\/section):hover *) {
       color: var(--color-primary);
@@ -3962,8 +3975,14 @@
     .hover\:no-underline:hover {
       text-decoration-line: none;
     }
+    .hover\:no-underline\!:hover {
+      text-decoration-line: none !important;
+    }
     .hover\:underline:hover {
       text-decoration-line: underline;
+    }
+    .hover\:opacity-90:hover {
+      opacity: 90%;
     }
     .hover\:ring-primary\/30:hover {
       --tw-ring-color: color-mix(in srgb, #F26722 30%, transparent);
@@ -4279,8 +4298,8 @@
     .lg\:sticky {
       position: sticky;
     }
-    .lg\:top-18 {
-      top: calc(var(--spacing) * 18);
+    .lg\:top-23 {
+      top: calc(var(--spacing) * 23);
     }
     .lg\:left-0 {
       left: 0px;
@@ -4326,9 +4345,6 @@
     }
     .lg\:px-6 {
       padding-inline: calc(var(--spacing) * 6);
-    }
-    .lg\:py-5 {
-      padding-block: calc(var(--spacing) * 5);
     }
     .lg\:py-16 {
       padding-block: calc(var(--spacing) * 16);
@@ -5102,6 +5118,12 @@ table.data-table {
       &.narrow {
         padding-inline: calc(var(--spacing) * 2);
       }
+      &.sticky-actions {
+        position: sticky;
+        right: 0px;
+        z-index: 1;
+        background-color: var(--color-gray-50);
+      }
       &[data-dataTable-sort] {
         cursor: pointer;
         transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
@@ -5133,6 +5155,18 @@ table.data-table {
           background-color: var(--color-gray-50);
         }
       }
+      &.row--failed {
+        background-color: color-mix(in srgb, #FEF2F2 60%, transparent);
+        @supports (color: color-mix(in lab, red, red)) {
+          background-color: color-mix(in oklab, var(--color-red-50) 60%, transparent);
+        }
+        &:not(:hover) > .sticky-actions {
+          background-color: color-mix(in srgb, #FEF2F2 60%, #ffffff);
+          @supports (color: color-mix(in lab, red, red)) {
+            background-color: color-mix(in oklab, var(--color-red-50) 60%, var(--color-white));
+          }
+        }
+      }
       td, th {
         padding-inline: calc(var(--spacing) * 6);
         padding-block: calc(var(--spacing) * 2.5);
@@ -5143,6 +5177,17 @@ table.data-table {
         }
         &.narrow {
           padding-inline: calc(var(--spacing) * 2);
+        }
+        &.sticky-actions {
+          position: sticky;
+          right: 0px;
+          z-index: 1;
+          background-color: var(--color-white);
+          &:is(:where(.group\/row):hover *) {
+            @media (hover: hover) {
+              background-color: var(--color-gray-50);
+            }
+          }
         }
       }
     }
@@ -6608,6 +6653,14 @@ table.data-table {
       align-items: center;
       justify-content: center;
     }
+    & a[role="button"].is-active {
+      background-color: var(--color-primary-soft) !important;
+      color: var(--color-primary) !important;
+    }
+    & a[role="button"].is-busy {
+      cursor: wait !important;
+      opacity: 50% !important;
+    }
   }
   @keyframes leaflet-ctrl-scroll-zoom-fadein {
     from {
@@ -6653,6 +6706,9 @@ table.data-table {
   body .lg-backdrop {
     z-index: 1490 !important;
     opacity: 0.9 !important;
+  }
+  body .lg-outer:not(.lg-visible) {
+    pointer-events: none;
   }
   .overflow-auto, .overflow-x-auto {
     &::-webkit-scrollbar-track {

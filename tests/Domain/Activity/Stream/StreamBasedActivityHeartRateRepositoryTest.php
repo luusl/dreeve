@@ -139,8 +139,8 @@ class StreamBasedActivityHeartRateRepositoryTest extends ContainerTestCase
         );
 
         $this->assertEquals(
-            self::totalSeconds($before) + 600,
-            self::totalSeconds($this->activityHeartRateRepository->findTotalTimeInSecondsInHeartRateZones()),
+            $before->getTotalTimeInSeconds() + 600,
+            $this->activityHeartRateRepository->findTotalTimeInSecondsInHeartRateZones()->getTotalTimeInSeconds(),
         );
     }
 
@@ -157,16 +157,19 @@ class StreamBasedActivityHeartRateRepositoryTest extends ContainerTestCase
         $this->assertContainsOnlyInstancesOf(TimeInHeartRateZones::class, $perActivityType);
 
         $this->assertEquals(
-            self::totalSeconds($this->activityHeartRateRepository->findTotalTimeInSecondsInHeartRateZones()),
-            array_sum(array_map(self::totalSeconds(...), $perActivityType)),
+            $this->activityHeartRateRepository->findTotalTimeInSecondsInHeartRateZones()->getTotalTimeInSeconds(),
+            array_sum(array_map(
+                fn (TimeInHeartRateZones $timeInHeartRateZones): int => $timeInHeartRateZones->getTotalTimeInSeconds(),
+                $perActivityType
+            )),
         );
     }
 
-    public function testFindTotalTimeInSecondsInHeartRateZonesForLast30DaysIgnoresOlderActivities(): void
+    public function testFindTimeInHeartRateZonesForLast30DaysIgnoresOlderActivities(): void
     {
         $this->provideFullTestSet();
 
-        $before = $this->activityHeartRateRepository->findTotalTimeInSecondsInHeartRateZonesForLast30Days();
+        $before = $this->activityHeartRateRepository->findTimeInHeartRateZonesForLast30Days()->getCurrent();
 
         $this->addActivityWithHeartRateDistribution(
             activityId: ActivityId::fromUnprefixed('42'),
@@ -176,7 +179,7 @@ class StreamBasedActivityHeartRateRepositoryTest extends ContainerTestCase
 
         $this->assertEquals(
             $before,
-            $this->activityHeartRateRepository->findTotalTimeInSecondsInHeartRateZonesForLast30Days(),
+            $this->activityHeartRateRepository->findTimeInHeartRateZonesForLast30Days()->getCurrent(),
         );
 
         $this->addActivityWithHeartRateDistribution(
@@ -186,16 +189,51 @@ class StreamBasedActivityHeartRateRepositoryTest extends ContainerTestCase
         );
 
         $this->assertEquals(
-            self::totalSeconds($before) + 600,
-            self::totalSeconds($this->activityHeartRateRepository->findTotalTimeInSecondsInHeartRateZonesForLast30Days()),
+            $before->getTotalTimeInSeconds() + 600,
+            $this->activityHeartRateRepository->findTimeInHeartRateZonesForLast30Days()->getCurrent()->getTotalTimeInSeconds(),
         );
     }
 
-    private static function totalSeconds(TimeInHeartRateZones $timeInHeartRateZones): int
+    public function testFindTimeInHeartRateZonesForLast30DaysAlsoReturnsTheWindowAsOfTheDayBefore(): void
     {
-        return $timeInHeartRateZones->getTimeInZoneOne() + $timeInHeartRateZones->getTimeInZoneTwo()
-            + $timeInHeartRateZones->getTimeInZoneThree() + $timeInHeartRateZones->getTimeInZoneFour()
-            + $timeInHeartRateZones->getTimeInZoneFive();
+        $this->provideFullTestSet();
+
+        $before = $this->activityHeartRateRepository->findTimeInHeartRateZonesForLast30Days();
+        $this->addActivityWithHeartRateDistribution(
+            activityId: ActivityId::fromUnprefixed('42'),
+            heartRateDistribution: [180 => 600],
+            startDate: SerializableDateTime::fromString('2023-10-17 10:00:00'),
+        );
+        $this->addActivityWithHeartRateDistribution(
+            activityId: ActivityId::fromUnprefixed('43'),
+            heartRateDistribution: [180 => 300],
+            startDate: SerializableDateTime::fromString('2023-10-10 10:00:00'),
+        );
+        $this->addActivityWithHeartRateDistribution(
+            activityId: ActivityId::fromUnprefixed('44'),
+            heartRateDistribution: [100 => 1200],
+            startDate: SerializableDateTime::fromString('2023-09-17 10:00:00'),
+        );
+        $this->addActivityWithHeartRateDistribution(
+            activityId: ActivityId::fromUnprefixed('45'),
+            heartRateDistribution: [100 => 999],
+            startDate: SerializableDateTime::fromString('2020-01-01 10:00:00'),
+        );
+
+        $rollingWindow = $this->activityHeartRateRepository->findTimeInHeartRateZonesForLast30Days();
+
+        $this->assertEquals(
+            $before->getCurrent()->getTotalTimeInSeconds() + 900,
+            $rollingWindow->getCurrent()->getTotalTimeInSeconds(),
+        );
+        $this->assertEquals(
+            $before->getAsOfPreviousDay()->getTotalTimeInSeconds() + 1500,
+            $rollingWindow->getAsOfPreviousDay()->getTotalTimeInSeconds(),
+        );
+        $this->assertNotEquals(
+            $rollingWindow->getCurrent(),
+            $rollingWindow->getAsOfPreviousDay(),
+        );
     }
 
     /**
