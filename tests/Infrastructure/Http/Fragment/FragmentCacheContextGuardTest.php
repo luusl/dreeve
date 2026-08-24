@@ -12,16 +12,22 @@ use App\Domain\Activity\Route\Match\ActivityRouteMatchesFragmentResolver;
 use App\Domain\Badge\BadgeFragmentResolver;
 use App\Domain\Calendar\MonthFragmentResolver;
 use App\Domain\Dashboard\DashboardWidgetFragmentResolver;
+use App\Domain\Integration\AI\Chat\ChatFragmentResolver;
 use App\Domain\Rewind\RewindCompareFragmentResolver;
 use App\Domain\Rewind\RewindFragmentResolver;
 use App\Domain\Segment\ActivitySegmentsFragmentResolver;
 use App\Domain\Segment\SegmentFragmentResolver;
 use App\Domain\Segment\SegmentPolylinesFragmentResolver;
+use App\Domain\Settings\SettingsGroup;
 use App\Infrastructure\Cache\Context\AuthenticatedCacheContext;
 use App\Infrastructure\Cache\Context\CacheContextRegistry;
 use App\Infrastructure\Http\Fragment\Fragment;
 use App\Infrastructure\Http\Fragment\FragmentRegistry;
 use App\Infrastructure\Http\Fragment\FragmentResolver;
+use App\Infrastructure\KeyValue\KeyValue;
+use App\Infrastructure\KeyValue\KeyValueStore;
+use App\Infrastructure\KeyValue\Value;
+use App\Infrastructure\Serialization\Json;
 use App\Tests\ContainerTestCase;
 use App\Tests\ProvideTestData;
 use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
@@ -33,21 +39,22 @@ class FragmentCacheContextGuardTest extends ContainerTestCase
     use ProvideTestData;
 
     private const array PATH_PER_RESOLVER = [
-        ActivityFragmentResolver::class => 'activity/activity-9756441741',
-        MonthFragmentResolver::class => 'month/2023-06',
+        ActivityFragmentResolver::class => 'activities/activity-9756441741',
+        MonthFragmentResolver::class => 'monthly-stats/2023-06',
         RewindFragmentResolver::class => 'rewind/2023',
         RewindCompareFragmentResolver::class => 'rewind/2023/compare/2022',
-        ActivityMetricsFragmentResolver::class => 'activity/activity-9756441741/metrics',
-        ActivityCoordinatesFragmentResolver::class => 'activity/activity-9756441741/coordinates',
-        ActivityPolylinesFragmentResolver::class => 'activity/activity-9830227112/polylines',
-        ActivityBestEffortsFragmentResolver::class => 'activity/activity-9542782314/best-efforts',
-        ActivitySegmentsFragmentResolver::class => 'activity/activity-9542782314/segments',
-        ActivityRouteMatchesFragmentResolver::class => 'activity/activity-9542782314/route-matches',
-        SegmentPolylinesFragmentResolver::class => 'segment/segment-10/polylines',
-        SegmentFragmentResolver::class => 'segment/segment-10',
+        ActivityMetricsFragmentResolver::class => 'activities/activity-9756441741/metrics',
+        ActivityCoordinatesFragmentResolver::class => 'activities/activity-9756441741/coordinates',
+        ActivityPolylinesFragmentResolver::class => 'activities/activity-9830227112/polylines',
+        ActivityBestEffortsFragmentResolver::class => 'activities/activity-9542782314/best-efforts',
+        ActivitySegmentsFragmentResolver::class => 'activities/activity-9542782314/segments',
+        ActivityRouteMatchesFragmentResolver::class => 'activities/activity-9542782314/route-matches',
+        SegmentPolylinesFragmentResolver::class => 'segments/segment-10/polylines',
+        SegmentFragmentResolver::class => 'segments/segment-10',
         BestEffortsHistoryFragmentResolver::class => 'best-efforts/Ride/10000',
         BadgeFragmentResolver::class => 'badge/dreeve',
         DashboardWidgetFragmentResolver::class => 'dashboard/widget/dashboardWidget-introText',
+        ChatFragmentResolver::class => 'chat',
     ];
 
     public function testEveryFragmentHasAPathAndACacheKeyOfItsOwn(): void
@@ -98,6 +105,18 @@ class FragmentCacheContextGuardTest extends ContainerTestCase
     {
         $this->provideFullTestSet();
         $this->addSegmentWithAPolylineFixtures();
+        // The chat fragment only resolves while the assistant is switched on.
+        $this->getContainer()->get(KeyValueStore::class)->save(KeyValue::fromState(
+            SettingsGroup::INTEGRATIONS->keyValueKey(),
+            Value::fromString(Json::encode([
+                'ai' => [
+                    'enabled' => true,
+                    'enableUI' => true,
+                    'provider' => 'openAI',
+                    'configuration' => ['key' => 'my-key', 'model' => 'cool-model'],
+                ],
+            ])),
+        ));
     }
 
     /**

@@ -10,7 +10,7 @@ export default class LeafletMap {
         this.config = config;
 
         this.map = L.map(mapNode, {
-            ctrlScrollZoom: true,
+            ctrlScrollZoom: config.requireCtrlToZoom,
             minZoom: data.minZoom,
             maxZoom: data.maxZoom,
             zoomSnap: .5,
@@ -97,6 +97,10 @@ export default class LeafletMap {
         } catch (error) {
             console.error('Failed to load coordinate map:', error);
         }
+    }
+
+    destroy() {
+        this.map.remove();
     }
 
     addCircleMarker(latLng, fillColor, {radius = 8, opacity = 1} = {}) {

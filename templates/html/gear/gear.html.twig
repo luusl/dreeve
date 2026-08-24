@@ -1,4 +1,4 @@
-<div class="flex items-center justify-between mb-5">
+<div class="flex items-center justify-between mb-4">
     {% include 'html/navigation/breadcrumbs.html.twig' with {'breadcrumbs': [{
         'url': 'gear',
         'label': 'Gear'|trans
@@ -17,7 +17,7 @@
                 </h3>
             </div>
             <div class="relative overflow-x-auto">
-                <table class="data-table" data-accordion="table-gear"
+                <table id="table-gear" class="data-table" data-accordion="table-gear"
                        data-active-classes="text-gray-500" data-inactive-classes="text-gray-500">
                     <thead>
                     <tr>
@@ -136,7 +136,7 @@
     {% autoescape false %}
         <tr class="group/row">
             <th scope="row" class="px-2 py-2 sticky left-0 font-medium bg-white whitespace-nowrap">
-                <a href="{{ relativeUrl('activities') }}" data-router-content-url="{{ relativeUrl('api/fragment/page/activities') }}" data-filters='{{ dataFilters('activities', {gear: gear.getId()}) }}' class="font-medium text-blue-600 hover:underline">
+                <a href="{{ filteredUrl('activities', {gear: gear.getId()}) }}" data-router-link class="font-medium text-blue-600 hover:underline">
                     {{ gear.getName() }}
                 </a>
             </th>

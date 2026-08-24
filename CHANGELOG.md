@@ -1,3 +1,52 @@
+# [v5.2.3](https://github.com/dreeveapp/dreeve/releases/tag/v5.2.3) - 2026-08-19
+
+> [!NOTE]
+> We released a separate __Hammerhead Wahoo Connector__ container to automatically sync your Hammerhead FIT files
+> to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/integrations/hammerhead-connector/
+> A big thank you to @goatie999 for setting this up 👏
+
+## New features
+* Added authentication for non-admin pages
+* Segment details now have their own dedicated page
+* Activity details now have their own dedicated page
+* Added the activity sport type as an available token for automation rule actions
+* Similar activities can now be sorted by fastest or most recent
+
+## Improvements
+* Automation rule conditions support additional parameters
+* Clicking a photo now opens it directly in the slideshow
+* Improved the handling of waypoint drift when comparing similar activities, with a fixed maximum limit
+* Made breadcrumbs more compact to make better use of screen space.
+* Filters are now stored in the URL instead of local storage
+* FIT files using "Backcountry Snowboarding" are now mapped to "Back Country Ski"
+
+## Bug fixes
+* Improved the mobile layout of the admin area.
+
+## Technical details
+* ISSUE #2514: Add a few parameters to automation rules by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2520
+* ISSUE #2519: Add authentication for non-admin pages by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2522
+* ISSUE #2524: Clicking an image on the photo's page should trigger the slideshow by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2525
+* ISSUE #2521: Cap waypoint drift for similar activities at an absolute maximum by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2523
+* Add reference for Hammerhead Connector by @goatie999 in https://github.com/dreeveapp/dreeve/pull/2526
+* ISSUE #2527: Improve routing for modals by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2528
+* ISSUE #2530: Move segment detail page to dedicated page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2531
+* ISSUE #2532: Move activity detail page to dedicated page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2534
+* ISSUE #2532: Made breadcrumbs more compact by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2535
+* ISSUE #2536: Move all modals to dedicated pages by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2539
+* Improve German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/2543
+* ISSUE #2541: Tighten javascript framework by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2544
+* ISSUE #2545: Move filters from localStorage to the url by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2546
+* ISSUE #2547: Add [activity:sport-type] as an available token in the automation rules by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2548
+* ISSUE #2549: Map FIT backcountry snowboarding to Back Country Ski by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2550
+* ISSUE #2540: Mobile Layout in Admin Area by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2551
+* ISSUE #2533: Allow to sort similar activities on fastest/recent by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2552
+
+## New Contributors
+* @goatie999 made their first contribution in https://github.com/dreeveapp/dreeve/pull/2526
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.2.2...v5.2.3
+
 # [v5.2.2](https://github.com/dreeveapp/dreeve/releases/tag/v5.2.2) - 2026-08-16
 
 ## New features
@@ -28,7 +77,7 @@
 
 > [!NOTE]
 > We released a separate __Dreeve Wahoo Connector__ container to automatically sync your Wahoo FIT files
-> to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/#/integrations/wahoo-connector
+> to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/integrations/wahoo-connector/
 > A big thank you to @MattW2 for setting this up 👏
 
 ## New features
@@ -169,7 +218,7 @@ This release fixes a critical bug in the v4 -> v5 migration path.
 # [v5.1.1](https://github.com/dreeveapp/dreeve/releases/tag/v5.1.1) - 2026-07-28
 
 We released a separate __Dreeve Garmin Connector__ container to automatically sync your Garmin FIT files
-to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/#/integrations/garmin-connect
+to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/integrations/garmin-connect/
 
 ## New features
 * Added a new automation rule action to automatically update an activity's recording device.
@@ -276,7 +325,7 @@ This is the biggest release since the project began as Statistics for Strava.
 
 > [!WARNING]
 > **Back up first.** Make a copy of `storage/database` **and** of your `config` directory before you upgrade to this new version.
-> The migration guide will walk you through the upgrade process:: https://docs.dreeve.app/#/getting-started/migrating-from-v4
+> The migration guide will walk you through the upgrade process:: https://docs.dreeve.app/getting-started/migrating-from-v4/
 
 Here are the three biggest changes:
 
@@ -302,7 +351,7 @@ All settings have been moved from YAML configuration files into a built-in admin
 making Dreeve easier to configure and maintain.
 
 
-For detailed upgrade instructions, see the migration guide: https://docs.dreeve.app/#/getting-started/migrating-from-v4
+For detailed upgrade instructions, see the migration guide: https://docs.dreeve.app/getting-started/migrating-from-v4/
 
 ## Technical details
 * ISSUE #2174: Enable sqlite journal_mode=WAL by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2176
@@ -1287,7 +1336,7 @@ Learn how to enable and configure webhooks in the documentation: https://docs.dr
 > If you are using the internal cron to manage your app imports and builds,
 > make sure you configured the correct volumes on the Daemon container.
 > The docs were missing a volume and have been updated:
-> https://docs.dreeve.app/#/getting-started/installation?id=docker-composeyml
+> https://docs.dreeve.app/getting-started/installation/#docker-composeyml
 
 ## What's Changed
 * ISSUE #1410: Build crashes when VelocityDistributionChart has no valid data by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/1411
@@ -1354,7 +1403,7 @@ The highlight is the addition of an internal scheduler, allowing you to define a
 If you prefer, you can still use external tools to trigger the import and build scripts.
 However, to use the internal scheduler, you’ll need to configure two things:
 
-* An extra container in your `docker-compose.yml` file: https://docs.dreeve.app/#/getting-started/installation?id=docker-composeyml
+* An extra container in your `docker-compose.yml` file: https://docs.dreeve.app/getting-started/installation/#docker-composeyml
 * The recurring tasks in your main config file under `daemin.cron`: https://docs.dreeve.app/#/configuration/main-configuration
 
 ## What's Changed
@@ -1594,7 +1643,7 @@ Read more in the documentation: https://docs.dreeve.app/#/configuration/main-con
 
 > [!WARNING]  
 > This release comes with a new Docker-based architecture.  Before upgrading, review and update the required `.env` values for your setup:  
-> https://docs.dreeve.app/#/getting-started/installation?id=env
+> https://docs.dreeve.app/getting-started/installation/#env
 
 ```.env
 # !! IMPORTANT If you want to serve Dreeve from a custom domain (not localhost), 

@@ -1,18 +1,17 @@
 <html><body>
-<div class="flex items-center justify-between mb-5">
-    <nav class="flex " aria-label="Breadcrumb">
-    <ol class="inline-flex items-center space-x-1 text-sm font-medium md:space-x-2">
-        <li class="inline-flex items-center">
-            <a href="/dashboard" data-router-content-url="/api/fragment/page/dashboard" class="inline-flex items-center text-gray-700 hover:text-primary-600 hover:underline">
-                <svg class="size-5 mr-2.5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
-                Dashboard
-            </a>
-        </li>
-                    <li>
-                <div class="flex items-center">
-                    <svg class="size-6 text-gray-400" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                    <a href="/gear" data-router-content-url="/api/fragment/page/gear" class="ml-1 text-gray-700 hover:text-primary-600 md:ml-2">Gear</a>
-                </div>
+<div class="flex items-center justify-between mb-4">
+    <nav class="flex min-w-0 max-w-full overflow-hidden " aria-label="Breadcrumb">
+    <ol class="flex min-w-0 items-center gap-x-1 text-xs font-medium">
+        <li class="inline-flex items-center shrink-0">
+                            <a href="/dashboard" data-router-link class="inline-flex items-center whitespace-nowrap text-gray-700 hover:text-primary hover:underline">    <svg class="size-4 shrink-0 mr-1.5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+    Dashboard
+</a>
+                    </li>
+                    <li class="min-w-0">
+                <div class="flex min-w-0 items-center">
+                    <svg class="size-4 shrink-0 text-gray-400" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                                            <span aria-current="page" title="Gear" class="ml-1 min-w-0 truncate text-gray-700">Gear</span>
+                                    </div>
             </li>
             </ol>
 </nav>
@@ -20,18 +19,18 @@
     <!-- GEAR SUB MENU -->
         <ul class="tabs tabs--menu-item">
         <li>
-            <a href="/gear" data-router-content-url="/api/fragment/page/gear" class="active">
+            <a href="/gear" data-router-link class="active">
                 Gear
             </a>
         </li>
         <li>
-            <a href="/gear/maintenance" data-router-content-url="/api/fragment/page/gear/maintenance" class="flex items-center ">
-                <div class="contents" data-async-content-url="/api/fragment/partial/gear/maintenance-due"></div>
+            <a href="/gear/maintenance" data-router-link class="flex items-center ">
+                <div class="contents" data-async-content-url="/api/internal/fragment/partial/gear/maintenance-due"></div>
                 Maintenance
             </a>
         </li>
         <li>
-            <a href="/gear/recording-devices" data-router-content-url="/api/fragment/page/gear/recording-devices" class="">
+            <a href="/gear/recording-devices" data-router-link class="">
                 Recording devices
             </a>
         </li>
@@ -46,7 +45,7 @@
                 </h3>
             </div>
             <div class="relative overflow-x-auto">
-                <table class="data-table" data-accordion="table-gear" data-active-classes="text-gray-500" data-inactive-classes="text-gray-500">
+                <table id="table-gear" class="data-table" data-accordion="table-gear" data-active-classes="text-gray-500" data-inactive-classes="text-gray-500">
                     <thead>
                     <tr>
                         <th rowspan="2" scope="col" class="sticky left-0 bg-gray-50">
@@ -86,7 +85,7 @@
                     <tbody>
                                                         <tr class="group/row">
             <th scope="row" class="px-2 py-2 sticky left-0 font-medium bg-white whitespace-nowrap">
-                <a href="/activities" data-router-content-url="/api/fragment/page/activities" data-filters='{"activities":{"gear":"gear-b12659861"}}' class="font-medium text-blue-600 hover:underline">
+                <a href="/activities?filters%5Bgear%5D=gear-b12659861" data-router-link class="font-medium text-blue-600 hover:underline">
                     Retro Race Bike
                 </a>
             </th>
@@ -125,7 +124,7 @@
     
                                                         <tr class="group/row">
             <th scope="row" class="px-2 py-2 sticky left-0 font-medium bg-white whitespace-nowrap">
-                <a href="/activities" data-router-content-url="/api/fragment/page/activities" data-filters='{"activities":{"gear":"gear-b12659862"}}' class="font-medium text-blue-600 hover:underline">
+                <a href="/activities?filters%5Bgear%5D=gear-b12659862" data-router-link class="font-medium text-blue-600 hover:underline">
                     Zwift hub
                 </a>
             </th>

@@ -23,6 +23,16 @@ class AppAccessMapTest extends TestCase
         $this->assertEquals([['ROLE_ADMIN'], null], $appAccessMap->getPatterns(Request::create('/admin/settings')));
     }
 
+    public function testItLeavesApiPathsToTheApiFirewall(): void
+    {
+        $accessMap = new AccessMap();
+        $accessMap->add(new PathRequestMatcher('^/api/v1'), ['ROLE_API']);
+
+        $appAccessMap = new AppAccessMap($accessMap, $this->settingsRepository(requiresAuthentication: true));
+
+        $this->assertEquals([['ROLE_API'], null], $appAccessMap->getPatterns(Request::create('/api/v1/status')));
+    }
+
     public function testItRequiresNothingWhenAuthenticationIsNotRequired(): void
     {
         $appAccessMap = new AppAccessMap(new AccessMap(), $this->settingsRepository(requiresAuthentication: false));
@@ -45,8 +55,8 @@ class AppAccessMapTest extends TestCase
     {
         yield 'dashboard' => ['/'];
         yield 'page' => ['/activities'];
-        yield 'fragment api' => ['/api/fragment/page/dashboard'];
-        yield 'gpx api' => ['/api/activity/activity-1/route.gpx'];
+        yield 'fragment api' => ['/api/internal/fragment/page/dashboard'];
+        yield 'gpx api' => ['/api/internal/activity/activity-1/route.gpx'];
         yield 'images' => ['/files/gear/bike.png'];
         yield 'badge' => ['/badge/strava.svg'];
         yield 'ai chat' => ['/ai/chat'];

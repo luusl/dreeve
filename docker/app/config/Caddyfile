@@ -4,6 +4,9 @@
 
 	servers {
 		trusted_proxies static private_ranges
+		timeouts {
+			read_body 60s
+		}
 	}
 
 	frankenphp {
@@ -72,9 +75,4 @@ import /etc/frankenphp/snippets/paths.caddyfile
 	file_server {
 		hide *.php *.yaml *.yml */log
 	}
-}
-
-# Reverse proxy for custom domain
-{$PROXY_HOST}:{$PROXY_PORT} {
-	reverse_proxy localhost:8080
 }

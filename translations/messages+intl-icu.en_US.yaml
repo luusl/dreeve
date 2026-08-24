@@ -61,7 +61,6 @@ Challenges: Challenges
 'Chronic Training Load (Fitness) - 42-day exponentially weighted average of your daily training load. Represents long-term training adaptation.': 'Chronic Training Load (Fitness) - 42-day exponentially weighted average of your daily training load. Represents long-term training adaptation.'
 'Clear all filters': 'Clear all filters'
 'Clear chat': 'Clear chat'
-'Close modal': 'Close modal'
 Columns: Columns
 Commutes: Commutes
 'Commutes only': 'Commutes only'
@@ -105,7 +104,9 @@ Distance: Distance
 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.': 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.'
 Duration: Duration
 'Dusting off the record books...': 'Dusting off the record books...'
+'E-Bike Ride': 'E-Bike Ride'
 'E-Bike Rides': 'E-Bike Rides'
+'E-Mountain Bike Ride': 'E-Mountain Bike Ride'
 'E-Mountain Bike Rides': 'E-Mountain Bike Rides'
 Eddington: Eddington
 'Eddington number': 'Eddington number'
@@ -126,6 +127,7 @@ Energy: Energy
 Evening: Evening
 'Excludes commutes': 'Excludes commutes'
 'FTP history': 'FTP history'
+Fastest: Fastest
 Favourite: Favourite
 Feb: Feb
 'Filling up the bottles...': 'Filling up the bottles...'
@@ -157,6 +159,7 @@ Golf: Golf
 'Google searches': 'Google searches'
 Grad.: Grad.
 Gradient: Gradient
+'Gravel Ride': 'Gravel Ride'
 'Gravel Rides': 'Gravel Rides'
 "Guidelines vary by individual; for more information see Joe Friel's 'The Cyclist's Training Bible' or TrainingPeaks' research documentation.": "Guidelines vary by individual; for more information see Joe Friel's 'The Cyclist's Training Bible' or TrainingPeaks' research documentation."
 HIIT: HIIT
@@ -173,6 +176,7 @@ High: High
 'High risk': 'High risk'
 'Highlight visited countries': 'Highlight visited countries'
 'Highly recovered and ready to perform': 'Highly recovered and ready to perform'
+Hike: Hike
 Hikes: Hikes
 History: History
 'History (6 weeks)': 'History (6 weeks)'
@@ -241,6 +245,7 @@ Morning: Morning
 'Most recent activities': 'Most recent activities'
 'Most recent challenges': 'Most recent challenges'
 'Most recent milestones': 'Most recent milestones'
+'Mountain Bike Ride': 'Mountain Bike Ride'
 'Mountain Bike Rides': 'Mountain Bike Rides'
 'Moving time': 'Moving time'
 'Moving time by sport': 'Moving time by sport'
@@ -309,6 +314,7 @@ Ranking: Ranking
 'Reached {threshold} total distance': 'Reached {threshold} total distance'
 'Reached {threshold} total elevation': 'Reached {threshold} total elevation'
 'Recalculating your suffer score...': 'Recalculating your suffer score...'
+Recent: Recent
 'Recent effort': 'Recent effort'
 'Recording devices': 'Recording devices'
 'Recovery Timeline': 'Recovery Timeline'
@@ -322,11 +328,13 @@ Ranking: Ranking
 'Retired gear': 'Retired gear'
 Rewind: Rewind
 'Rewind comparisons are only available on larger screens.': 'Rewind comparisons are only available on larger screens.'
+Ride: Ride
 Rides: Rides
 'Risk of detraining': 'Risk of detraining'
 'Rock Climbing': 'Rock Climbing'
 'Roller Ski': 'Roller Ski'
 Rowing: Rowing
+Run: Run
 Running: Running
 Runs: Runs
 Sail: Sail
@@ -350,6 +358,7 @@ Snowboard: Snowboard
 Snowshoe: Snowshoe
 Soccer: Soccer
 'Someone who regularly trains for 90 minutes will score higher than someone doing mostly short sessions.': 'Someone who regularly trains for 90 minutes will score higher than someone doing mostly short sessions.'
+Sort: Sort
 Speed: Speed
 'Speed & cadence sensor': 'Speed & cadence sensor'
 'Speed sensor': 'Speed sensor'
@@ -371,6 +380,7 @@ Surfing: Surfing
 'Table Tennis': 'Table Tennis'
 'Taper sweet-spot (+15)': 'Taper sweet-spot (+15)'
 'Team Sports': 'Team Sports'
+Temperature: Temperature
 'Temperature sensor': 'Temperature sensor'
 Tennis: Tennis
 "That's 1.5 times the distance to the edge of space": "That's 1.5 times the distance to the edge of space"
@@ -483,6 +493,7 @@ Title: Title
 'Total hours spent per gear': 'Total hours spent per gear'
 'Total hours spent per sport type': 'Total hours spent per sport type'
 'Total moving time per month': 'Total moving time per month'
+'Trail Run': 'Trail Run'
 'Trail Runs': 'Trail Runs'
 'Training 4–5 days every week scores higher than doing everything in one or two days.': 'Training 4–5 days every week scores higher than doing everything in one or two days.'
 'Training Impulse - Training load metric that accounts for intensity and duration.': 'Training Impulse - Training load metric that accounts for intensity and duration.'
@@ -497,17 +508,21 @@ Tue.: Tue.
 Unspecified: Unspecified
 'Upcoming maintenance': 'Upcoming maintenance'
 'User badge': 'User badge'
+'Velo Mobile': 'Velo Mobile'
 'Velo Mobiles': 'Velo Mobiles'
 'Very high': 'Very high'
 'View all': 'View all'
 'View details': 'View details'
 'View this month': 'View this month'
+'Virtual Ride': 'Virtual Ride'
 'Virtual Rides': 'Virtual Rides'
 'Virtual Row': 'Virtual Row'
+'Virtual Run': 'Virtual Run'
 'Virtual Runs': 'Virtual Runs'
 'Virtual workout assistant': 'Virtual workout assistant'
 Volleyball: Volleyball
 Volume: Volume
+Walk: Walk
 Walking: Walking
 Walks: Walks
 'Water Sports': 'Water Sports'

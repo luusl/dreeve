@@ -10,6 +10,7 @@ use App\Domain\Activity\Stream\ActivityHeartRateRepository;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Activity\Stream\CombinedStream\CombinedActivityStreamRepository;
 use App\Domain\Activity\Stream\CombinedStream\CombinedStreamProfileCharts;
+use App\Domain\Activity\Stream\CombinedStream\CombinedStreamType;
 use App\Domain\Activity\Stream\StreamType;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Cache\Cacheability;
@@ -26,8 +27,6 @@ use Twig\Environment;
 
 final readonly class ActivityFragmentResolver implements FragmentResolver
 {
-    private const string BASE_PATH = 'activity';
-
     public function __construct(
         private ActivityRepository $activityRepository,
         private EnrichedActivityRepository $enrichedActivityRepository,
@@ -45,13 +44,7 @@ final readonly class ActivityFragmentResolver implements FragmentResolver
 
     public function resolve(string $path): ?ResolvedFragment
     {
-        if (!preg_match('#^'.self::BASE_PATH.'/([^/]+)$#', $path, $matches)) {
-            return null;
-        }
-
-        try {
-            $activityId = ActivityId::fromString($matches[1]);
-        } catch (\InvalidArgumentException) {
+        if (!$activityId = ActivityFragmentPath::match($path)) {
             return null;
         }
 
@@ -60,9 +53,9 @@ final readonly class ActivityFragmentResolver implements FragmentResolver
         }
 
         return new ResolvedFragment(
-            path: self::BASE_PATH.'/'.$activityId,
+            path: ActivityFragmentPath::for($activityId),
             cacheability: Cacheability::for(
-                cacheKey: sprintf('%s.%s', self::BASE_PATH, $activityId->toUnprefixedString()),
+                cacheKey: ActivityFragmentPath::cacheKey($activityId),
                 cacheTags: CacheTags::of(
                     ActivityCacheTag::for($activityId),
                     RootCacheTag::GEAR,
@@ -81,8 +74,13 @@ final readonly class ActivityFragmentResolver implements FragmentResolver
         $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
         $leafletMap = $activity->getLeafletMap();
         $numberOfProfileChartLanes = $this->combinedActivityStreamRepository->countChartableStreamTypesFor(
-            $activityId,
-            $unitSystem
+            activityId: $activityId,
+            unitSystem: $unitSystem
+        );
+        $hasTemperatureRibbon = $this->combinedActivityStreamRepository->hasStreamTypeFor(
+            activityId: $activityId,
+            unitSystem: $unitSystem,
+            streamType: CombinedStreamType::TEMP
         );
 
         $timeInHeartRateZones = null;
@@ -93,16 +91,14 @@ final readonly class ActivityFragmentResolver implements FragmentResolver
 
         $templateName = sprintf('html/activity/%s.html.twig', $activity->getSportType()->getTemplateName());
 
-        return $this->twig->load($templateName)->render([
+        return $this->twig->load($templateName)->render(context: [
             'activity' => $activity,
             'enrichedActivity' => $enrichedActivity,
             'leaflet' => $leafletMap instanceof LeafletMap ? [
-                'polylineUrl' => sprintf('activity/%s/polylines', $activityId),
+                'polylineUrl' => ActivityFragmentPath::for($activityId, 'polylines'),
                 'map' => $leafletMap,
             ] : null,
-            'gpxLink' => $this->activityStreamRepository->hasOneForActivityAndStreamType($activityId, StreamType::TIME)
-                ? sprintf('api/activity/%s/route.gpx', $activityId)
-                : null,
+            'hasGpxLink' => $this->activityStreamRepository->hasOneForActivityAndStreamType($activityId, StreamType::TIME),
             'gpxFileName' => sprintf(
                 '%s-%s.gpx',
                 $activity->getStartDate()->format('Y-m-d'),
@@ -114,7 +110,10 @@ final readonly class ActivityFragmentResolver implements FragmentResolver
                 unitSystem: $unitSystem
             ),
             'laps' => $this->activityLapRepository->findBy($activityId),
-            'profileChartHeight' => CombinedStreamProfileCharts::totalHeightFor($numberOfProfileChartLanes),
+            'profileChartHeight' => CombinedStreamProfileCharts::totalHeightFor(
+                numberOfLanes: $numberOfProfileChartLanes,
+                hasTemperatureRibbon: $hasTemperatureRibbon
+            ),
             'hasProfileChart' => $numberOfProfileChartLanes > 0,
             'heartRateZones' => $timeInHeartRateZones,
             'isAuthenticated' => $this->authenticatedVisitor->isAuthenticated(),

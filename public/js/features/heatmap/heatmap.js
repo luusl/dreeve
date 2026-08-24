@@ -1,28 +1,43 @@
-import {FilterName} from "../data-table/storage";
 import {FilterManager} from "../data-table/filter-manager";
+import {parse, serialize} from "../data-table/filter-url";
+import {router} from "../../core/router";
 import HeatmapDrawer from "./heatmap-drawer";
 import {fetchJson} from "../../utils";
+import {eventBus, Events} from "../../core/event-bus";
+
+let activeHeatmap = null;
+
+eventBus.on(Events.PAGE_LOADED, () => {
+    activeHeatmap?.destroy();
+    activeHeatmap = null;
+});
 
 export default class Heatmap {
-    constructor(wrapper, modalManager) {
+    constructor(wrapper) {
         this.wrapper = wrapper;
         this.heatmap = wrapper.querySelector('[data-leaflet-routes]');
         this.resetBtn = wrapper.querySelector('[data-dataTable-reset]');
         this.config = JSON.parse(this.heatmap.getAttribute('data-heatmap-config'));
 
         this.filterManager = new FilterManager(wrapper);
-        this.drawer = new HeatmapDrawer(this.heatmap, this.config, modalManager);
+        this.drawer = new HeatmapDrawer(this.heatmap, this.config);
+    }
+
+    destroy() {
+        this.drawer.destroy();
     }
 
     async render() {
+        activeHeatmap = this;
+
         const apiUrl = this.heatmap.getAttribute('data-leaflet-routes');
         const allRoutes = await fetchJson(apiUrl);
 
-        const redraw = (updateStorage = true) => {
+        const redraw = (syncUrl = true) => {
             const activeFilters = this.filterManager.getActiveFilters();
             this.filterManager.updateDropdownState(activeFilters);
-            if(updateStorage){
-                this.filterManager.updateStorage(FilterName.HEATMAP, activeFilters);
+            if (syncUrl) {
+                router.replaceQuery(serialize({filters: this.filterManager.toUrlFilters()}));
             }
 
             const routes = this.filterManager.applyFiltersToRows(allRoutes);
@@ -33,7 +48,7 @@ export default class Heatmap {
             if (resultCount) resultCount.innerText = routes.filter((route) => route.active).length;
         };
 
-        this.filterManager.prefillFromStorage(FilterName.HEATMAP);
+        this.filterManager.prefillFromUrl(parse(new URLSearchParams(location.search)).filters);
         redraw(false);
 
         this.wrapper.querySelectorAll('[data-dataTable-filter]').forEach(el => el.addEventListener('input', redraw));

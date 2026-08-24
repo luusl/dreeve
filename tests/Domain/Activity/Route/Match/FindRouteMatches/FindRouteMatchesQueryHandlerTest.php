@@ -57,10 +57,74 @@ class FindRouteMatchesQueryHandlerTest extends ContainerTestCase
         );
     }
 
+    public function testHandleRanksRecencyIndependentlyFromSpeed(): void
+    {
+        $route = range(1, 20);
+
+        $this->addActivityWithRouteCells('subject', $route, startDateTime: SerializableDateTime::fromString('2023-10-10'));
+        $this->addActivityWithRouteCells('faster', $route, movingTimeInSeconds: 3000, startDateTime: SerializableDateTime::fromString('2023-09-01'));
+        $this->addActivityWithRouteCells('slower', $route, movingTimeInSeconds: 4200, startDateTime: SerializableDateTime::fromString('2023-11-20'));
+
+        $routeMatches = $this->queryBus->ask(new FindRouteMatches(ActivityId::fromUnprefixed('subject')))->getRouteMatches();
+
+        $this->assertEquals(
+            [
+                ['activity-faster', 1, 3],
+                ['activity-subject', 2, 2],
+                ['activity-slower', 3, 1],
+            ],
+            array_map(
+                fn (RouteMatch $routeMatch): array => [
+                    (string) $routeMatch->getActivityId(),
+                    $routeMatch->getRank(),
+                    $routeMatch->getRecencyRank(),
+                ],
+                $routeMatches->toArray()
+            )
+        );
+    }
+
     public function testHandleDoesNotMatchALongerRouteThatMerelyContainsTheSubject(): void
     {
         $this->addActivityWithRouteCells('subject', range(1, 20));
         $this->addActivityWithRouteCells('longer-route', range(1, 27));
+
+        $routeMatches = $this->queryBus->ask(new FindRouteMatches(ActivityId::fromUnprefixed('subject')))->getRouteMatches();
+
+        $this->assertEquals(
+            ['activity-subject'],
+            array_map(fn (RouteMatch $routeMatch): string => (string) $routeMatch->getActivityId(), $routeMatches->toArray())
+        );
+    }
+
+    public function testHandleDoesNotMatchARouteThatDivergesAtASingleWaypoint(): void
+    {
+        $route = range(1, 20);
+        $forward = ActivityRouteSignatureBuilder::fromDefaults()->build()->getWaypoints()->toArray();
+        // Six waypoints land on top of each other and one sits 4 km away: a median of seven
+        // reported no drift at all for this, so the detour was listed as a similar route.
+        $detoured = $forward;
+        $detoured[6] += 3600;
+
+        $this->addActivityWithRouteCells('subject', $route);
+        $this->addActivityWithRouteCells('detoured', $route, waypoints: RouteWaypoints::fromArray($detoured));
+
+        $routeMatches = $this->queryBus->ask(new FindRouteMatches(ActivityId::fromUnprefixed('subject')))->getRouteMatches();
+
+        $this->assertEquals(
+            ['activity-subject'],
+            array_map(fn (RouteMatch $routeMatch): string => (string) $routeMatch->getActivityId(), $routeMatches->toArray())
+        );
+    }
+
+    public function testHandleDoesNotMatchALongRouteThatDriftsMoreThanTheAbsoluteMaximum(): void
+    {
+        $route = range(1, 20);
+        $forward = ActivityRouteSignatureBuilder::fromDefaults()->build()->getWaypoints()->toArray();
+        $drifted = array_map(fn (int $coordinate, int $index): int => 0 === $index % 2 ? $coordinate + 2500 : $coordinate, $forward, array_keys($forward));
+
+        $this->addActivityWithRouteCells('subject', $route, distance: Kilometer::from(80));
+        $this->addActivityWithRouteCells('drifted', $route, distance: Kilometer::from(80), waypoints: RouteWaypoints::fromArray($drifted));
 
         $routeMatches = $this->queryBus->ask(new FindRouteMatches(ActivityId::fromUnprefixed('subject')))->getRouteMatches();
 
@@ -112,12 +176,13 @@ class FindRouteMatchesQueryHandlerTest extends ContainerTestCase
         WorldType $worldType = WorldType::REAL_WORLD,
         ?Kilometer $distance = null,
         ?RouteWaypoints $waypoints = null,
+        ?SerializableDateTime $startDateTime = null,
     ): void {
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed($activityId))
                 ->withName($activityId)
-                ->withStartDateTime(SerializableDateTime::fromString('2023-10-10'))
+                ->withStartDateTime($startDateTime ?? SerializableDateTime::fromString('2023-10-10'))
                 ->withMovingTimeInSeconds($movingTimeInSeconds)
                 ->withSportType($sportType)
                 ->withWorldType($worldType)

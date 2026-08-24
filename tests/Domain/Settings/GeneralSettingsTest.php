@@ -9,13 +9,11 @@ use App\Domain\Settings\AthleteHasNotBeenConfigured;
 use App\Domain\Settings\GeneralSettings;
 use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 class GeneralSettingsTest extends TestCase
 {
-    /**
-     * @return array<string, mixed>
-     */
     private static function validData(): array
     {
         return [
@@ -69,6 +67,8 @@ class GeneralSettingsTest extends TestCase
         $settings = GeneralSettings::fromArray([
             'athlete' => [
                 'birthday' => '1989-08-14',
+                'firstName' => 'Robin',
+                'lastName' => 'Ingelbrecht',
                 'maxHeartRateFormula' => 'fox',
             ],
         ]);
@@ -78,6 +78,43 @@ class GeneralSettingsTest extends TestCase
         $this->assertEmpty($settings->getAthleteWeightHistory(UnitSystem::METRIC)->findAll());
         // Resting heart rate defaults to the heuristic age-based formula.
         $this->assertGreaterThan(0, $settings->getAthlete()->getRestingHeartRate(SerializableDateTime::fromString('2024-01-01')));
+    }
+
+    #[DataProvider(methodName: 'provideUnconfiguredNames')]
+    public function testItThrowsWhenTheNameIsNotConfigured(string $key, mixed $value): void
+    {
+        $this->expectExceptionObject(new AthleteHasNotBeenConfigured(sprintf('A "%s" is required for the athlete in the general settings', $key)));
+
+        $data = self::validData();
+        $data['athlete'][$key] = $value;
+
+        GeneralSettings::fromArray($data);
+    }
+
+    public static function provideUnconfiguredNames(): iterable
+    {
+        foreach (['firstName', 'lastName'] as $key) {
+            yield $key.' is empty' => [$key, ''];
+            yield $key.' is whitespace only' => [$key, '   '];
+            yield $key.' is null' => [$key, null];
+            yield $key.' is not a string' => [$key, ['nope']];
+        }
+    }
+
+    public function testItTrimsTheName(): void
+    {
+        $data = self::validData();
+        $data['athlete']['firstName'] = '  Robin  ';
+        $data['athlete']['lastName'] = "\tIngelbrecht\n";
+
+        $this->assertSame('Robin Ingelbrecht', (string) GeneralSettings::fromArray($data)->getAthlete()->getName());
+    }
+
+    public function testItIgnoresANonArrayAthlete(): void
+    {
+        $this->expectExceptionObject(new AthleteHasNotBeenConfigured('A "birthday" is required for the athlete in the general settings'));
+
+        GeneralSettings::fromArray(['athlete' => 'Robin']);
     }
 
     public function testItThrowsWhenBirthdayIsMissing(): void
@@ -91,7 +128,11 @@ class GeneralSettingsTest extends TestCase
     {
         $this->expectExceptionObject(new AthleteHasNotBeenConfigured('A "maxHeartRateFormula" is required for the athlete in the general settings'));
 
-        GeneralSettings::fromArray(['athlete' => ['birthday' => '1989-08-14']]);
+        GeneralSettings::fromArray(['athlete' => [
+            'birthday' => '1989-08-14',
+            'firstName' => 'Robin',
+            'lastName' => 'Ingelbrecht',
+        ]]);
     }
 
     public function testItThrowsWhenNothingIsConfigured(): void

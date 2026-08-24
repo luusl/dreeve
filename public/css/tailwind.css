@@ -10,7 +10,6 @@
 @import "./components/filter-dropdown.css";
 @import "./components/form.css";
 @import "./components/loader.css";
-@import "./components/modal.css";
 @import "./components/pill.css";
 @import "./components/popover.css";
 @import "./components/scroll-to.css";
@@ -46,6 +45,7 @@
 @custom-variant sidebar-collapsed (&:where([data-sidebar-collapsed], [data-sidebar-collapsed] *));
 @custom-variant fullscreen-enabled (&:where([data-fullscreen-enabled], [data-fullscreen-enabled] *));
 @custom-variant drawer-open (&:where(body:has(#drawer-navigation[aria-modal="true"]) *));
+@custom-variant sorted-by-date ([data-sort-scope]:has([data-sort-option="date"]:checked) &);
 
 @layer base {
     *,
