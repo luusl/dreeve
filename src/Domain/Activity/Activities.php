@@ -19,11 +19,43 @@ final class Activities extends Collection
         return Activity::class;
     }
 
+    /**
+     * @return array<string, Activity>
+     */
+    public function keyByActivityId(): array
+    {
+        $activities = [];
+        foreach ($this as $activity) {
+            $activities[(string) $activity->getId()] = $activity;
+        }
+
+        return $activities;
+    }
+
+    /**
+     * @return array<string, Activities>
+     */
+    public function groupByActivityType(ActivityTypes $activityTypes): array
+    {
+        $activitiesPerActivityType = [];
+        foreach ($activityTypes as $activityType) {
+            $activitiesPerActivityType[$activityType->value] = Activities::empty();
+        }
+
+        foreach ($this as $activity) {
+            $activityType = $activity->getSportType()->getActivityType()->value;
+            $activitiesPerActivityType[$activityType] ??= Activities::empty();
+            $activitiesPerActivityType[$activityType]->add($activity);
+        }
+
+        return $activitiesPerActivityType;
+    }
+
     public function getFirstActivityStartDate(): SerializableDateTime
     {
         $startDate = null;
         foreach ($this as $activity) {
-            if ($startDate && $activity->getStartDate()->isAfterOrOn($startDate)) {
+            if ($startDate instanceof SerializableDateTime && $activity->getStartDate()->isAfterOrOn($startDate)) {
                 continue;
             }
             $startDate = $activity->getStartDate();

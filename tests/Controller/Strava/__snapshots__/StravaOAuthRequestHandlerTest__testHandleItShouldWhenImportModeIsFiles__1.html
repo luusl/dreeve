@@ -8,13 +8,13 @@
     <meta name="mobile-web-app-title" content="Dreeve">
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/x-icon" href="/assets/images/logo.svg">
-    <link href="/css/dist/tailwind.min.css?0025176c-5652-11ee-923d-02424dd627d5" rel="stylesheet">
+    <link href="/css/dist/tailwind.min.css?v5.3.3" rel="stylesheet">
 </head>
 <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
 <nav class="text-gray-900 bg-white border-b border-gray-200 px-4 py-2.5 fixed left-0 right-0 top-0 z-1100 group">
     <div class="flex flex-wrap justify-between items-center">
         <div class="flex justify-start items-center">
-                        <a href="#" data-router-navigate="/dashboard" class="flex items-center justify-between mr-4">
+                        <a href="/dashboard" data-router-link class="flex items-center justify-between mr-4">
                 <img src="/assets/images/logo.svg" class="rounded-full mr-3 h-8" alt="Logo">
                 <div class="flex gap-x-1 sm:text-lg font-extrabold whitespace-nowrap">
                     <div>Dreeve</div>
@@ -59,7 +59,7 @@
             You are running Dreeve with <code class="font-mono text-xs text-gray-700">IMPORT_MODE=files</code>. In this mode activities are imported from the files you upload, so there is no need to connect a Strava account.
         </p>
         <p class="mt-4 text-sm text-gray-500">
-            Want to import straight from Strava instead? Switch to <code class="font-mono text-xs text-gray-700">IMPORT_MODE=stravaApi</code> and restart your container. See <a class="font-medium text-primary hover:underline" href="https://docs.dreeve.app/#/getting-started/installation?id=env">the docs</a> for the details.
+            Want to import straight from Strava instead? Switch to <code class="font-mono text-xs text-gray-700">IMPORT_MODE=stravaApi</code> and restart your container. See <a class="font-medium text-primary hover:underline" href="https://docs.dreeve.app/getting-started/installation/#env">the docs</a> for the details.
         </p>
         <a href="/" class="mt-6 inline-flex w-full items-center justify-center gap-2.5 rounded-xl bg-primary px-5 py-3 font-semibold text-white shadow-sm transition hover:brightness-95">
             Back to the app

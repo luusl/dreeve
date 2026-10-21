@@ -1,5 +1,6 @@
 {% extends "html/admin/page/template.html.twig" %}
 {% block main %}
+    {% set returnUrl = redirectUrl('') %}
     {% autoescape false %}
     <div class="flex flex-col gap-4">
         {% if warnings is not empty %}
@@ -15,7 +16,8 @@
                 </div>
             </div>
         {% endif %}
-        <form data-dispatch-command="{{ dispatchCommand }}" class="p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+        <form data-dispatch-command="{{ dispatchCommand }}" data-redirect="{{ returnUrl }}"
+              class="p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
             <div class="mb-5">
                 <h3 class="text-lg font-semibold">{{ "Gear maintenance"|trans }}</h3>
                 <p class="mt-1 text-sm text-gray-500">
@@ -72,7 +74,7 @@
                         <th scope="col" class="text-left">{{ "Attached to"|trans({}, 'admin') }}</th>
                         <th scope="col">{{ "Tasks"|trans({}, 'admin') }}</th>
                         <th scope="col">{{ "Purchase price"|trans }}</th>
-                        <th scope="col" class="narrow"><span class="sr-only">{{ "Edit"|trans({}, 'admin') }}</span></th>
+                        <th scope="col" class="narrow sticky-actions"><span class="sr-only">{{ "Edit"|trans({}, 'admin') }}</span></th>
                     </tr>
                     </thead>
                     <tbody>
@@ -107,7 +109,7 @@
                                 {% set purchasePrice = component.getPurchasePrice() %}
                                 {{ purchasePrice ? purchasePrice|formatMoney : '-' }}
                             </td>
-                            <td class="narrow whitespace-nowrap">
+                            <td class="narrow whitespace-nowrap sticky-actions">
                                 <div class="inline-flex items-center gap-2">
                                     <a href="{{ relativeUrl(path('admin_edit_gear_maintenance_component', {gearComponentId: component.getId()})) }}" class="inline-flex items-center justify-center text-gray-500 transition-colors hover:text-primary" title="{{ "Edit"|trans({}, 'admin') }}">
                                         <span class="sr-only">{{ "Edit"|trans({}, 'admin') }}</span>

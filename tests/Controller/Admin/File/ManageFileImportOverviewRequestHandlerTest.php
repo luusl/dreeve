@@ -77,6 +77,13 @@ class ManageFileImportOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertCount(3, $crawler->filter('table.data-table tbody tr'));
         $this->assertCount(3, $crawler->filter('table.data-table tbody a[href$="/delete"]'));
+        $downloadLinks = $crawler->filter('table.data-table tbody a[href$="/download"]');
+        $this->assertCount(2, $downloadLinks);
+        $this->assertStringContainsString(
+            '/admin/file-imports/'.FileImportId::fromUnprefixed('2').'/download',
+            (string) $downloadLinks->first()->attr('href')
+        );
+        $this->assertSame('activity-2.fit', $downloadLinks->first()->attr('download'));
         $this->assertStringContainsString('activity-1.fit', $crawler->filter('table.data-table')->text());
         $this->assertStringNotContainsString('No files imported yet.', $crawler->filter('body')->text());
         $this->assertCount(0, $crawler->filter('[aria-label="Go to next page"]'));
@@ -187,7 +194,7 @@ class ManageFileImportOverviewRequestHandlerTest extends AdminWebTestCase
         );
     }
 
-    public function testLinksToTheDetailPageOnlyOnceItHasBeenBuilt(): void
+    public function testLinksEveryImportedActivityToItsDetailPage(): void
     {
         $this->withImportMode(ImportMode::FILES);
 
@@ -212,30 +219,19 @@ class ManageFileImportOverviewRequestHandlerTest extends AdminWebTestCase
             );
         }
 
-        // Only the first activity made it into a build, the second one was imported afterwards.
-        static::getContainer()->get('build_html.storage')->write(
-            'activity/'.ActivityId::fromUnprefixed('1').'.html',
-            'I am the activity page'
-        );
-
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/file-imports');
 
         $this->assertResponseIsSuccessful();
 
-        $detailLinks = $crawler->filter('table.data-table tbody a[href*="#/activity/"]');
-        $this->assertCount(1, $detailLinks);
+        $detailLinks = $crawler->filter('table.data-table tbody a[href^="/activities/"]');
+        $this->assertCount(2, $detailLinks);
         $this->assertStringContainsString(
-            '/activities#/activity/'.ActivityId::fromUnprefixed('1').'.html',
+            '/activities/'.ActivityId::fromUnprefixed('1'),
             $detailLinks->first()->attr('href')
         );
         $this->assertSame('Activity 1', trim($detailLinks->first()->text()));
-
-        $pendingPills = $crawler->filter('table.data-table tbody span.pill');
-        $this->assertCount(1, $pendingPills);
-        $this->assertSame('Pending build', trim($pendingPills->first()->text()));
-        $this->assertStringContainsString('Activity 2', $crawler->filter('table.data-table')->text());
     }
 
     private function seedFileImports(int $count): void
@@ -244,11 +240,13 @@ class ManageFileImportOverviewRequestHandlerTest extends AdminWebTestCase
 
         for ($i = 1; $i <= $count; ++$i) {
             $failed = 0 === $i % 2;
+            $originalFileWasKept = 0 !== $i % 3;
 
             $fileImportRepository->add(
                 FileImportBuilder::fromDefaults()
                     ->withFileImportId(FileImportId::fromUnprefixed((string) $i))
                     ->withOriginalFilename(sprintf('activity-%d.fit', $i))
+                    ->withFileContents($originalFileWasKept ? 'raw fit bytes' : null)
                     ->withStatus($failed ? FileImportStatus::FAILED : FileImportStatus::SUCCESS)
                     ->withErrorMessage($failed ? sprintf('Could not parse activity-%d.fit', $i) : null)
                     ->withImportedOn(SerializableDateTime::fromString(sprintf('2026-06-01 %02d:%02d:00', 8 + intdiv($i, 60), $i % 60)))

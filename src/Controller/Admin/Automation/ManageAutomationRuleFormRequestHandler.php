@@ -1,0 +1,99 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller\Admin\Automation;
+
+use App\Domain\Automation\Action\Actions;
+use App\Domain\Automation\AddAutomationRule\AddAutomationRule;
+use App\Domain\Automation\AutomationRule;
+use App\Domain\Automation\AutomationRuleId;
+use App\Domain\Automation\AutomationRuleRepository;
+use App\Domain\Automation\Condition\Conditions;
+use App\Domain\Automation\DeleteAutomationRule\DeleteAutomationRule;
+use App\Domain\Automation\UpdateAutomationRule\UpdateAutomationRule;
+use App\Domain\Gear\GearRepository;
+use App\Domain\Gear\RecordingDevice\RecordingDeviceRepository;
+use App\Domain\Gear\Sensor\SensorRepository;
+use App\Domain\Import\ImportMode;
+use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Http\HtmlResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Attribute\AsController;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Attribute\Route;
+use Twig\Environment;
+
+#[AsController]
+final readonly class ManageAutomationRuleFormRequestHandler
+{
+    public function __construct(
+        private Environment $twig,
+        private AutomationRuleRepository $automationRuleRepository,
+        private Conditions $conditions,
+        private Actions $actions,
+        private GearRepository $gearRepository,
+        private RecordingDeviceRepository $recordingDeviceRepository,
+        private SensorRepository $sensorRepository,
+        private ImportMode $importMode,
+    ) {
+    }
+
+    #[Route(path: '/admin/automation-rules/add', name: 'admin_add_automation_rule', methods: ['GET'], priority: 10)]
+    public function handleAdd(Request $request): HtmlResponse
+    {
+        if (!$this->importMode->isFiles()) {
+            throw new NotFoundHttpException('Automation rules are only available in file import mode');
+        }
+
+        $automationRuleToCopy = null;
+        if ($copyFrom = $request->query->get('copyFrom')) {
+            try {
+                $automationRuleToCopy = $this->automationRuleRepository->find(AutomationRuleId::fromPrefixedOrUnprefixed($copyFrom));
+            } catch (EntityNotFound|\InvalidArgumentException) {
+            }
+        }
+
+        return new HtmlResponse($this->twig->render('html/admin/page/automation-rules/edit-automation-rule.html.twig', [
+            'dispatchCommand' => AddAutomationRule::getCommandName(),
+            'automationRule' => $automationRuleToCopy,
+            'isCopy' => $automationRuleToCopy instanceof AutomationRule,
+            'conditions' => $this->conditions->all(),
+            'actions' => $this->actions->all(),
+            'gears' => $this->gearRepository->findAll(),
+            'recordingDevices' => $this->recordingDeviceRepository->findAll(),
+            'sensorTypes' => $this->sensorRepository->findAll()->getSensorTypes(),
+        ]));
+    }
+
+    #[Route(path: '/admin/automation-rules/{id}/edit', name: 'admin_edit_automation_rule', methods: ['GET'], priority: 10)]
+    public function handleEdit(string $id): HtmlResponse
+    {
+        if (!$this->importMode->isFiles()) {
+            throw new NotFoundHttpException('Automation rules are only available in file import mode');
+        }
+
+        return new HtmlResponse($this->twig->render('html/admin/page/automation-rules/edit-automation-rule.html.twig', [
+            'dispatchCommand' => UpdateAutomationRule::getCommandName(),
+            'automationRule' => $this->automationRuleRepository->find(AutomationRuleId::fromString($id)),
+            'conditions' => $this->conditions->all(),
+            'actions' => $this->actions->all(),
+            'gears' => $this->gearRepository->findAll(),
+            'recordingDevices' => $this->recordingDeviceRepository->findAll(),
+            'sensorTypes' => $this->sensorRepository->findAll()->getSensorTypes(),
+        ]));
+    }
+
+    #[Route(path: '/admin/automation-rules/{id}/delete', name: 'admin_delete_automation_rule', methods: ['GET'], priority: 10)]
+    public function handleDelete(string $id): HtmlResponse
+    {
+        if (!$this->importMode->isFiles()) {
+            throw new NotFoundHttpException('Automation rules are only available in file import mode');
+        }
+
+        return new HtmlResponse($this->twig->render('html/admin/page/automation-rules/delete-automation-rule.html.twig', [
+            'dispatchCommand' => DeleteAutomationRule::getCommandName(),
+            'automationRule' => $this->automationRuleRepository->find(AutomationRuleId::fromString($id)),
+        ]));
+    }
+}

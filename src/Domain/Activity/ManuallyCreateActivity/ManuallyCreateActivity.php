@@ -5,24 +5,21 @@ declare(strict_types=1);
 namespace App\Domain\Activity\ManuallyCreateActivity;
 
 use App\Domain\Activity\ActivityName;
+use App\Domain\Activity\ProvideCaloriesFromPayload;
 use App\Domain\Activity\ProvideManuallyAddedActivityPayload;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Gear\GearId;
 use App\Domain\Image\NewImage;
 use App\Domain\Image\ProvideLocalImageFromDropZonePayload;
-use App\Infrastructure\Cache\CacheTag;
-use App\Infrastructure\Cache\CacheTags;
-use App\Infrastructure\Cache\InvalidatesCacheTags;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
 use App\Infrastructure\CQRS\Command\DomainCommand;
-use App\Infrastructure\CQRS\Command\RequiresRebuild;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 
-#[RequiresRebuild]
-final readonly class ManuallyCreateActivity extends DomainCommand implements DeserializableCommand, InvalidatesCacheTags
+final readonly class ManuallyCreateActivity extends DomainCommand implements DeserializableCommand
 {
+    use ProvideCaloriesFromPayload;
     use ProvideLocalImageFromDropZonePayload;
     use ProvideManuallyAddedActivityPayload;
     use ProvidesCommandName;
@@ -40,7 +37,9 @@ final readonly class ManuallyCreateActivity extends DomainCommand implements Des
         private float $distance,
         private float $elevation,
         private ?GearId $gearId,
+        private ?int $calories,
         private bool $isCommute,
+        private bool $isGroupActivity,
         private array $newImages,
     ) {
     }
@@ -59,7 +58,9 @@ final readonly class ManuallyCreateActivity extends DomainCommand implements Des
             distance: self::parsePositiveNumber($payload, 'distance'),
             elevation: self::parsePositiveNumber($payload, 'elevation'),
             gearId: self::parseGearId($payload),
+            calories: self::parseCalories($payload),
             isCommute: self::parseIsCommute($payload),
+            isGroupActivity: self::parseIsGroupActivity($payload),
             newImages: $newImages,
         );
     }
@@ -109,9 +110,19 @@ final readonly class ManuallyCreateActivity extends DomainCommand implements Des
         return $this->gearId;
     }
 
+    public function getCalories(): ?int
+    {
+        return $this->calories;
+    }
+
     public function isCommute(): bool
     {
         return $this->isCommute;
+    }
+
+    public function isGroupActivity(): bool
+    {
+        return $this->isGroupActivity;
     }
 
     /**
@@ -120,10 +131,5 @@ final readonly class ManuallyCreateActivity extends DomainCommand implements Des
     public function getNewImages(): array
     {
         return $this->newImages;
-    }
-
-    public function getCacheTagsToInvalidate(): CacheTags
-    {
-        return CacheTags::of(CacheTag::ACTIVITIES);
     }
 }

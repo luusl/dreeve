@@ -500,7 +500,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getConnection()->executeStatement(
             'INSERT INTO KeyValue (`key`, `value`) VALUES (:key, :value)',
-            ['key' => 'lock.importDataOrBuildApp', 'value' => '{"lockAcquiredBy": "test"}']
+            ['key' => 'lock.importData', 'value' => '{"lockAcquiredBy": "test"}']
         );
 
         $this->commandBus = $this->getContainer()->get(CommandBus::class);
@@ -512,7 +512,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
      */
     private function seedImportSettings(array $overrides): void
     {
-        $this->getContainer()->get(SettingsRepository::class)->save(SettingsGroup::IMPORT, [
+        $this->getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::IMPORT, [
             'numberOfNewActivitiesToProcessPerImport' => 250,
             'sportTypesToImport' => [],
             'activityVisibilitiesToImport' => [],

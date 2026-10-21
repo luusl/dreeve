@@ -32,7 +32,7 @@
             {% set milestoneYear = milestone.getAchievedOn().getYear() %}
             {% if milestoneYear != currentYear %}
                 {% set currentYear = milestoneYear %}
-                <div class="relative mb-8 -ml-4" data-milestone-year-separator>
+                <div class="relative mb-8 -ml-4">
                     <div class="flex items-center gap-x-3">
                         <div class="size-8 rounded-full bg-primary-soft dark:bg-[#202830] flex items-center justify-center ring-8 ring-gray-50">
                             {{ svg('calendar', 'size-4', 'text-primary') }}
@@ -61,7 +61,7 @@
                     </div>
                     <div class="text-sm text-gray-600">
                         {% if milestone.getActivityId() %}
-                            {% set activity = enrichedActivities.find(milestone.getActivityId()) %}
+                            {% set activity = activitiesPerActivityId[milestone.getActivityId()] %}
                             {{ activity|activityLink }}
                         {% endif %}
                     </div>

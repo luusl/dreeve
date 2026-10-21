@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\Dashboard\Widget;
 
+use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\Widget\AthleteWeightHistoryWidget;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
 use App\Domain\Settings\SettingsGroup;
@@ -16,17 +17,16 @@ class AthleteWeightHistoryWidgetTest extends ContainerTestCase
     public function testRenderWhenNoWeights(): void
     {
         // Remove the weight history from the general settings.
-        $this->getContainer()->get(SettingsRepository::class)->save(SettingsGroup::GENERAL, [
-            'athlete' => [
-                'birthday' => '1989-08-14',
-                'firstName' => 'Robin',
-                'lastName' => 'Ingelbrecht',
-                'maxHeartRateFormula' => 'fox',
-            ],
+        $this->getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::GENERAL, [
+            'birthday' => '1989-08-14',
+            'firstName' => 'Robin',
+            'lastName' => 'Ingelbrecht',
+            'maxHeartRateFormula' => 'fox',
         ]);
 
         $this->assertNull(
             $this->widget->render(
+                DashboardWidgetId::fromUnprefixed('test'),
                 SerializableDateTime::fromString('2026-01-09'),
                 WidgetConfiguration::empty()
             )

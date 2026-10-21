@@ -12,6 +12,7 @@ use App\Domain\Activity\Stream\Metric\ActivityStreamMetricType;
 use App\Domain\Activity\Stream\StreamType;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 
@@ -41,20 +42,18 @@ class DailyTrainingLoadTest extends ContainerTestCase
 
         $this->assertEquals(
             100,
-            $this->dailyTrainingLoad->calculate(SerializableDateTime::fromString('2023-10-10')),
+            $this->loadOn('2023-10-10'),
         );
     }
 
     public function testCalculateWhenFtpNotFound(): void
     {
         // Remove the FTP history so the power-based calculation falls back to heart rate.
-        $this->getContainer()->get(SettingsRepository::class)->save(SettingsGroup::GENERAL, [
-            'athlete' => [
-                'birthday' => '1989-08-14',
-                'firstName' => 'Robin',
-                'lastName' => 'Ingelbrecht',
-                'maxHeartRateFormula' => 'fox',
-            ],
+        $this->getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::GENERAL, [
+            'birthday' => '1989-08-14',
+            'firstName' => 'Robin',
+            'lastName' => 'Ingelbrecht',
+            'maxHeartRateFormula' => 'fox',
         ]);
 
         $activity = ActivityBuilder::fromDefaults()
@@ -77,7 +76,7 @@ class DailyTrainingLoadTest extends ContainerTestCase
 
         $this->assertEquals(
             105,
-            $this->dailyTrainingLoad->calculate(SerializableDateTime::fromString('2023-10-10')),
+            $this->loadOn('2023-10-10'),
         );
     }
 
@@ -96,7 +95,7 @@ class DailyTrainingLoadTest extends ContainerTestCase
 
         $this->assertEquals(
             105,
-            $this->dailyTrainingLoad->calculate(SerializableDateTime::fromString('2023-10-10')),
+            $this->loadOn('2023-10-10'),
         );
     }
 
@@ -115,8 +114,41 @@ class DailyTrainingLoadTest extends ContainerTestCase
 
         $this->assertEquals(
             0,
-            $this->dailyTrainingLoad->calculate(SerializableDateTime::fromString('2023-10-10')),
+            $this->loadOn('2023-10-10'),
         );
+    }
+
+    public function testCalculateForDateRangeShouldSeedEveryDayInTheRange(): void
+    {
+        $activity = ActivityBuilder::fromDefaults()
+            ->withAverageHeartRate(171)
+            ->withMovingTimeInSeconds(3600)
+            ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 14:00:00'))
+            ->build();
+
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            $activity,
+            []
+        ));
+
+        $this->assertEquals(
+            [
+                '2023-10-09' => 0,
+                '2023-10-10' => 105,
+                '2023-10-11' => 0,
+            ],
+            $this->dailyTrainingLoad->calculateForDateRange(DateRange::fromDates(
+                from: SerializableDateTime::fromString('2023-10-09'),
+                till: SerializableDateTime::fromString('2023-10-11'),
+            )),
+        );
+    }
+
+    private function loadOn(string $day): int
+    {
+        $on = SerializableDateTime::fromString($day);
+
+        return $this->dailyTrainingLoad->calculateForDateRange(DateRange::fromDates($on, $on))[$day];
     }
 
     #[\Override]

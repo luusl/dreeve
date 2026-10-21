@@ -47,9 +47,9 @@ final readonly class GateRequestListener implements EventSubscriberInterface
 
     private function isAlwaysOpen(string $path): bool
     {
-        return 1 === preg_match('#^/(_(profiler|wdt)|css|images|js)/#', $path)
-            || '/strava/webhook' === $path
-            || '/auth/status' === $path;
+        return 1 === preg_match('#^/(_(profiler|wdt)|css|images|js|files)/#', $path)
+            || '/api/v1' === $path || str_starts_with($path, '/api/v1/')
+            || '/strava/webhook' === $path;
     }
 
     /**

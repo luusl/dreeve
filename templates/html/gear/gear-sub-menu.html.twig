@@ -1,23 +1,20 @@
 {% autoescape false %}
     <ul class="tabs tabs--menu-item">
         <li>
-            <a href="#" data-router-navigate="{{ relativeUrl('gear') }}"
+            <a href="{{ relativeUrl('gear') }}" data-router-link
                class="{{ activeMenuItem == 'gear' ? 'active' : '' }}">
                 {{ "Gear"|trans }}
             </a>
         </li>
         <li>
-            <a href="#" data-router-navigate="{{ relativeUrl('gear/maintenance') }}"
+            <a href="{{ relativeUrl('gear/maintenance') }}" data-router-link
                class="flex items-center {{ activeMenuItem == 'gearMaintenance' ? 'active' : '' }}">
-                {% if maintenanceTaskIsDue %}
-                    <span class="flex size-2 me-2 bg-red-500 rounded-full animate-pulse"
-                          title="{{ "One of your gear maintenance tasks is due"|trans }}"></span>
-                {% endif %}
+                <div class="contents" data-async-content-url="{{ fragmentPartialUrl('gear/maintenance-due') }}"></div>
                 {{ "Maintenance"|trans }}
             </a>
         </li>
         <li>
-            <a href="#" data-router-navigate="{{ relativeUrl('gear/recording-devices') }}"
+            <a href="{{ relativeUrl('gear/recording-devices') }}" data-router-link
                class="{{ activeMenuItem == 'recordingDevices' ? 'active' : '' }}">
                 {{ "Recording devices"|trans }}
             </a>

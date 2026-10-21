@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Settings\UpdateAthleteSettings;
 
-use App\Domain\Settings\KeyValueBasedSettingsRepository;
+use App\Domain\Settings\DbalSettingsRepository;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\CQRS\Command\Command;
@@ -14,7 +14,7 @@ use Symfony\Component\DependencyInjection\Attribute\Autowire;
 final readonly class UpdateAthleteSettingsCommandHandler implements CommandHandler
 {
     public function __construct(
-        #[Autowire(service: KeyValueBasedSettingsRepository::class)]
+        #[Autowire(service: DbalSettingsRepository::class)]
         private SettingsRepository $settingsRepository,
     ) {
     }
@@ -23,12 +23,12 @@ final readonly class UpdateAthleteSettingsCommandHandler implements CommandHandl
     {
         assert($command instanceof UpdateAthleteSettings);
 
-        $data = $this->settingsRepository->find(SettingsGroup::GENERAL);
-        /** @var array<string, mixed> $athlete */
-        $athlete = $data['athlete'] ?? [];
-        $data['athlete'] = [...$athlete, ...$command->getAthlete()];
+        $data = [
+            ...$this->settingsRepository->findGroup(SettingsGroup::GENERAL),
+            ...$command->getAthlete(),
+        ];
 
-        $this->settingsRepository->save(
+        $this->settingsRepository->saveGroup(
             group: SettingsGroup::GENERAL,
             data: $data,
         );

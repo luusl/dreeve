@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Domain\Import\UploadActivityFile;
 
+use App\Domain\Import\InvalidActivityFileName;
 use App\Domain\Import\UploadActivityFile\UploadActivityFile;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -18,18 +19,28 @@ class UploadActivityFileTest extends TestCase
             'content' => base64_encode('raw-fit-bytes'),
         ]);
 
-        $this->assertSame('ride.fit', $command->getFilename());
+        $this->assertSame('ride.fit', (string) $command->getFilename());
         $this->assertSame('raw-fit-bytes', $command->getContents());
     }
 
-    public function testFromPayloadStripsPathTraversal(): void
+    #[DataProvider('provideNamesThatAreStripped')]
+    public function testFromPayloadStripsPathTraversal(string $filename, string $expected): void
     {
         $command = UploadActivityFile::fromPayload([
-            'filename' => '../../etc/foo.gpx',
+            'filename' => $filename,
             'content' => base64_encode('raw-gpx-bytes'),
         ]);
 
-        $this->assertSame('foo.gpx', $command->getFilename());
+        $this->assertSame($expected, (string) $command->getFilename());
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function provideNamesThatAreStripped(): iterable
+    {
+        yield 'a unix path' => ['../../etc/foo.gpx', 'foo.gpx'];
+        yield 'a backslash escape' => ['..\\foo.gpx', 'foo.gpx'];
     }
 
     /**
@@ -63,6 +74,21 @@ class UploadActivityFileTest extends TestCase
             'The file type is not supported.',
         ];
 
+        yield 'only an extension' => [
+            ['filename' => '.fit', 'content' => base64_encode('raw-fit-bytes')],
+            'The file name is not valid.',
+        ];
+
+        yield 'a null byte in the filename' => [
+            ['filename' => "ride\0.fit", 'content' => base64_encode('raw-fit-bytes')],
+            'The file name is not valid.',
+        ];
+
+        yield 'a filename longer than the limit' => [
+            ['filename' => str_repeat('a', 200).'.fit', 'content' => base64_encode('raw-fit-bytes')],
+            'The file name cannot be longer than 200 bytes.',
+        ];
+
         yield 'malformed base64 content' => [
             ['filename' => 'ride.fit', 'content' => 'not-valid-base64!!!'],
             'The file content must be valid, non-empty base64.',
@@ -72,5 +98,21 @@ class UploadActivityFileTest extends TestCase
             ['filename' => 'ride.fit', 'content' => ''],
             'The file content must be valid, non-empty base64.',
         ];
+    }
+
+    public function testFromFile(): void
+    {
+        $command = UploadActivityFile::fromFile('ride.fit', 'raw-fit-bytes');
+
+        $this->assertSame('ride.fit', (string) $command->getFilename());
+        // No base64 round trip: the API path already holds the raw bytes.
+        $this->assertSame('raw-fit-bytes', $command->getContents());
+    }
+
+    public function testFromFileWithAnInvalidName(): void
+    {
+        $this->expectException(InvalidActivityFileName::class);
+
+        UploadActivityFile::fromFile('notes.txt', 'raw-bytes');
     }
 }

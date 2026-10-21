@@ -7,6 +7,7 @@ namespace App\Tests\Domain\Import\FileParser;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\Lap\ActivityLapRepository;
+use App\Domain\Activity\Shifting\ActivityDrivetrainUsageRepository;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Import\FileParser\ParsedActivityFile;
 use App\Domain\Import\FileParser\RawActivityFile;
@@ -34,6 +35,9 @@ abstract class ActivityFileParserTestCase extends ContainerTestCase
         foreach ($parsed->getLaps() as $lap) {
             $this->getContainer()->get(ActivityLapRepository::class)->add($lap);
         }
+        foreach ($parsed->getDrivetrainUsages() as $drivetrainUsage) {
+            $this->getContainer()->get(ActivityDrivetrainUsageRepository::class)->add($drivetrainUsage);
+        }
 
         $this->assertMatchesJsonSnapshot(
             $this->getConnection()->executeQuery('SELECT * FROM Activity')->fetchAllAssociative()
@@ -42,6 +46,9 @@ abstract class ActivityFileParserTestCase extends ContainerTestCase
             $this->getConnection()->executeQuery('SELECT * FROM ActivityLap ORDER BY lapNumber ASC')->fetchAllAssociative()
         );
         $this->assertCompressedDatabaseQueryMatchesSnapshot('SELECT * FROM ActivityStream ORDER BY streamType ASC');
+        $this->assertMatchesJsonSnapshot(
+            $this->getConnection()->executeQuery('SELECT * FROM ActivityDrivetrainUsage ORDER BY position, gearNumber')->fetchAllAssociative()
+        );
     }
 
     protected function rawFileFromFixture(string $name): RawActivityFile

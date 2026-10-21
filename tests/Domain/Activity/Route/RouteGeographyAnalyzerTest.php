@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\Activity\Route;
 
+use App\Domain\Activity\Route\CountryGeographyAssets;
 use App\Domain\Activity\Route\RouteGeographyAnalyzer;
 use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
 use PHPUnit\Framework\Attributes\TestWith;
@@ -15,7 +16,9 @@ class RouteGeographyAnalyzerTest extends TestCase
     {
         $this->assertEquals(
             ['CZ', 'PL'],
-            $this->analyzer->analyzeForPolyline($this->fixture('route-pl-cz'))
+            $this->analyzer->analyzeForPolyline(EncodedPolyline::fromString(trim(
+                file_get_contents(__DIR__.'/fixtures/route-pl-cz.txt') ?: ''
+            )))
         );
     }
 
@@ -23,13 +26,17 @@ class RouteGeographyAnalyzerTest extends TestCase
     {
         $this->assertEquals(
             ['BE', 'NL'],
-            $this->analyzer->analyzeForPolyline($this->fixture('route-be-nl'))
+            $this->analyzer->analyzeForPolyline(EncodedPolyline::fromString(trim(
+                file_get_contents(__DIR__.'/fixtures/route-be-nl.txt') ?: ''
+            )))
         );
     }
 
     public function testAnalyzeForPolylineIsIndependentOfDirection(): void
     {
-        $reversed = array_reverse($this->fixture('route-pl-cz')->decodeAndPairLatLng());
+        $reversed = array_reverse(EncodedPolyline::fromString(trim(
+            file_get_contents(__DIR__.'/fixtures/route-pl-cz.txt') ?: ''
+        ))->decodeAndPairLatLng());
 
         $this->assertEquals(
             ['CZ', 'PL'],
@@ -113,18 +120,11 @@ class RouteGeographyAnalyzerTest extends TestCase
         );
     }
 
-    private function fixture(string $name): EncodedPolyline
-    {
-        return EncodedPolyline::fromString(trim(
-            file_get_contents(__DIR__.'/fixtures/'.$name.'.txt') ?: ''
-        ));
-    }
-
     #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->analyzer = new RouteGeographyAnalyzer();
+        $this->analyzer = new RouteGeographyAnalyzer(new CountryGeographyAssets());
     }
 }

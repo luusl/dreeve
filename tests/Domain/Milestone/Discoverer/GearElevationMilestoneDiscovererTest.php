@@ -9,7 +9,8 @@ use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Milestone\Context\GearElevationContext;
 use App\Domain\Milestone\Discoverer\GearElevationMilestoneDiscoverer;
-use App\Domain\Settings\SettingsGroup;
+use App\Domain\Milestone\MilestoneIdFactory;
+use App\Domain\Settings\SettingsName;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Serialization\Json;
@@ -17,7 +18,6 @@ use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Gear\GearBuilder;
-use App\Tests\Domain\Milestone\IncrementingMilestoneIdFactory;
 use Spatie\Snapshots\MatchesSnapshots;
 
 class GearElevationMilestoneDiscovererTest extends ContainerTestCase
@@ -25,10 +25,11 @@ class GearElevationMilestoneDiscovererTest extends ContainerTestCase
     use MatchesSnapshots;
 
     private GearElevationMilestoneDiscoverer $discoverer;
+    private MilestoneIdFactory $milestoneIdFactory;
 
     public function testDiscoverWithNoActivities(): void
     {
-        $this->assertTrue($this->discoverer->discover()->isEmpty());
+        $this->assertTrue($this->discoverer->discover($this->milestoneIdFactory)->isEmpty());
     }
 
     public function testDiscoverWithNoGear(): void
@@ -41,16 +42,21 @@ class GearElevationMilestoneDiscovererTest extends ContainerTestCase
                 ->build(), []
         ));
 
-        $this->assertTrue($this->discoverer->discover()->isEmpty());
+        $this->assertTrue($this->discoverer->discover($this->milestoneIdFactory)->isEmpty());
     }
 
     public function testDiscoverFirstThreshold(): void
     {
         $gearId = GearId::fromUnprefixed('bike-1');
-        $this->insertGear($gearId, 'Canyon Endurace');
+        $this->getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId($gearId)
+                ->withName('Canyon Endurace')
+                ->build()
+        );
         $this->insertActivity('1', '2024-01-01', $gearId, 500.0);
 
-        $milestones = $this->discoverer->discover();
+        $milestones = $this->discoverer->discover($this->milestoneIdFactory);
 
         $context = $milestones->getFirst()->getContext();
         $this->assertInstanceOf(GearElevationContext::class, $context);
@@ -63,11 +69,16 @@ class GearElevationMilestoneDiscovererTest extends ContainerTestCase
     public function testDiscoverMultipleThresholdsWithPreviousChain(): void
     {
         $gearId = GearId::fromUnprefixed('bike-1');
-        $this->insertGear($gearId, 'Canyon Endurace');
+        $this->getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId($gearId)
+                ->withName('Canyon Endurace')
+                ->build()
+        );
         $this->insertActivity('1', '2024-01-01', $gearId, 1500.0);
         $this->insertActivity('2', '2024-01-02', $gearId, 1500.0);
 
-        $milestones = $this->discoverer->discover();
+        $milestones = $this->discoverer->discover($this->milestoneIdFactory);
         $this->assertMatchesJsonSnapshot(Json::encode($milestones));
     }
 
@@ -75,39 +86,58 @@ class GearElevationMilestoneDiscovererTest extends ContainerTestCase
     {
         $bikeId = GearId::fromUnprefixed('bike-1');
         $shoesId = GearId::fromUnprefixed('shoes-1');
-        $this->insertGear($bikeId, 'Canyon Endurace');
-        $this->insertGear($shoesId, 'Nike Pegasus');
+        $this->getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId($bikeId)
+                ->withName('Canyon Endurace')
+                ->build()
+        );
+        $this->getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId($shoesId)
+                ->withName('Nike Pegasus')
+                ->build()
+        );
 
         $this->insertActivity('1', '2024-01-01', $bikeId, 500.0);
         $this->insertActivity('2', '2024-01-02', $shoesId, 500.0);
 
-        $milestones = $this->discoverer->discover();
+        $milestones = $this->discoverer->discover($this->milestoneIdFactory);
         $this->assertMatchesJsonSnapshot(Json::encode($milestones));
     }
 
     public function testDiscoverSkipsZeroElevation(): void
     {
         $gearId = GearId::fromUnprefixed('bike-1');
-        $this->insertGear($gearId, 'Canyon Endurace');
+        $this->getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId($gearId)
+                ->withName('Canyon Endurace')
+                ->build()
+        );
         $this->insertActivity('1', '2024-01-01', $gearId, 0.0);
 
-        $this->assertTrue($this->discoverer->discover()->isEmpty());
+        $this->assertTrue($this->discoverer->discover($this->milestoneIdFactory)->isEmpty());
     }
 
     public function testDiscoverWithImperialUnits(): void
     {
         $gearId = GearId::fromUnprefixed('bike-1');
-        $this->insertGear($gearId, 'Canyon Endurace');
+        $this->getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId($gearId)
+                ->withName('Canyon Endurace')
+                ->build()
+        );
         $this->insertActivity('1', '2024-01-01', $gearId, 500.0);
 
         $settingsRepository = $this->getContainer()->get(SettingsRepository::class);
-        $settingsRepository->save(SettingsGroup::APPEARANCE, ['unitSystem' => 'imperial']);
+        $settingsRepository->save(SettingsName::UNIT_SYSTEM, 'imperial');
         $discoverer = new GearElevationMilestoneDiscoverer(
             $this->getConnection(),
             $settingsRepository,
-            new IncrementingMilestoneIdFactory(),
         );
-        $milestones = $discoverer->discover();
+        $milestones = $discoverer->discover($this->milestoneIdFactory);
 
         $context = $milestones->getFirst()->getContext();
         $this->assertInstanceOf(GearElevationContext::class, $context);
@@ -117,20 +147,10 @@ class GearElevationMilestoneDiscovererTest extends ContainerTestCase
     public function setUp(): void
     {
         parent::setUp();
+        $this->milestoneIdFactory = new MilestoneIdFactory();
         $this->discoverer = new GearElevationMilestoneDiscoverer(
             $this->getConnection(),
             $this->getContainer()->get(SettingsRepository::class),
-            new IncrementingMilestoneIdFactory(),
-        );
-    }
-
-    private function insertGear(GearId $gearId, string $name): void
-    {
-        $this->getContainer()->get(GearRepository::class)->add(
-            GearBuilder::fromDefaults()
-                ->withGearId($gearId)
-                ->withName($name)
-                ->build()
         );
     }
 

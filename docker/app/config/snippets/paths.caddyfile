@@ -1,55 +1,19 @@
 # Path-routing rules cover every path directive EXCEPT the PHP front-controller handle.
 (paths) {
-	handle /manifest.json {
-	    root /var/www/build
-    }
-
-	# Serve static .html from build/html
-	@staticBuildFiles {
-		path *.html
-	}
-	handle @staticBuildFiles {
-		handle {
-			root * /var/www/build/html
-			file_server
-		}
-	}
-
-	handle /files/* {
-		# Serve badge SVGs — no cache
-		@badges path /files/*-badge.svg
-		handle @badges {
-			header {
-				Cache-Control "no-cache, no-store, must-revalidate"
-			}
-
-			root * /var/www/storage
-			file_server
-		}
-
-		# Only serve image and SVG files from storage, except the activity photos:
-		# those are only reachable through the IP-gated /secured-image/* route.
-		# Everything else is blocked.
-		@allowedFiles {
-			path_regexp (?i)\.(jpe?g|png|gif|webp|avif|svg)$
-			path /files/*
-			not path /files/activities/*
-		}
-		handle @allowedFiles {
-			header {
-				Cache-Control "public, max-age=31536000, immutable"
-			}
-
-			root * /var/www/storage
-			file_server
-		}
-		respond 404
-	}
-
 	# Cache static assets.
 	handle /assets/* {
 		header {
 			Cache-Control "public, max-age=86400"
+		}
+	}
+
+	# Everything below is referenced through Twig's asset(), which appends the app version
+	# as a query string. The URL therefore changes on every release, which is what makes
+	# immutable safe here: a stale entry can never outlive the version that produced it.
+	@versionedAssets path /js/* /css/* /libraries/*
+	handle @versionedAssets {
+		header {
+			Cache-Control "public, max-age=31536000, immutable"
 		}
 	}
 }

@@ -2,7 +2,7 @@
 
 namespace App\Tests\Infrastructure\Twig;
 
-use App\Domain\Settings\SettingsGroup;
+use App\Domain\Settings\SettingsName;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Measurement\Length\Foot;
 use App\Infrastructure\Measurement\Length\Kilometer;
@@ -103,7 +103,7 @@ class MeasurementTwigExtensionTest extends ContainerTestCase
     private function extensionFor(UnitSystem $unitSystem): MeasurementTwigExtension
     {
         $settingsRepository = $this->getContainer()->get(SettingsRepository::class);
-        $settingsRepository->save(SettingsGroup::APPEARANCE, ['unitSystem' => $unitSystem->value]);
+        $settingsRepository->save(SettingsName::UNIT_SYSTEM, $unitSystem->value);
 
         return new MeasurementTwigExtension($settingsRepository);
     }

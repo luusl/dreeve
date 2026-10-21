@@ -4,23 +4,21 @@ declare(strict_types=1);
 
 namespace App\Domain\Import\UploadActivityFile;
 
-use App\Domain\Import\SupportedFileExtension;
+use App\Domain\Import\ActivityFileName;
+use App\Domain\Import\InvalidActivityFileName;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
 use App\Infrastructure\CQRS\Command\DomainCommand;
-use App\Infrastructure\CQRS\Command\RequiresRebuild;
 use App\Infrastructure\CQRS\Command\SuppressesFlashMessage;
-use App\Infrastructure\ValueObject\String\Path;
 
-#[RequiresRebuild]
 #[SuppressesFlashMessage]
 final readonly class UploadActivityFile extends DomainCommand implements DeserializableCommand
 {
     use ProvidesCommandName;
 
     private function __construct(
-        private string $filename,
+        private ActivityFileName $filename,
         private string $contents,
     ) {
     }
@@ -33,10 +31,10 @@ final readonly class UploadActivityFile extends DomainCommand implements Deseria
             throw CouldNotDeserializeCommand::invalidPayload('A "filename" and "content" are required.');
         }
 
-        $filename = basename($payload['filename']);
-
-        if (!SupportedFileExtension::tryFrom(Path::fromString($filename)->getExtension())) {
-            throw CouldNotDeserializeCommand::invalidPayload('The file type is not supported.');
+        try {
+            $filename = ActivityFileName::fromString($payload['filename']);
+        } catch (InvalidActivityFileName $e) {
+            throw CouldNotDeserializeCommand::invalidPayload($e->getMessage());
         }
 
         $contents = base64_decode($payload['content'], strict: true);
@@ -50,7 +48,15 @@ final readonly class UploadActivityFile extends DomainCommand implements Deseria
         );
     }
 
-    public function getFilename(): string
+    public static function fromFile(string $filename, string $contents): self
+    {
+        return new self(
+            filename: ActivityFileName::fromString($filename),
+            contents: $contents,
+        );
+    }
+
+    public function getFilename(): ActivityFileName
     {
         return $this->filename;
     }

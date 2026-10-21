@@ -17,6 +17,7 @@ use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Console\ProgressIndicator;
 use App\Infrastructure\DependencyInjection\Mutex\WithMutex;
 use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Temperature\Celsius;
 use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
 use App\Infrastructure\Mutex\LockName;
 use App\Infrastructure\Mutex\Mutex;
@@ -25,7 +26,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\Attribute\AsTaggedItem;
 
 #[AsTaggedItem(priority: 40)]
-#[WithMutex(lockName: LockName::IMPORT_DATA_OR_BUILD_APP)]
+#[WithMutex(lockName: LockName::IMPORT_DATA)]
 final readonly class CalculateCombinedStreams implements CalculateActivityMetricsStep
 {
     use ProvideTimeFormats;
@@ -81,6 +82,12 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
                     $combinedStreamTypes->add(CombinedStreamType::GRADE);
                 }
             }
+            $temperatureData = [];
+            if (($temperatureStream = $streams->filterOnType(StreamType::TEMP)) instanceof ActivityStream) {
+                if ($temperatureStream->hasValidData() && ($temperatureData = $temperatureStream->getData())) {
+                    $combinedStreamTypes->add(CombinedStreamType::TEMP);
+                }
+            }
 
             /** @var array<int, array{0: CombinedStreamType, 1: array<int, int|float>}> $otherStreams */
             $otherStreams = [];
@@ -119,14 +126,18 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
             $hasDistanceData = $combinedStreamTypes->has(CombinedStreamType::DISTANCE);
             $hasLatLngData = $combinedStreamTypes->has(CombinedStreamType::LAT_LNG);
             $hasGradeData = $combinedStreamTypes->has(CombinedStreamType::GRADE);
+            $hasTemperatureData = $combinedStreamTypes->has(CombinedStreamType::TEMP);
 
             $maxYAxisValue = PHP_INT_MIN;
             $maxTimeDataIndex = count($timeData) - 1;
             foreach ($timeData as $i => $time) {
-                if ($hasMovingData && true === $movingData[$i] && $i < $maxTimeDataIndex) {
+                // Without a moving stream we cannot tell movement from standstill, so we fall back to elapsed time
+                $isMoving = !$hasMovingData || true === $movingData[$i];
+                if ($isMoving && $i < $maxTimeDataIndex) {
                     $delta = $timeData[$i + 1] - $time;
+                    $nextIsMoving = $hasMovingData && true === $movingData[$i + 1];
                     // Ignore session gaps (e.g. activity recorded in multiple sessions).
-                    if (true === $movingData[$i + 1] || $delta <= 60) {
+                    if ($nextIsMoving || $delta <= 60) {
                         $cumulativeMovingTime += $delta;
                     }
                 }
@@ -156,6 +167,12 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
 
                 if ($hasGradeData) {
                     $combinedPoint[] = $gradeData[$i];
+                }
+
+                if ($hasTemperatureData) {
+                    $combinedPoint[] = round(
+                        Celsius::from($temperatureData[$i] ?? 0)->toUnitSystem($unitSystem)->toFloat()
+                    );
                 }
 
                 foreach ($otherStreams as $otherStream) {

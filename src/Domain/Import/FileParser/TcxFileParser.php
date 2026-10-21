@@ -5,15 +5,13 @@ declare(strict_types=1);
 namespace App\Domain\Import\FileParser;
 
 use App\Domain\Activity\Activity;
-use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIdFactory;
 use App\Domain\Activity\ActivityName;
 use App\Domain\Activity\ImportSource;
 use App\Domain\Activity\Lap\ActivityLap;
-use App\Domain\Activity\Lap\ActivityLapIdFactory;
-use App\Domain\Activity\Lap\ActivityLaps;
 use App\Domain\Activity\Math;
 use App\Domain\Activity\Route\RouteGeography;
+use App\Domain\Activity\Shifting\ActivityDrivetrainUsages;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\StreamType;
 use App\Domain\Activity\WorldType;
@@ -29,7 +27,7 @@ final readonly class TcxFileParser implements ActivityFileParser
 {
     public function __construct(
         private ActivityIdFactory $activityIdFactory,
-        private ActivityLapIdFactory $activityLapIdFactory,
+        private ActivityLapsMapper $activityLapsMapper,
         private ActivityStreamsMapper $activityStreamsMapper,
         private ?SerializableTimezone $timezone,
     ) {
@@ -47,16 +45,8 @@ final readonly class TcxFileParser implements ActivityFileParser
             throw new CouldNotParseActivityFile(message: sprintf('Could not read "%s"', $file->getPath()->getFilename()), activityFile: $file);
         }
 
-        // Strip namespace declarations and prefixes so SimpleXML element access is uniform
-        // regardless of the file's (default + ActivityExtension) namespaces.
-        $contents = (string) preg_replace('/xmlns(:\w+)?="[^"]*"/', '', $contents);
-        $contents = (string) preg_replace('/(<\/?)\w+:/', '$1', $contents);
-
-        $previousErrorState = libxml_use_internal_errors(true);
-        $xml = simplexml_load_string($contents);
-        libxml_use_internal_errors($previousErrorState);
-
-        if (false === $xml) {
+        $xml = Xml::load($contents);
+        if (!$xml instanceof \SimpleXMLElement) {
             throw new CouldNotParseActivityFile(message: sprintf('"%s" is not valid TCX XML', $file->getPath()->getFilename()), activityFile: $file);
         }
 
@@ -98,8 +88,8 @@ final readonly class TcxFileParser implements ActivityFileParser
 
         $activityId = $this->activityIdFactory->random();
         $startDateTime = SerializableDateTime::fromTimestamp($startTimestamp)->toTimezone($this->timezone ?? SerializableTimezone::UTC());
-        $activityLaps = $this->buildActivityLaps($laps, $activityId);
-        $activity = Activity::fromState(
+        $activityLaps = $this->activityLapsMapper->map($laps, $activityId);
+        $activity = Activity::create(
             activityId: $activityId,
             startDateTime: $startDateTime,
             sportType: $sportType,
@@ -126,6 +116,7 @@ final readonly class TcxFileParser implements ActivityFileParser
             movingTimeInSeconds: (int) $activityLaps->sum(static fn (ActivityLap $lap): int => $lap->getMovingTimeInSeconds()),
             elapsedTimeInSeconds: (int) $activityLaps->sum(static fn (ActivityLap $lap): int => $lap->getElapsedTimeInSeconds()),
             deviceName: $deviceName,
+            connectedSensors: null,
             totalImageCount: 0,
             localImagePaths: [],
             polyline: StreamMath::encodePolyline($streams),
@@ -133,6 +124,7 @@ final readonly class TcxFileParser implements ActivityFileParser
             weather: null,
             gearId: null,
             isCommute: false,
+            isGroupActivity: false,
             workoutType: null,
         );
 
@@ -140,11 +132,12 @@ final readonly class TcxFileParser implements ActivityFileParser
             activity: $activity,
             streams: $this->activityStreamsMapper->fromStreamMap($streams, $activityId),
             laps: $activityLaps,
+            drivetrainUsages: ActivityDrivetrainUsages::empty(),
         );
     }
 
     /**
-     * @return array{list<array<string, mixed>>, array<string, list<mixed>>, ?int}
+     * @return array{list<ParsedActivityLap>, array<string, list<mixed>>, ?int}
      */
     private function parseLapsAndStreams(\SimpleXMLElement $activityXml): array
     {
@@ -181,7 +174,7 @@ final readonly class TcxFileParser implements ActivityFileParser
                     $altitude = $this->floatChild($trackpoint, 'AltitudeMeters');
                     // Suunto exports interleave spurious 0-altitudes between real
                     // values; treat exact zeros as missing, but only when the file
-                    // has real altitude data (an all-zero file is kept as-is).
+                    // has real altitude data to gap fill them from.
                     if ($hasNonZeroAltitude && 0.0 === $altitude) {
                         $altitude = null;
                     }
@@ -221,41 +214,7 @@ final readonly class TcxFileParser implements ActivityFileParser
         return [$laps, $streams, $startTimestamp];
     }
 
-    /**
-     * @param list<array<string, mixed>> $rawLaps
-     */
-    private function buildActivityLaps(array $rawLaps, ActivityId $activityId): ActivityLaps
-    {
-        $averageSpeeds = array_map(static fn (array $lap): float => (float) ($lap['average_speed'] ?? 0.0), $rawLaps);
-        $minAverageSpeed = MetersPerSecond::from([] !== $averageSpeeds ? min($averageSpeeds) : 0.0);
-        $maxAverageSpeed = MetersPerSecond::from([] !== $averageSpeeds ? max($averageSpeeds) : 0.0);
-
-        $laps = ActivityLaps::empty();
-        foreach ($rawLaps as $lap) {
-            $laps->add(ActivityLap::create(
-                lapId: $this->activityLapIdFactory->random(),
-                activityId: $activityId,
-                lapNumber: (int) $lap['lap_index'],
-                name: (string) $lap['name'],
-                elapsedTimeInSeconds: (int) $lap['elapsed_time'],
-                movingTimeInSeconds: (int) $lap['moving_time'],
-                distance: Meter::from((float) $lap['distance']),
-                averageSpeed: MetersPerSecond::from((float) $lap['average_speed']),
-                minAverageSpeed: $minAverageSpeed,
-                maxAverageSpeed: $maxAverageSpeed,
-                maxSpeed: MetersPerSecond::from((float) $lap['max_speed']),
-                elevationDifference: Meter::from((float) ($lap['total_elevation_gain'] ?? 0)),
-                averageHeartRate: empty($lap['average_heartrate']) ? null : (int) round((float) $lap['average_heartrate']),
-            ));
-        }
-
-        return $laps;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function buildLap(int $index, \SimpleXMLElement $lap, float $elevationGain, int $activeSeconds, ?float $trackpointDistance): array
+    private function buildLap(int $index, \SimpleXMLElement $lap, float $elevationGain, int $activeSeconds, ?float $trackpointDistance): ParsedActivityLap
     {
         $totalTime = $this->floatChild($lap, 'TotalTimeSeconds');
         $totalTimeSeconds = null !== $totalTime ? (int) round($totalTime) : 0;
@@ -268,17 +227,19 @@ final readonly class TcxFileParser implements ActivityFileParser
         // merged files. Fall back to the summary when trackpoints carry no distance.
         $distance = $trackpointDistance ?? $this->floatChild($lap, 'DistanceMeters') ?? 0.0;
 
-        return [
-            'lap_index' => $index + 1,
-            'name' => sprintf('Lap %d', $index + 1),
-            'elapsed_time' => $totalTimeSeconds,
-            'moving_time' => $movingTime,
-            'distance' => $distance,
-            'average_speed' => $movingTime > 0 ? $distance / $movingTime : 0.0,
-            'max_speed' => $this->floatChild($lap, 'MaximumSpeed') ?? 0.0,
-            'total_elevation_gain' => $elevationGain,
-            'average_heartrate' => $this->intChild($lap->AverageHeartRateBpm, 'Value'),
-        ];
+        $averageHeartRate = $this->intChild($lap->AverageHeartRateBpm, 'Value');
+
+        return ParsedActivityLap::create(
+            lapNumber: $index + 1,
+            name: sprintf('Lap %d', $index + 1),
+            elapsedTimeInSeconds: $totalTimeSeconds,
+            movingTimeInSeconds: $movingTime,
+            distance: Meter::from($distance),
+            averageSpeed: MetersPerSecond::from($movingTime > 0 ? $distance / $movingTime : 0.0),
+            maxSpeed: MetersPerSecond::from($this->floatChild($lap, 'MaximumSpeed') ?? 0.0),
+            elevationDifference: Meter::from($elevationGain),
+            averageHeartRate: empty($averageHeartRate) ? null : $averageHeartRate,
+        );
     }
 
     /**

@@ -18,10 +18,12 @@
     "movingTimeInSeconds": 3600,
     "recordedOnDevice": null,
     "totalImageCount": 0,
-    "routeGeography": [],
+    "startingPointCountryCode": null,
+    "startingPointState": null,
     "weather": null,
     "gearId": "b12659861",
     "gearName": "Retro Race Bike",
     "isCommute": false,
+    "isGroupActivity": false,
     "workoutType": null
 }

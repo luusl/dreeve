@@ -21,6 +21,7 @@ use App\Infrastructure\Repository\Pagination;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
+use App\Tests\Infrastructure\Eventing\SpyEventBus;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -68,6 +69,7 @@ class DbalFileImportOverviewRepositoryTest extends ContainerTestCase
                     errorMessage: 'Could not parse file',
                     activityId: ActivityId::fromUnprefixed('42'),
                     activityName: 'Morning Run',
+                    hasFileContents: true,
                 ),
             ],
             $overview->getItems()
@@ -121,6 +123,37 @@ class DbalFileImportOverviewRepositoryTest extends ContainerTestCase
             [],
             3,
         ];
+    }
+
+    #[DataProvider('provideFileContentsScenarios')]
+    public function testFindFlagsWhetherTheOriginalFileIsStillStored(
+        ?string $fileContents,
+        bool $expectedHasFileContents,
+    ): void {
+        $fileImportId = FileImportId::fromUnprefixed('1');
+        $this->fileImportRepository->add(
+            FileImportBuilder::fromDefaults()
+                ->withFileImportId($fileImportId)
+                ->withFileContents($fileContents)
+                ->build()
+        );
+
+        $overview = $this->fileImportOverviewRepository->find(
+            Pagination::fromOffsetAndLimit(0, 10),
+            FileImportOverviewFilters::fromRequest(new Request())
+        );
+
+        $this->assertSame($expectedHasFileContents, $overview->getItems()[0]->hasFileContents());
+        $this->assertSame(
+            $expectedHasFileContents,
+            $this->fileImportOverviewRepository->findOneByFileImportId($fileImportId)->hasFileContents()
+        );
+    }
+
+    public static function provideFileContentsScenarios(): iterable
+    {
+        yield 'an import that kept its original file' => ['raw fit bytes', true];
+        yield 'a skipped import that never stored one' => [null, false];
     }
 
     public function testFindReturnsAnEmptyOverviewWhenThereIsNoData(): void
@@ -247,7 +280,8 @@ class DbalFileImportOverviewRepositoryTest extends ContainerTestCase
             $this->getConnection()
         );
         $this->activityRepository = new DbalActivityRepository(
-            $this->getConnection()
+            $this->getConnection(),
+            new SpyEventBus(),
         );
     }
 }

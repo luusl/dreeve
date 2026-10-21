@@ -8,6 +8,7 @@
 'A high score means you concentrate more training into fewer, heavier days.': 'A high score means you concentrate more training into fewer, heavier days.'
 'A:C Ratio': 'A:C Ratio'
 'A:C optimal in': 'A:C optimal in'
+'AI integration settings': 'AI integration settings'
 'ATL (Fatigue)': 'ATL (Fatigue)'
 'Accumulated fatigue': 'Accumulated fatigue'
 'Active days': 'Active days'
@@ -21,6 +22,7 @@ Activity: Activity
 'Acute:Chronic Ratio - Ratio of ATL to CTL. Indicates injury risk.': 'Acute:Chronic Ratio - Ratio of ATL to CTL. Indicates injury risk.'
 'Adaptive & Inclusive Sports': 'Adaptive & Inclusive Sports'
 'Admin panel': 'Admin panel'
+'Aero sensor': 'Aero sensor'
 Afternoon: Afternoon
 All: All
 'All time': 'All time'
@@ -43,9 +45,12 @@ Best: Best
 'Best effort': 'Best effort'
 'Best efforts': 'Best efforts'
 'Best efforts for {sportType}': 'Best efforts for {sportType}'
+'Bike light': 'Bike light'
+'Bike radar': 'Bike radar'
 'Build zone (–10)': 'Build zone (–10)'
 'CTL (Fitness)': 'CTL (Fitness)'
 Cadence: Cadence
+'Cadence sensor': 'Cadence sensor'
 Cal.: Cal.
 Calories: Calories
 'Calories burned': 'Calories burned'
@@ -57,19 +62,22 @@ Challenges: Challenges
 'Chronic Training Load (Fitness) - 42-day exponentially weighted average of your daily training load. Represents long-term training adaptation.': 'Chronic Training Load (Fitness) - 42-day exponentially weighted average of your daily training load. Represents long-term training adaptation.'
 'Clear all filters': 'Clear all filters'
 'Clear chat': 'Clear chat'
-'Close modal': 'Close modal'
+Columns: Columns
+Commute: Commute
 Commutes: Commutes
 'Commutes only': 'Commutes only'
 Compare: Compare
 'Compare to': 'Compare to'
 'Completed {threshold} activities': 'Completed {threshold} activities'
 Components: Components
+'Configure gear maintenance': 'Configure gear maintenance'
 'Congrats! You achieved {numberOfPRs} PRs in this activity.': 'Congrats! You achieved {numberOfPRs} PRs in this activity.'
 'Consider reducing load': 'Consider reducing load'
 Consistency: Consistency
 Country: Country
 Cricket: Cricket
 Crossfit: Crossfit
+'Crunching the numbers...': 'Crunching the numbers...'
 'Current Status': 'Current Status'
 'Current streaks': 'Current streaks'
 Cycling: Cycling
@@ -83,6 +91,7 @@ Day: Day
 'Days needed': 'Days needed'
 'Daytime stats': 'Daytime stats'
 Dec: Dec
+'Decreased compared to yesterday': 'Decreased compared to yesterday'
 Density: Density
 Details: Details
 Device: Device
@@ -97,15 +106,19 @@ Distance: Distance
 'Distance per month per gear': 'Distance per month per gear'
 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.': 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.'
 Duration: Duration
+'Dusting off the record books...': 'Dusting off the record books...'
+'E-Bike Ride': 'E-Bike Ride'
 'E-Bike Rides': 'E-Bike Rides'
+'E-Mountain Bike Ride': 'E-Mountain Bike Ride'
 'E-Mountain Bike Rides': 'E-Mountain Bike Rides'
 Eddington: Eddington
 'Eddington number': 'Eddington number'
 'Eddington over time': 'Eddington over time'
-Edit: Edit
+'Edit dashboard': 'Edit dashboard'
 'Edit this activity': 'Edit this activity'
 'Effort vs heart rate': 'Effort vs heart rate'
 'Elapsed time': 'Elapsed time'
+'Electronic shifting': 'Electronic shifting'
 Elev: Elev
 Elev.: Elev.
 Elevation: Elevation
@@ -117,9 +130,12 @@ Energy: Energy
 'Enter fullscreen mode': 'Enter fullscreen mode'
 Evening: Evening
 'Excludes commutes': 'Excludes commutes'
+'Excludes group activities': 'Excludes group activities'
 'FTP history': 'FTP history'
+Fastest: Fastest
 Favourite: Favourite
 Feb: Feb
+'Filling up the bottles...': 'Filling up the bottles...'
 'Filter on KOM segments': 'Filter on KOM segments'
 'Filter on country': 'Filter on country'
 'Filter on sport type': 'Filter on sport type'
@@ -130,28 +146,37 @@ Firsts: Firsts
 Fitness: Fitness
 'Fitness may be declining due to low recent training load': 'Fitness may be declining due to low recent training load'
 'Fitness may decline': 'Fitness may decline'
+'Foot pod': 'Foot pod'
 'For example, an Eddington number of 70 would imply that a cyclist has cycled at least 70 km or miles in a day on at least 70 occasions. Achieving a high Eddington number is difficult, since moving from, say, 70 to 75 will (probably) require more than five new long-distance workouts, since any workout shorter than 75 km or miles will no longer be included in the reckoning.': 'For example, an Eddington number of 70 would imply that a cyclist has cycled at least 70 km or miles in a day on at least 70 occasions. Achieving a high Eddington number is difficult, since moving from, say, 70 to 75 will (probably) require more than five new long-distance workouts, since any workout shorter than 75 km or miles will no longer be included in the reckoning.'
 'Form (TSB)': 'Form (TSB)'
 Fri: Fri
 Fri.: Fri.
+'Front rings': 'Front rings'
+'Front shifts': 'Front shifts'
 GAP: GAP
 Gear: Gear
 'Gear maintenance': 'Gear maintenance'
 'Gear stats': 'Gear stats'
 "Gear that hasn't been used in the last three months, is disabled by default.": "Gear that hasn't been used in the last three months, is disabled by default."
 'Gear that is retired is disabled by default.': 'Gear that is retired is disabled by default.'
+'Go to activity': 'Go to activity'
 Goal: Goal
 Golf: Golf
 'Good training variety': 'Good training variety'
 'Google searches': 'Google searches'
 Grad.: Grad.
 Gradient: Gradient
+'Gravel Ride': 'Gravel Ride'
 'Gravel Rides': 'Gravel Rides'
+'Group activities': 'Group activities'
+'Group activities only': 'Group activities only'
+'Group activity': 'Group activity'
 "Guidelines vary by individual; for more information see Joe Friel's 'The Cyclist's Training Bible' or TrainingPeaks' research documentation.": "Guidelines vary by individual; for more information see Joe Friel's 'The Cyclist's Training Bible' or TrainingPeaks' research documentation."
 HIIT: HIIT
 HR: HR
 'Hand Cycle': 'Hand Cycle'
 'Heart rate': 'Heart rate'
+'Heart rate monitor': 'Heart rate monitor'
 'Heart rate zone distribution over the past month. For effective polarized training, your workouts should primarily fall within the following zones': 'Heart rate zone distribution over the past month. For effective polarized training, your workouts should primarily fall within the following zones'
 'Heart rate zones': 'Heart rate zones'
 Heatmap: Heatmap
@@ -159,7 +184,9 @@ High: High
 'High fatigue levels may increase injury or burnout risk. Consider reducing load and prioritizing recovery': 'High fatigue levels may increase injury or burnout risk. Consider reducing load and prioritizing recovery'
 'High monotony - increase variety': 'High monotony - increase variety'
 'High risk': 'High risk'
+'Highlight visited countries': 'Highlight visited countries'
 'Highly recovered and ready to perform': 'Highly recovered and ready to perform'
+Hike: Hike
 Hikes: Hikes
 History: History
 'History (6 weeks)': 'History (6 weeks)'
@@ -170,9 +197,9 @@ History: History
 'How much training you do in total on days you train.': 'How much training you do in total on days you train.'
 'How often do you train': 'How often do you train'
 'Ice Skate': 'Ice Skate'
-Id: Id
 Imperial: Imperial
 "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉.": "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉."
+'Increased compared to yesterday': 'Increased compared to yesterday'
 'Individual thresholds vary based on fitness level.': 'Individual thresholds vary based on fitness level.'
 'Inline Skate': 'Inline Skate'
 Intensity: Intensity
@@ -196,7 +223,6 @@ Lifetime: Lifetime
 'Light fatigue with good readiness. A great balance for quality training or longer efforts': 'Light fatigue with good readiness. A great balance for quality training or longer efforts'
 Load: Load
 'Load (CTL/ATL)': 'Load (CTL/ATL)'
-'Loading data...': 'Loading data...'
 Loading...: Loading...
 'Locations over the globe': 'Locations over the globe'
 'Long run': 'Long run'
@@ -209,12 +235,17 @@ Low: Low
 'Low risk': 'Low risk'
 'Low training load': 'Low training load'
 Maintenance: Maintenance
+'Manage activities': 'Manage activities'
+'Manage gear': 'Manage gear'
+'Manage recording devices': 'Manage recording devices'
+'Map settings': 'Map settings'
 Mar: Mar
 Max: Max
 'Max gradient': 'Max gradient'
 May: May
 Medium: Medium
 Metric: Metric
+'Metrics settings': 'Metrics settings'
 Milestones: Milestones
 'Mind & Body Sports': 'Mind & Body Sports'
 'Moderate fatigue with stable fitness. Well suited for consistent day-to-day training': 'Moderate fatigue with stable fitness. Well suited for consistent day-to-day training'
@@ -227,12 +258,15 @@ Monthly: Monthly
 Morning: Morning
 'Most elevation': 'Most elevation'
 'Most recent activities': 'Most recent activities'
+'Most recent activities with map': 'Most recent activities with map'
 'Most recent challenges': 'Most recent challenges'
 'Most recent milestones': 'Most recent milestones'
+'Mountain Bike Ride': 'Mountain Bike Ride'
 'Mountain Bike Rides': 'Mountain Bike Rides'
 'Moving time': 'Moving time'
 'Moving time by sport': 'Moving time by sport'
 'Moving time in hours': 'Moving time in hours'
+'Muscle oxygen sensor': 'Muscle oxygen sensor'
 Name: Name
 Neutral: Neutral
 'New personal best for': 'New personal best for'
@@ -254,13 +288,17 @@ Now: Now
 Oct: Oct
 'Older effort': 'Older effort'
 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.': 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.'
+'On your own': 'On your own'
 'One of your gear maintenance tasks is due': 'One of your gear maintenance tasks is due'
+"Oops, looks like you've wandered off the map! 🗺️": "Oops, looks like you've wandered off the map! 🗺️"
+'Open Water Swim': 'Open Water Swim'
 'Optimal training range': 'Optimal training range'
 Other: Other
 'Outdoor Sports': 'Outdoor Sports'
 Over-fatigued: Over-fatigued
 'Over-fatigued (–30)': 'Over-fatigued (–30)'
 'Overall weekly training stress': 'Overall weekly training stress'
+'Overdue by {amount}': 'Overdue by {amount}'
 'PB badges': 'PB badges'
 'PET bottles produced': 'PET bottles produced'
 Pace: Pace
@@ -276,7 +314,9 @@ Photos: Photos
 Pilates: Pilates
 'Pizza slices': 'Pizza slices'
 'Polarised training (last 30 days)': 'Polarised training (last 30 days)'
+'Pool Swim': 'Pool Swim'
 Power: Power
+'Power meter': 'Power meter'
 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.': 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.'
 'Prev year': 'Prev year'
 Previous: Previous
@@ -290,12 +330,16 @@ Ranking: Ranking
 'Reached {threshold} hours total moving time': 'Reached {threshold} hours total moving time'
 'Reached {threshold} total distance': 'Reached {threshold} total distance'
 'Reached {threshold} total elevation': 'Reached {threshold} total elevation'
+'Rear cogs': 'Rear cogs'
+'Rear shifts': 'Rear shifts'
+'Recalculating your suffer score...': 'Recalculating your suffer score...'
+Recent: Recent
 'Recent effort': 'Recent effort'
 'Recording devices': 'Recording devices'
-'Recording devices details': 'Recording devices details'
 'Recovery Timeline': 'Recovery Timeline'
 'Recovery forecast': 'Recovery forecast'
 'Reduced carbon emission by commuting': 'Reduced carbon emission by commuting'
+'Register maintenance': 'Register maintenance'
 'Relative cost': 'Relative cost'
 'Rest Days': 'Rest Days'
 'Rest days': 'Rest days'
@@ -304,11 +348,13 @@ Ranking: Ranking
 'Retired gear': 'Retired gear'
 Rewind: Rewind
 'Rewind comparisons are only available on larger screens.': 'Rewind comparisons are only available on larger screens.'
+Ride: Ride
 Rides: Rides
 'Risk of detraining': 'Risk of detraining'
 'Rock Climbing': 'Rock Climbing'
 'Roller Ski': 'Roller Ski'
 Rowing: Rowing
+Run: Run
 Running: Running
 Runs: Runs
 Sail: Sail
@@ -319,23 +365,29 @@ Search: Search
 'Search segment...': 'Search segment...'
 Segments: Segments
 Sep: Sep
+Shifting: Shifting
+'Show all columns': 'Show all columns'
 'Show information': 'Show information'
 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.': 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.'
-"Since I began using Strava {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began using Strava {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
+'Similar activities': 'Similar activities'
+"Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
 Skateboard: Skateboard
 Skating: Skating
 'Slightly fresh': 'Slightly fresh'
+'Smart trainer': 'Smart trainer'
 Snowboard: Snowboard
 Snowshoe: Snowshoe
 Soccer: Soccer
 'Someone who regularly trains for 90 minutes will score higher than someone doing mostly short sessions.': 'Someone who regularly trains for 90 minutes will score higher than someone doing mostly short sessions.'
+Sort: Sort
 Speed: Speed
+'Speed & cadence sensor': 'Speed & cadence sensor'
+'Speed sensor': 'Speed sensor'
 Splits: Splits
 'Sport variety': 'Sport variety'
 Squash: Squash
 'Stair Stepper': 'Stair Stepper'
 'Stand Up Paddling': 'Stand Up Paddling'
-'Start slideshow': 'Start slideshow'
 'Start times': 'Start times'
 'Stats per weekday': 'Stats per weekday'
 Status: Status
@@ -344,12 +396,13 @@ Streaks: Streaks
 Sun: Sun
 Sun.: Sun.
 Surfing: Surfing
-Swim: Swim
 'TSB (Form)': 'TSB (Form)'
 'TSB positive in': 'TSB positive in'
 'Table Tennis': 'Table Tennis'
 'Taper sweet-spot (+15)': 'Taper sweet-spot (+15)'
 'Team Sports': 'Team Sports'
+Temperature: Temperature
+'Temperature sensor': 'Temperature sensor'
 Tennis: Tennis
 "That's 1.5 times the distance to the edge of space": "That's 1.5 times the distance to the edge of space"
 "That's 100 days of commitment, triple digits!": "That's 100 days of commitment, triple digits!"
@@ -440,6 +493,7 @@ Tennis: Tennis
 "That's {number} days of at least {distance}": "That's {number} days of at least {distance}"
 "That's {percentage}% of all countries 🌍": "That's {percentage}% of all countries 🌍"
 'The Eddington number in the context of cycling or running is defined as the maximum number E such that the athlete has covered at least E km on at least E days.': 'The Eddington number in the context of cycling or running is defined as the maximum number E such that the athlete has covered at least E km on at least E days.'
+"The page you're looking for doesn't exist or may have been moved.": "The page you're looking for doesn't exist or may have been moved."
 'These badges are dynamically created. You can use them in any &lt;img&gt; tag': 'These badges are dynamically created. You can use them in any &lt;img&gt; tag'
 Thinking...: Thinking...
 'This chart summarizes how you train. Each axis reflects a different normalized training habit, so higher values mean stronger emphasis.': 'This chart summarizes how you train. Each axis reflects a different normalized training habit, so higher values mean stronger emphasis.'
@@ -449,10 +503,11 @@ Thinking...: Thinking...
 Thu: Thu
 Thu.: Thu.
 Time: Time
+'Time in gear': 'Time in gear'
 'Time in zone': 'Time in zone'
 'Times completed': 'Times completed'
 Title: Title
-'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect': 'To enable it, configure this in the admin panel and rebuild the files for the changes to take effect'
+'To enable it, configure this in the admin panel': 'To enable it, configure this in the admin panel'
 'Toggle sidebar': 'Toggle sidebar'
 'Top 10': 'Top 10'
 'Total distance per month': 'Total distance per month'
@@ -460,6 +515,7 @@ Title: Title
 'Total hours spent per gear': 'Total hours spent per gear'
 'Total hours spent per sport type': 'Total hours spent per sport type'
 'Total moving time per month': 'Total moving time per month'
+'Trail Run': 'Trail Run'
 'Trail Runs': 'Trail Runs'
 'Training 4–5 days every week scores higher than doing everything in one or two days.': 'Training 4–5 days every week scores higher than doing everything in one or two days.'
 'Training Impulse - Training load metric that accounts for intensity and duration.': 'Training Impulse - Training load metric that accounts for intensity and duration.'
@@ -470,23 +526,29 @@ Title: Title
 'Training load is accumulating, recovery days are important': 'Training load is accumulating, recovery days are important'
 Tue: Tue
 Tue.: Tue.
+'Unchanged compared to yesterday': 'Unchanged compared to yesterday'
 Unspecified: Unspecified
-'Updated on': 'Updated on'
+'Upcoming maintenance': 'Upcoming maintenance'
 'User badge': 'User badge'
+'Velo Mobile': 'Velo Mobile'
 'Velo Mobiles': 'Velo Mobiles'
 'Very high': 'Very high'
 'View all': 'View all'
 'View details': 'View details'
 'View this month': 'View this month'
+'Virtual Ride': 'Virtual Ride'
 'Virtual Rides': 'Virtual Rides'
 'Virtual Row': 'Virtual Row'
+'Virtual Run': 'Virtual Run'
 'Virtual Runs': 'Virtual Runs'
 'Virtual workout assistant': 'Virtual workout assistant'
 Volleyball: Volleyball
 Volume: Volume
+Walk: Walk
 Walking: Walking
 Walks: Walks
 'Water Sports': 'Water Sports'
+'Waxing the chain...': 'Waxing the chain...'
 'We detected following issues': 'We detected following issues'
 Wed: Wed
 Wed.: Wed.
@@ -501,6 +563,7 @@ Weight: Weight
 Wheelchair: Wheelchair
 'Wind Surf': 'Wind Surf'
 'Winter Sports': 'Winter Sports'
+'With others': 'With others'
 Workout: Workout
 'Workout assistant': 'Workout assistant'
 'Workout type': 'Workout type'
@@ -509,8 +572,9 @@ Year: Year
 Yearly: Yearly
 'Yearly stats': 'Yearly stats'
 Yoga: Yoga
+"You weren't alone out there": "You weren't alone out there"
+'Your Dreeve badge': 'Your Dreeve badge'
 'Your PB badge': 'Your PB badge'
-'Your Strava badge': 'Your Strava badge'
 'Your Zwift badge': 'Your Zwift badge'
 'Your badge(s)': 'Your badge(s)'
 Z1: Z1
@@ -533,7 +597,6 @@ activities: activities
 and: and
 avg: avg
 bpm: bpm
-challenges: challenges
 clear: clear
 compare: compare
 countries: countries
@@ -541,6 +604,7 @@ day(s): day(s)
 days: days
 'days needed for next Eddington': 'days needed for next Eddington'
 'days to reach {n}': 'days to reach {n}'
+'every {interval}': 'every {interval}'
 hours: hours
 hrs: hrs
 humidity: humidity
@@ -551,6 +615,7 @@ months: months
 more: more
 n/a: n/a
 never: never
+'of your activities': 'of your activities'
 'on': 'on'
 per: per
 'per activity': 'per activity'
@@ -562,16 +627,19 @@ total: total
 watts: watts
 weeks: weeks
 workouts: workouts
+'{amount} left': '{amount} left'
 '{daysSinceLastTagged} days': '{daysSinceLastTagged} days'
 '{days} consecutive days of activity': '{days} consecutive days of activity'
 '{hoursSinceLastTagged} hours': '{hoursSinceLastTagged} hours'
 '{maintenanceTaskLabel} every {interval}': '{maintenanceTaskLabel} every {interval}'
 '{numberOfActivities} activities': '{numberOfActivities} activities'
 '{numberOfActivities} activities in {year}': '{numberOfActivities} activities in {year}'
+'{numberOfActivities} activities on this route': '{numberOfActivities} activities on this route'
 '{numberOfMonths} months': '{numberOfMonths} months'
 '{numberOfResults} photos': '{numberOfResults} photos'
 '{numberOfResults} results': '{numberOfResults} results'
 '{numberOfResults} routes': '{numberOfResults} routes'
+'{numberOfRoutes} nearby route(s)': '{numberOfRoutes} nearby route(s)'
 '{numberOfWeeks} weeks': '{numberOfWeeks} weeks'
 '{threshold} hours using {gearName}': '{threshold} hours using {gearName}'
 '{threshold} total distance using {gearName}': '{threshold} total distance using {gearName}'

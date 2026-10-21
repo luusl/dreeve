@@ -7,6 +7,7 @@ use App\Domain\Import\ImportMode;
 use App\Domain\Strava\InsufficientStravaAccessTokenScopes;
 use App\Domain\Strava\InvalidStravaAccessToken;
 use App\Domain\Strava\Strava;
+use App\Domain\Strava\StravaApplicationIsInactive;
 use App\Domain\Strava\StravaClientId;
 use App\Domain\Strava\StravaClientSecret;
 use App\Infrastructure\Serialization\Json;
@@ -39,18 +40,19 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ->expects($this->never())
             ->method('post');
 
-        $this->assertEquals(
-            new RedirectResponse('/', \Symfony\Component\HttpFoundation\Response::HTTP_FOUND),
-            $this->stravaOAuthRequestHandler->handle(new Request(
-                query: ['code' => 'the-code'],
-                request: [],
-                attributes: [],
-                cookies: [],
-                files: [],
-                server: [],
-                content: [],
-            ))
-        );
+        $response = $this->stravaOAuthRequestHandler->handle(new Request(
+            query: ['code' => 'the-code'],
+            request: [],
+            attributes: [],
+            cookies: [],
+            files: [],
+            server: [],
+            content: [],
+        ));
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame('/', $response->getTargetUrl());
+        $this->assertSame(\Symfony\Component\HttpFoundation\Response::HTTP_FOUND, $response->getStatusCode());
     }
 
     public function testHandleWithCode(): void
@@ -151,6 +153,28 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ->expects($this->once())
             ->method('verifyAccessToken')
             ->willThrowException(new InsufficientStravaAccessTokenScopes());
+
+        $this->client
+            ->expects($this->never())
+            ->method('post');
+
+        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(
+            query: [],
+            request: [],
+            attributes: [],
+            cookies: [],
+            files: [],
+            server: [],
+            content: [],
+        ))->getContent());
+    }
+
+    public function testHandleItShouldWhenTheApplicationIsInactive(): void
+    {
+        $this->strava
+            ->expects($this->once())
+            ->method('verifyAccessToken')
+            ->willThrowException(StravaApplicationIsInactive::create());
 
         $this->client
             ->expects($this->never())

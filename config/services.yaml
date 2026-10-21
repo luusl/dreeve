@@ -9,10 +9,13 @@ parameters:
     env(ADMIN_USERNAME): 'admin'
     env(ADMIN_PASSWORD_HASH): ''
     env(ADMIN_ALLOWED_IPS): ''
+    env(DREEVE_API_KEY): ''
+    env(TRUSTED_PROXIES): 'private_ranges'
     env(STRAVA_CLIENT_ID): 'replace-me'
     env(STRAVA_CLIENT_SECRET): 'replace-me'
     env(STRAVA_REFRESH_TOKEN): 'replace-me'
     env(DEMO_MODE_IS_ENABLED): 0
+    env(DEV_MODE_IS_ENABLED): 0
     env(LOCK_DSN): 'flock'
     env(TZ): ''
     env(DATABASE_DIRECTORY): '%kernel.project_dir%/storage/database'
@@ -36,10 +39,6 @@ services:
     App\Controller\:
         resource: '../src/Controller/'
         tags: ['controller.service_arguments']
-
-    App\Infrastructure\Http\ErrorResponseExceptionListener:
-        tags:
-            - { name: kernel.event_listener, event: kernel.exception }
 
     App\Infrastructure\KeyValue\KeyValueStore:
       class: App\Infrastructure\KeyValue\DbalKeyValueStore
@@ -68,6 +67,10 @@ services:
     App\Infrastructure\Config\DemoMode:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:DEMO_MODE_IS_ENABLED)%']
+
+    App\Infrastructure\Config\DevMode:
+        factory: [ null, 'fromString' ]
+        arguments: ['%env(string:DEV_MODE_IS_ENABLED)%']
 
     App\Infrastructure\Security\AdminUserName:
         factory: [ null, 'fromString' ]
@@ -102,6 +105,10 @@ services:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:STRAVA_REFRESH_TOKEN)%']
 
+    App\Domain\Api\Token:
+        factory: [ null, 'fromString' ]
+        arguments: ['%env(string:DREEVE_API_KEY)%']
+
     App\Domain\Import\ImportMode:
         public: true
         autoconfigure: false
@@ -116,6 +123,16 @@ services:
 
     GuzzleHttp\Client:
       class: GuzzleHttp\Client
+      arguments:
+        $config:
+          connect_timeout: 5
+          timeout: 30
 
     Money\MoneyFormatter:
         factory: '@App\Infrastructure\DependencyInjection\MoneyFormatterFactory'
+
+    monolog.formatter.errors:
+        class: Monolog\Formatter\LineFormatter
+        arguments:
+            $format: "[%%datetime%%] %%channel%%.%%level_name%%: %%message%%\n"
+            $allowInlineLineBreaks: true

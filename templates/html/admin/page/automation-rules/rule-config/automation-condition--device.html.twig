@@ -1,0 +1,21 @@
+<div class="grid gap-2 sm:grid-cols-2">
+    <div>
+        <label class="mt-0! text-xs">{{ "Operator"|trans({}, 'admin') }}</label>
+        <select name="{{ namePrefix }}[operator]" data-repeater-field="config.operator" class="mt-0">
+            {% for operator in enum('App\\Domain\\Automation\\Condition\\MatchOperator').cases()|filter(o => o.isForSingleValue()) %}
+                <option value="{{ operator.value }}">{{ operator|trans }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="mt-0! text-xs">{{ "Recording device"|trans({}, 'admin') }}</label>
+        {% include 'html/admin/component/combobox.html.twig' with {
+            name: namePrefix ~ '[deviceName]',
+            options: recordingDevices|map(device => {'value': device.getName(), 'label': device.getName()}),
+            placeholder: "eg: Garmin Edge 1040",
+            required: true,
+            repeaterField: 'config.deviceName',
+        } only %}
+        <p class="mt-0.5 text-xxs text-gray-500">{{ "Pick a device you already recorded with, or type a new name."|trans({}, 'admin') }}</p>
+    </div>
+</div>

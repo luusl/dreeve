@@ -1,3 +1,337 @@
+# [v5.3.3](https://github.com/dreeveapp/dreeve/releases/tag/v5.3.3) - 2026-09-11
+
+## New features
+* Added the ability to export original uploaded files.
+* Added API endpoints for athlete weight
+
+## Improvements
+* Added support for importing disc golf .fit files
+* Updated activity descriptions when importing activities from Strava
+* Activity management filters are now preserved after deleting or editing an activity
+
+## Bug fixes
+Updated the device automation condition to retain devices that no longer exist
+
+## Technical details
+* ISSUE #2615: Spanish locale by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2650
+* ISSUE #2655:  Support disc golf .fit files by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2656
+* ISSUE #2657: Allow to export original uploaded files by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2658
+* Translate 'Actions' and 'Download original file' to German #2657 by @effectpears in https://github.com/dreeveapp/dreeve/pull/2659
+* Add bearer-authenticated athlete weight API by @sanglt in https://github.com/dreeveapp/dreeve/pull/2653
+* ISSUE #2651: Update description when importing Strava activities by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2661
+* Translations by @masfaraud in https://github.com/dreeveapp/dreeve/pull/2660
+* ISSUE #2663: Let the device condition keep devices that no longer exist by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2664
+* ISSUE #2662: Refactor settings storage by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2665
+* ISSUE #2666: Keep activity management filters after deleting or editing an activity by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2667
+
+## New Contributors
+* @sanglt made their first contribution in https://github.com/dreeveapp/dreeve/pull/2653
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.3.2...v5.3.3
+
+# [v5.3.2](https://github.com/dreeveapp/dreeve/releases/tag/v5.3.2) - 2026-09-04
+
+> [!NOTE]
+> We released a separate __Zepp Connector__ container to automatically sync your Zepp FIT files
+> to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/integrations/zepp-connector/
+> A big thank you to @fjuliofontes and @effectpears for setting this up 👏
+
+## New features
+* Calculate laps during file import
+* Added StartDateCondition to automation rules
+* Added an option to backfill already imported activities with weather and reverse geocoded data
+* Added a "mark as group activity" automation action
+
+## Improvements
+* Improved XML import handling to tolerate leading whitespace or a BOM before the XML declaration
+* sort nearby heatmap routes by date, newest first
+
+## Bug fixes
+* Fixed dashboard widgets that failed to load
+* Fixed a bug where the gear page would not load when calories where empty
+
+## Technical details
+* ISSUE #2613: Add an option to calculate laps during the file import by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2619
+* ISSUE #2622 German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/2623
+* Add Zepp Connector integration docs by @fjuliofontes in https://github.com/dreeveapp/dreeve/pull/2624
+* Complete Hungarian (hu_HU) translations (admin panel + dashboard) by @czdanika in https://github.com/dreeveapp/dreeve/pull/2626
+* feat: some french translations by @masfaraud in https://github.com/dreeveapp/dreeve/pull/2628
+* ISSUE #2627: Added StartDateCondition to automation rules by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2629
+* ISSUE #2630: Tolerate leading whitespace/BOM before the XML declaration by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2631
+* Complete Hungarian (hu_HU) dashboard translations by @czdanika in https://github.com/dreeveapp/dreeve/pull/2633
+* Update Brazilian Portuguese translation by @gustavobim in https://github.com/dreeveapp/dreeve/pull/2635
+* Update admin+intl-icu.de_DE.yaml #2627 by @effectpears in https://github.com/dreeveapp/dreeve/pull/2636
+* ISSUE #2637: Sort nearby routes on heatmap by Date DESC by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2640
+* update FR Translations by @masfaraud in https://github.com/dreeveapp/dreeve/pull/2632
+* ISSUE #2638: Allow to backfill already imported activities with by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2644
+* ISSUE #2639: Add 'mark as group activity' condition action by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2645
+* ISSUE #2643: Some widgets don't load in the dashboard by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2646
+* ISSUE #2642: Gear page not working after v5.2.3 by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2647
+
+## New Contributors
+* @fjuliofontes made their first contribution in https://github.com/dreeveapp/dreeve/pull/2624
+* @masfaraud made their first contribution in https://github.com/dreeveapp/dreeve/pull/2628
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.3.1...v5.3.2
+
+# [v5.3.1](https://github.com/dreeveapp/dreeve/releases/tag/v5.3.1) - 2026-08-30
+
+## New features
+* Added an option to mark group rides and group activities
+* Added a dashboard widget showing your most recent activity with its map
+* Added CalculateKiloJoules as an automation rule condition action
+* Added the ability to copy existing automation rules
+* Added shifting info for electronic shifting on the activity detail page
+
+## Improvements
+* Improved mapping for mountaineering activities
+* Added more buttons throughout the app to quickly navigate to the relevant admin panel settings
+* Limited AI tool results to prevent context window overflows
+* Added German translations.
+
+## Technical details
+* ISSUE 2570: Investigate mountaineering sport type mapping by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2592
+* ISSUE #2583: Option to mark grouprides / group activities by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2594
+* ISSUE 2586: Most recent activity with map dashboard widget by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2595
+* ISSUE #2596: Add CalculateKiloJoules as a automation condition action by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2598
+* ISSUE #2599: Add more action buttons throughout the app that navigate  to the admin panel by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2600
+* Bump actions/setup-node from 4 to 7 by @dependabot[bot] in https://github.com/dreeveapp/dreeve/pull/2602
+* Bump codecov/codecov-action from 5 to 7 by @dependabot[bot] in https://github.com/dreeveapp/dreeve/pull/2603
+* ISSUE #2604: New Shoutrrr release available: v0.18.0 by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2605
+* ISSUE #2601: Cap AI tool results to prevent context window overflow by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2606
+* ISSUE #2608 German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/2609
+* ISSUE #2612: Copy existing automation rules by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2617
+* ISSUE #2611: Shifting Distribution / overview for eletronic shifting by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2616
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.3.0...v5.3.1
+
+# [v5.3.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.3.0) - 2026-08-24
+
+## New features
+* Added a public API to add proper support for [GadgetBridge](https://gadgetbridge.org/)
+* Added a movingTime condition for automation rules
+* Added an option to disable Ctrl+scroll zooming on maps
+* Added the ability to manually edit calories
+
+## Improvements
+* Added support for ADMIN_ALLOWED_IPS behind a reverse proxy
+* Added temperature to the combined profile chart
+* Improved handling of inactive Strava API applications
+* Hardened file processing in the watch directory
+* Fixed inconsistent numbers of similar routes
+
+## Bug fixes
+* Fixed an HTTP 500 error caused by an empty athlete name
+
+## Technical details
+* ISSUE #2557: Make ADMIN_ALLOWED_IPS work behind a reverse proxy by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2558
+* ISSUE #2559: Introduced movingTime automation rule condition by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2560
+* ISSUE #2556: Option to disable ctrl+scroll for zoom on map by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2561
+* ISSUE #2563: Show temperature in the combined profile chart by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2564
+* ISSUE #2562: Handle inactive Strava API applications gracefully by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2566
+* ISSUE #2567: Move the current /api routes to /api/internal in preparation of GadgetBride integration by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2568
+* ISSUE #2569: Harden watch directory file processing by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2571
+* ISSUE #2573: Migrate docs over to Starlight by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2574
+* ISSUE #2575: Unhandled empty athlete name causes HTTP 500 by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2576
+* ISSUE #2577 German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/2578
+* ISSUE #2511: Gadgetbridge support by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2587
+* ISSUE #2585: Allow to manually edit calories by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2588
+* ISSUE #2572: Inconsistent number of similar routes by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2589
+
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.2.3...v5.3.0
+
+# [v5.2.3](https://github.com/dreeveapp/dreeve/releases/tag/v5.2.3) - 2026-08-19
+
+> [!NOTE]
+> We released a separate __Hammerhead Wahoo Connector__ container to automatically sync your Hammerhead FIT files
+> to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/integrations/hammerhead-connector/
+> A big thank you to @goatie999 for setting this up 👏
+
+## New features
+* Added authentication for non-admin pages
+* Segment details now have their own dedicated page
+* Activity details now have their own dedicated page
+* Added the activity sport type as an available token for automation rule actions
+* Similar activities can now be sorted by fastest or most recent
+
+## Improvements
+* Automation rule conditions support additional parameters
+* Clicking a photo now opens it directly in the slideshow
+* Improved the handling of waypoint drift when comparing similar activities, with a fixed maximum limit
+* Made breadcrumbs more compact to make better use of screen space.
+* Filters are now stored in the URL instead of local storage
+* FIT files using "Backcountry Snowboarding" are now mapped to "Back Country Ski"
+
+## Bug fixes
+* Improved the mobile layout of the admin area.
+
+## Technical details
+* ISSUE #2514: Add a few parameters to automation rules by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2520
+* ISSUE #2519: Add authentication for non-admin pages by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2522
+* ISSUE #2524: Clicking an image on the photo's page should trigger the slideshow by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2525
+* ISSUE #2521: Cap waypoint drift for similar activities at an absolute maximum by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2523
+* Add reference for Hammerhead Connector by @goatie999 in https://github.com/dreeveapp/dreeve/pull/2526
+* ISSUE #2527: Improve routing for modals by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2528
+* ISSUE #2530: Move segment detail page to dedicated page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2531
+* ISSUE #2532: Move activity detail page to dedicated page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2534
+* ISSUE #2532: Made breadcrumbs more compact by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2535
+* ISSUE #2536: Move all modals to dedicated pages by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2539
+* Improve German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/2543
+* ISSUE #2541: Tighten javascript framework by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2544
+* ISSUE #2545: Move filters from localStorage to the url by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2546
+* ISSUE #2547: Add [activity:sport-type] as an available token in the automation rules by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2548
+* ISSUE #2549: Map FIT backcountry snowboarding to Back Country Ski by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2550
+* ISSUE #2540: Mobile Layout in Admin Area by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2551
+* ISSUE #2533: Allow to sort similar activities on fastest/recent by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2552
+
+## New Contributors
+* @goatie999 made their first contribution in https://github.com/dreeveapp/dreeve/pull/2526
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.2.2...v5.2.3
+
+# [v5.2.2](https://github.com/dreeveapp/dreeve/releases/tag/v5.2.2) - 2026-08-16
+
+## New features
+* On the activity detail page, similar activities are displayed based on route geometry
+* New dashboard widget for upcoming maintenance
+* Allow to toggle visited countries overlay on the heatmap
+
+## Improvements
+* Show zone distribution trend on the training load dashboard widget
+
+## Bug fixes
+* Ollama provider ignored the configured URL in the admin panel
+
+## Technical details
+* ISSUE #2387: Similar activities by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2500
+* ISSUE #2428: Dashboard Card for upcoming Maintenance by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2501
+* ISSUE #2497: Show zone distribution trend on the Training Load widget by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2502
+* docs(wahoo-connector): update configuration options, port mapping, an… by @MattW2 in https://github.com/dreeveapp/dreeve/pull/2504
+* ISSUE #2505: Async loaded content is not routed through router.js by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2506
+* ISSUE #2507: Allow to toggle visited countries overlay on the heatmap by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2508
+* ISSUE #2510: Add support for sportType 0 in FIT file parser by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2512
+* ISSUE #2515: Adjust daemon's runStravaImportAndBuildApp Cron to avoid open-meteo API downtime by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2516
+* ISSUE #2513: Ollama provider ignored the configured URL by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2517
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.2.1...v5.2.2
+
+# [v5.2.1](https://github.com/dreeveapp/dreeve/releases/tag/v5.2.1) - 2026-08-13
+
+> [!NOTE]
+> We released a separate __Dreeve Wahoo Connector__ container to automatically sync your Wahoo FIT files
+> to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/integrations/wahoo-connector/
+> A big thank you to @MattW2 for setting this up 👏
+
+## New features
+* Apply automation rules to past activities
+
+## Improvements
+* You can now drag and drop dashboard widgets and automation rules on mobile devices
+* Maps on the activity page now stay visible while scrolling
+* Images up to 10 MB can now be uploaded
+
+## Technical details
+* ISSUE #2471: Cant drag and drop dashboard or automation rules in admin panel on mobile devices by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2475
+* ISSUE #2306: Allow to apply automation rules to past activities by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2474
+* ISSUE #2473: app:data:detect-corrupted-activities crashes on 'ZSTD decompression failed' by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2478
+* ISSUE #2476: GPX export using wraong date/time by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2480
+* ISSUE #2482: Allow to upload images bigger than 5MB by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2483
+* docs: add Wahoo Connector integration documentation by @MattW2 in https://github.com/dreeveapp/dreeve/pull/2487
+* ISSUE #2481: Peak power outputs details page by activity type by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2486
+* ISSUE #2488: Rename cache headers and prefix Dreeve' to them by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2489
+* ISSUE #2490: Improve performance of the app by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2494
+* ISSUE #2495: Move console commands to the proper namespaces by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2496
+* ISSUE #2492: Sticky map on activity page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2498
+
+## New Contributors
+* @MattW2 made their first contribution in https://github.com/dreeveapp/dreeve/pull/2487
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.2.0...v5.2.1
+
+# [v5.2.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.2.0) - 2026-08-10
+
+## No more builds
+
+This release brings another major UX improvement. We've **eliminated the need for pre-built HTML files**.
+Changes made in the admin panel are now reflected in the app immediately. No more waiting for builds.
+
+## Other noteworthy changes
+
+* Toggle column visibility on the activity overview
+
+## What's Changed
+* ISSUE #2426: Move the Heatmap page to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2427
+* ISSUE #2430: Move the Milestones page to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2431
+* ISSUE #2434: Serve activity GPX file on demand by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2438
+* ISSUE #2429: Heart rate diagram for certain activity types in file mode by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2435
+* ISSUE #2432: Move the Best efforts page to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2433
+* ISSUE #2437: Replaced Strava-specific intro wording with source-agnostic phrasing by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2439
+* ISSUE #2441: Move the Rewind page to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2442
+* ISSUE #2443: Serve activity metrics and coordinates file on demand by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2444
+* ISSUE #2447: Move the Months page to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2448
+* ISSUE #2449: Move the Activity pages to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2450
+* ISSUE #2451: Move the Segments pages to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2452
+* ISSUE #2454: Move the manifest.json page to a dynamic request handler by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2455
+* ISSUE #2457: Move the Badges pages to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2458
+* ISSUE #2459: ConfigureAppColors needs to invalidate cache tags by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2460
+* ISSUE #2461: Move the Gear pages to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2463
+* ISSUE #2464: Move the dashboard pages to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2465
+* ISSUE #2466: Remove all references to build-related functionality by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2467
+* ISSUE #2424: Allow to toggle column visibility by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2469
+* ISSUE #2445 Translation: German files by @effectpears in https://github.com/dreeveapp/dreeve/pull/2446
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.1.5...v5.2.0
+
+# [v5.1.5](https://github.com/dreeveapp/dreeve/releases/tag/v5.1.5) - 2026-08-05
+
+## New features
+* Added configuration options for Leaflet map base styles
+* Swimming activities can now be categorized as either Open Water Swimming or Pool Swimming
+
+## Improvements
+* Improved map rendering by lowering the default smoothing factor
+* Activity segments and best efforts are now loaded asynchronously
+* Improved the algorithm that determines when gear maintenance is due
+* GPX imports can now extract calorie data when available
+
+## Technical details
+* ISSUE #2402: Lower smoothFactor to 1.0 by @cgtobi in https://github.com/dreeveapp/dreeve/pull/2405
+* ISSUE #2406: Fetch activity segments and best efforts async in preparation for the cached pages by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2407
+* ISSUE #2408: Refactor the application shell to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2410
+* ISSUE #2411: Improve 'gear maintenance is due' algo by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2412
+* ISSUE #2409: Leaflet base style config by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2415
+* ISSUE #2404: Extract calories for gpx files by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2416
+* ISSUE #2418: Move the Eddington page to the new cache based system by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2420
+* ISSUE #2417: Separate swimming activities to OWS/Pool by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2422
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.1.4...v5.1.5
+
+# [v5.1.4](https://github.com/dreeveapp/dreeve/releases/tag/v5.1.4) - 2026-08-04
+
+## New features
+* You can now disable build notifications
+
+## Improvements
+* When importing FIT files, Garmin workout names ae now automatically used as activity titles
+* Sailing activities now display more appropriate units
+* Added heart rate zone indicators to activity charts
+
+## Bug fixes
+* Fixed an error in the AI workout assistant that could cause an "Invalid message sequence" error
+
+## Technical details
+* ISSUE #2382: Garmin Workout Name as Title by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2388
+* ISSUE #2354: Adequate units for sailing activities by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2360
+* ISSUE #2390: Allow to disable build notifications by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2394
+* ISSUE #2395: AI workout assistant UI errors with Invalid message sequence at position 1 by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2397
+* ISSUE #2384: Introduce a caching mechanism to start serving the app dynamically by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2385
+* ISSUE #2389: Heart rate zones indicator on charts by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2396
+* ISSUE #2384: Moved cache tag invalidation to event listeners by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2399
+* ISSUE #2384: Refactor challenges page to be dynamic one by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2400
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.1.3...v5.1.4
+
 # [v5.1.3](https://github.com/dreeveapp/dreeve/releases/tag/v5.1.3) - 2026-07-29
 
 This release fixes a critical bug in the v4 -> v5 migration path.
@@ -27,7 +361,7 @@ This release fixes a critical bug in the v4 -> v5 migration path.
 # [v5.1.1](https://github.com/dreeveapp/dreeve/releases/tag/v5.1.1) - 2026-07-28
 
 We released a separate __Dreeve Garmin Connector__ container to automatically sync your Garmin FIT files
-to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/#/integrations/garmin-connect
+to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/integrations/garmin-connect/
 
 ## New features
 * Added a new automation rule action to automatically update an activity's recording device.
@@ -134,7 +468,7 @@ This is the biggest release since the project began as Statistics for Strava.
 
 > [!WARNING]
 > **Back up first.** Make a copy of `storage/database` **and** of your `config` directory before you upgrade to this new version.
-> The migration guide will walk you through the upgrade process:: https://docs.dreeve.app/#/getting-started/migrating-from-v4
+> The migration guide will walk you through the upgrade process:: https://docs.dreeve.app/getting-started/migrating-from-v4/
 
 Here are the three biggest changes:
 
@@ -160,7 +494,7 @@ All settings have been moved from YAML configuration files into a built-in admin
 making Dreeve easier to configure and maintain.
 
 
-For detailed upgrade instructions, see the migration guide: https://docs.dreeve.app/#/getting-started/migrating-from-v4
+For detailed upgrade instructions, see the migration guide: https://docs.dreeve.app/getting-started/migrating-from-v4/
 
 ## Technical details
 * ISSUE #2174: Enable sqlite journal_mode=WAL by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2176
@@ -1145,7 +1479,7 @@ Learn how to enable and configure webhooks in the documentation: https://docs.dr
 > If you are using the internal cron to manage your app imports and builds,
 > make sure you configured the correct volumes on the Daemon container.
 > The docs were missing a volume and have been updated:
-> https://docs.dreeve.app/#/getting-started/installation?id=docker-composeyml
+> https://docs.dreeve.app/getting-started/installation/#docker-composeyml
 
 ## What's Changed
 * ISSUE #1410: Build crashes when VelocityDistributionChart has no valid data by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/1411
@@ -1212,7 +1546,7 @@ The highlight is the addition of an internal scheduler, allowing you to define a
 If you prefer, you can still use external tools to trigger the import and build scripts.
 However, to use the internal scheduler, you’ll need to configure two things:
 
-* An extra container in your `docker-compose.yml` file: https://docs.dreeve.app/#/getting-started/installation?id=docker-composeyml
+* An extra container in your `docker-compose.yml` file: https://docs.dreeve.app/getting-started/installation/#docker-composeyml
 * The recurring tasks in your main config file under `daemin.cron`: https://docs.dreeve.app/#/configuration/main-configuration
 
 ## What's Changed
@@ -1452,7 +1786,7 @@ Read more in the documentation: https://docs.dreeve.app/#/configuration/main-con
 
 > [!WARNING]  
 > This release comes with a new Docker-based architecture.  Before upgrading, review and update the required `.env` values for your setup:  
-> https://docs.dreeve.app/#/getting-started/installation?id=env
+> https://docs.dreeve.app/getting-started/installation/#env
 
 ```.env
 # !! IMPORTANT If you want to serve Dreeve from a custom domain (not localhost), 

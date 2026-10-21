@@ -6,6 +6,7 @@ namespace App\Domain\Activity\UpdateManuallyAddedActivity;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityName;
+use App\Domain\Activity\ProvideCaloriesFromPayload;
 use App\Domain\Activity\ProvideManuallyAddedActivityPayload;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
@@ -13,19 +14,15 @@ use App\Domain\Gear\GearId;
 use App\Domain\Image\NewImage;
 use App\Domain\Image\ProvideLocalImageFromDropZonePayload;
 use App\Domain\Image\RemovedImage;
-use App\Infrastructure\Cache\CacheTag;
-use App\Infrastructure\Cache\CacheTags;
-use App\Infrastructure\Cache\InvalidatesCacheTags;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
 use App\Infrastructure\CQRS\Command\DomainCommand;
-use App\Infrastructure\CQRS\Command\RequiresRebuild;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 
-#[RequiresRebuild]
-final readonly class UpdateManuallyAddedActivity extends DomainCommand implements DeserializableCommand, InvalidatesCacheTags
+final readonly class UpdateManuallyAddedActivity extends DomainCommand implements DeserializableCommand
 {
+    use ProvideCaloriesFromPayload;
     use ProvideLocalImageFromDropZonePayload;
     use ProvideManuallyAddedActivityPayload;
     use ProvidesCommandName;
@@ -45,7 +42,9 @@ final readonly class UpdateManuallyAddedActivity extends DomainCommand implement
         private float $distance,
         private float $elevation,
         private ?GearId $gearId,
+        private ?int $calories,
         private bool $isCommute,
+        private bool $isGroupActivity,
         private array $newImages,
         private array $removedImages,
     ) {
@@ -70,7 +69,9 @@ final readonly class UpdateManuallyAddedActivity extends DomainCommand implement
             distance: self::parsePositiveNumber($payload, 'distance'),
             elevation: self::parsePositiveNumber($payload, 'elevation'),
             gearId: self::parseGearId($payload),
+            calories: self::parseCalories($payload),
             isCommute: self::parseIsCommute($payload),
+            isGroupActivity: self::parseIsGroupActivity($payload),
             newImages: $newImages,
             removedImages: $removedImages,
         );
@@ -126,9 +127,19 @@ final readonly class UpdateManuallyAddedActivity extends DomainCommand implement
         return $this->gearId;
     }
 
+    public function getCalories(): ?int
+    {
+        return $this->calories;
+    }
+
     public function isCommute(): bool
     {
         return $this->isCommute;
+    }
+
+    public function isGroupActivity(): bool
+    {
+        return $this->isGroupActivity;
     }
 
     /**
@@ -145,10 +156,5 @@ final readonly class UpdateManuallyAddedActivity extends DomainCommand implement
     public function getRemovedImages(): array
     {
         return $this->removedImages;
-    }
-
-    public function getCacheTagsToInvalidate(): CacheTags
-    {
-        return CacheTags::of(CacheTag::ACTIVITIES);
     }
 }

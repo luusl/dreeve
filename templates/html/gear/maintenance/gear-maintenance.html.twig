@@ -1,4 +1,4 @@
-<div class="flex items-center justify-between mb-5">
+<div class="flex items-center justify-between mb-4">
     {% include 'html/navigation/breadcrumbs.html.twig' with {'breadcrumbs': [
         {
             'url': 'gear',
@@ -9,11 +9,28 @@
             'label': 'Maintenance'|trans
         }],
         'disableMargin': true} %}
+    <div class="flex items-center gap-x-2">
+        {% if isFeatureEnabled %}
+            {% include 'html/navigation/admin-edit-link.html.twig' with {
+                path: 'admin/gear/maintenance-logs/register',
+                redirectTo: 'gear/maintenance',
+                title: "Register maintenance"|trans,
+                label: "Log maintenance"|trans({}, 'admin')
+            } %}
+        {% endif %}
+        {% include 'html/navigation/admin-edit-link.html.twig' with {
+            path: 'admin/gear/maintenance-config',
+            redirectTo: 'gear/maintenance',
+            title: "Configure gear maintenance"|trans,
+            label: "Configure"|trans({}, 'admin'),
+            icon: 'cog'
+        } %}
+    </div>
 </div>
 {% block content %}
     {% autoescape false %}
         <!-- GEAR SUB MENU -->
-        {% include 'html/gear/gear-sub-menu.html.twig' with {activeMenuItem: 'gearMaintenance', maintenanceTaskIsDue: not gearIdsThatHaveDueTasks.isEmpty()} %}
+        {% include 'html/gear/gear-sub-menu.html.twig' with {activeMenuItem: 'gearMaintenance'} %}
         <div class="grid grid-cols-1 gap-4">
             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
                 <h3 class="mb-4 text-lg font-semibold">
@@ -38,7 +55,7 @@
                             </th>
                         </tr>
                         </thead>
-                        <tbody data-accordion="table-gears"
+                        <tbody id="table-gears" data-accordion="table-gears"
                                data-active-classes="text-gray-500"
                                data-inactive-classes="text-gray-500">
                         {% for gear in gearsAttachedToComponents %}
@@ -101,7 +118,7 @@
                                                     </div>
                                                     <div class="grid grid-cols-1 xl:grid-cols-2 gap-y-4 divide-x *:px-4 -mx-4 font-normal text-gray-700">
                                                         {% for maintenanceTask in gearComponent.getMaintenanceTasks() %}
-                                                            {% set mostRecentMaintenance = mostRecentMaintenanceForTask(maintenanceTask.getId()) %}
+                                                            {% set maintenanceTaskStatus = maintenanceTaskStatuses.getForTask(maintenanceTask.getId()) %}
                                                             <div class="flex flex-col">
                                                                 <div class="flex justify-between">
                                                                     <div>
@@ -113,19 +130,18 @@
                                                                 </div>
                                                                 <span class="text-xs grow">
                                                                         {{ "Last maintenance"|trans }}:
-                                                                        {% if mostRecentMaintenance is not null %}
-                                                                            {{ mostRecentMaintenance.getPerformedOn()|formatDate('normal') }}
+                                                                        {% if maintenanceTaskStatus.getLastPerformedOn() is not null %}
+                                                                            {{ maintenanceTaskStatus.getLastPerformedOn()|formatDate('normal') }}
                                                                         {% else %}
                                                                             {{ "never"|trans }}
                                                                         {% endif %}
                                                                     </span>
-                                                                {% set progress = calculateMaintenanceTaskProgress(
-                                                                    gearComponent.getAttachedTo(),
-                                                                    mostRecentMaintenance is not null ? mostRecentMaintenance.getPerformedOn() : null,
-                                                                    maintenanceTask.getIntervalUnit(),
-                                                                    maintenanceTask.getIntervalValue()
-                                                                ) %}
-                                                                {% if progress.isZero() %}
+                                                                {% set progress = maintenanceTaskStatus.getProgress() %}
+                                                                {% if progress is null %}
+                                                                    {% set colors = {'bg':'bg-gray-200','text':'text-gray-700'} %}
+                                                                {% elseif progress.isOverdue() %}
+                                                                    {% set colors = {'bg':'bg-red-600', 'text':'text-red-600'} %}
+                                                                {% elseif progress.isZero() %}
                                                                     {% set colors = {'bg':'bg-gray-200','text':'text-gray-700'} %}
                                                                 {% elseif progress.isLow() %}
                                                                     {% set colors = {'bg':'bg-green-600','text':'text-green-600'} %}
@@ -135,12 +151,21 @@
                                                                     {% set colors = {'bg':'bg-red-600', 'text':'text-red-600'} %}
                                                                 {% endif %}
                                                                 <div class="mt-2">
-                                                                    <div class="mb-1">
-                                                                        <span class="{{ colors.text }} text-sm font-medium">{{ progress.getDescription() }}</span>
+                                                                    <div class="flex items-center justify-between mb-1">
+                                                                        <span class="{{ colors.text }} text-sm font-medium">{{ progress ? progress.getDescription() : '0' }}</span>
+                                                                        {% if progress %}
+                                                                            <span class="{{ colors.text }} text-xs font-medium">
+                                                                                {% if progress.isOverdue() %}
+                                                                                    {{ "Overdue by {amount}"|trans({'{amount}': progress.getRemainingDescription()}) }}
+                                                                                {% else %}
+                                                                                    {{ "{amount} left"|trans({'{amount}': progress.getRemainingDescription()}) }}
+                                                                                {% endif %}
+                                                                            </span>
+                                                                        {% endif %}
                                                                     </div>
                                                                     <div class="w-full bg-gray-200 rounded-full h-2.5">
                                                                         <div class="{{ colors.bg }} h-2.5 rounded-full"
-                                                                             style="width: {{ progress.getPercentage() }}%"></div>
+                                                                             style="width: {{ progress ? progress.getPercentage() : 0 }}%"></div>
                                                                     </div>
                                                                 </div>
                                                             </div>

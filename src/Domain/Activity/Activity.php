@@ -4,12 +4,9 @@ namespace App\Domain\Activity;
 
 use App\Domain\Activity\Route\RouteGeography;
 use App\Domain\Activity\SportType\SportType;
-use App\Domain\Activity\Stream\ActivityPowerRepository;
-use App\Domain\Activity\Stream\PowerOutput;
-use App\Domain\Activity\Stream\PowerOutputs;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\RecordingDevice\RecordingDeviceId;
-use App\Domain\Integration\AI\SupportsAITooling;
+use App\Domain\Gear\Sensor\ConnectedSensors;
 use App\Domain\Integration\Weather\OpenMeteo\Weather;
 use App\Domain\Zwift\CouldNotDetermineZwiftMap;
 use App\Domain\Zwift\ZwiftMap;
@@ -39,19 +36,16 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'Activity_startDateTimeIndex', columns: ['startDateTime'])]
 #[ORM\Index(name: 'Activity_sportType', columns: ['sportType'])]
 #[ORM\Index(name: 'Activity_gearId', columns: ['gearId'])]
+#[ORM\Index(name: 'Activity_gearIdStartDateTime', columns: ['gearId', 'startDateTime'])]
 #[ORM\Index(name: 'Activity_markedForDeletion', columns: ['markedForDeletion'])]
 #[ORM\Index(name: 'Activity_streamsAreImported', columns: ['streamsAreImported'])]
-final class Activity implements SupportsAITooling
+#[ORM\Index(name: 'Activity_importSource', columns: ['importSource'])]
+final class Activity
 {
     use RecordsEvents;
     use ProvideTimeFormats;
 
     public const string DATE_TIME_FORMAT = 'Y-m-d\TH:i:s\Z';
-
-    private ?int $maxCadence = null;
-    private ?PowerOutputs $bestPowerOutputs = null;
-    private ?int $normalizedPower = null;
-    private ?string $gearName = null;
 
     #[ORM\Column(type: 'string', nullable: true)]
     // @phpstan-ignore-next-line
@@ -116,6 +110,8 @@ final class Activity implements SupportsAITooling
         private readonly int $elapsedTimeInSeconds,
         #[ORM\Column(type: 'string', nullable: true)]
         private readonly ?string $deviceName,
+        #[ORM\Column(type: 'json', nullable: true)]
+        private readonly ?ConnectedSensors $connectedSensors,
         #[ORM\Column(type: 'integer')]
         private readonly int $totalImageCount,
         #[ORM\Column(type: 'text', nullable: true)]
@@ -130,6 +126,8 @@ final class Activity implements SupportsAITooling
         private readonly ?GearId $gearId,
         #[ORM\Column(type: 'boolean', nullable: true)]
         private readonly bool $isCommute,
+        #[ORM\Column(type: 'boolean', nullable: true)]
+        private readonly bool $isGroupActivity,
         #[ORM\Column(type: 'string', nullable: true)]
         private readonly ?WorkoutType $workoutType,
     ) {
@@ -148,7 +146,7 @@ final class Activity implements SupportsAITooling
 
         $deviceName = $rawData['device_name'] ?? null;
 
-        return self::fromState(
+        return self::create(
             activityId: ActivityId::fromUnprefixed((string) $rawData['id']),
             startDateTime: $startDate,
             sportType: SportType::from($rawData['sport_type']),
@@ -175,6 +173,7 @@ final class Activity implements SupportsAITooling
             movingTimeInSeconds: $rawData['moving_time'] ?? 0,
             elapsedTimeInSeconds: $rawData['elapsed_time'] ?? 0,
             deviceName: $deviceName,
+            connectedSensors: null,
             totalImageCount: $rawData['total_photo_count'] ?? 0,
             localImagePaths: [],
             polyline: $rawData['map']['summary_polyline'] ?? null,
@@ -182,8 +181,90 @@ final class Activity implements SupportsAITooling
             weather: null,
             gearId: GearId::fromOptionalUnprefixed($rawData['gear_id'] ?? null),
             isCommute: $rawData['commute'] ?? false,
+            isGroupActivity: ($rawData['athlete_count'] ?? 1) > 1,
             workoutType: WorkoutType::fromStravaInt($rawData['workout_type'] ?? null),
         );
+    }
+
+    /**
+     * @param array<string> $localImagePaths
+     */
+    public static function create(
+        ActivityId $activityId,
+        SerializableDateTime $startDateTime,
+        SportType $sportType,
+        WorldType $worldType,
+        ImportSource $importSource,
+        ?ExternalReferenceId $externalReferenceId,
+        ActivityName $name,
+        ?string $description,
+        Kilometer $distance,
+        Meter $elevation,
+        ?Coordinate $startingCoordinate,
+        ?int $calories,
+        ?int $kilojoules,
+        ?int $averagePower,
+        ?int $maxPower,
+        KmPerHour $averageSpeed,
+        KmPerHour $maxSpeed,
+        ?int $averageHeartRate,
+        ?int $maxHeartRate,
+        ?int $averageCadence,
+        int $movingTimeInSeconds,
+        int $elapsedTimeInSeconds,
+        ?string $deviceName,
+        ?ConnectedSensors $connectedSensors,
+        int $totalImageCount,
+        array $localImagePaths,
+        ?string $polyline,
+        RouteGeography $routeGeography,
+        ?string $weather,
+        ?GearId $gearId,
+        bool $isCommute,
+        bool $isGroupActivity,
+        ?WorkoutType $workoutType,
+    ): self {
+        $activity = self::fromState(
+            activityId: $activityId,
+            startDateTime: $startDateTime,
+            sportType: $sportType,
+            worldType: $worldType,
+            importSource: $importSource,
+            externalReferenceId: $externalReferenceId,
+            name: $name,
+            description: $description,
+            distance: $distance,
+            elevation: $elevation,
+            startingCoordinate: $startingCoordinate,
+            calories: $calories,
+            kilojoules: $kilojoules,
+            averagePower: $averagePower,
+            maxPower: $maxPower,
+            averageSpeed: $averageSpeed,
+            maxSpeed: $maxSpeed,
+            averageHeartRate: $averageHeartRate,
+            maxHeartRate: $maxHeartRate,
+            averageCadence: $averageCadence,
+            movingTimeInSeconds: $movingTimeInSeconds,
+            elapsedTimeInSeconds: $elapsedTimeInSeconds,
+            deviceName: $deviceName,
+            connectedSensors: $connectedSensors,
+            totalImageCount: $totalImageCount,
+            localImagePaths: $localImagePaths,
+            polyline: $polyline,
+            routeGeography: $routeGeography,
+            weather: $weather,
+            gearId: $gearId,
+            isCommute: $isCommute,
+            isGroupActivity: $isGroupActivity,
+            workoutType: $workoutType,
+        );
+        $activity->recordThat(new ActivityWasAdded($activity->getStartDate()));
+        if ($activity->hasMappableRoute()) {
+            $activity->recordThat(new ActivityRouteWasUpdated());
+        }
+
+        return $activity;
     }
 
     /**
@@ -213,6 +294,7 @@ final class Activity implements SupportsAITooling
         int $movingTimeInSeconds,
         int $elapsedTimeInSeconds,
         ?string $deviceName,
+        ?ConnectedSensors $connectedSensors,
         int $totalImageCount,
         array $localImagePaths,
         ?string $polyline,
@@ -220,6 +302,7 @@ final class Activity implements SupportsAITooling
         ?string $weather,
         ?GearId $gearId,
         bool $isCommute,
+        bool $isGroupActivity,
         ?WorkoutType $workoutType,
     ): self {
         return new self(
@@ -246,6 +329,7 @@ final class Activity implements SupportsAITooling
             movingTimeInSeconds: $movingTimeInSeconds,
             elapsedTimeInSeconds: $elapsedTimeInSeconds,
             deviceName: $deviceName,
+            connectedSensors: $connectedSensors,
             totalImageCount: $totalImageCount,
             localImagePaths: $localImagePaths,
             polyline: $polyline,
@@ -253,6 +337,7 @@ final class Activity implements SupportsAITooling
             weather: $weather,
             gearId: $gearId,
             isCommute: $isCommute,
+            isGroupActivity: $isGroupActivity,
             workoutType: $workoutType
         );
     }
@@ -269,9 +354,9 @@ final class Activity implements SupportsAITooling
 
     public function withStartDateTime(SerializableDateTime $startDateTime): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'startDateTime' => $startDateTime,
-        ]);
+        ]));
     }
 
     public function getSportType(): SportType
@@ -286,9 +371,9 @@ final class Activity implements SupportsAITooling
 
     public function withWorldType(WorldType $worldType): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'worldType' => $worldType,
-        ]);
+        ]));
     }
 
     public function getImportSource(): ImportSource
@@ -303,9 +388,9 @@ final class Activity implements SupportsAITooling
 
     public function withSportType(SportType $sportType): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'sportType' => $sportType,
-        ]);
+        ]));
     }
 
     public function getStartingCoordinate(): ?Coordinate
@@ -315,9 +400,9 @@ final class Activity implements SupportsAITooling
 
     public function withStartingCoordinate(?Coordinate $coordinate): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'startingCoordinate' => $coordinate,
-        ]);
+        ]));
     }
 
     public function getGearId(): ?GearId
@@ -333,50 +418,9 @@ final class Activity implements SupportsAITooling
     public function withGear(
         ?GearId $gearId = null,
     ): self {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'gearId' => $gearId,
-        ]);
-    }
-
-    public function getGearName(): ?string
-    {
-        return $this->gearName;
-    }
-
-    public function withGearName(?string $gearName): self
-    {
-        return clone ($this, [
-            'gearName' => $gearName,
-        ]);
-    }
-
-    public function hasDetailedPowerData(): bool
-    {
-        if (is_null($this->bestPowerOutputs)) {
-            return false;
-        }
-
-        return !$this->bestPowerOutputs->isEmpty();
-    }
-
-    public function getBestAveragePowerForTimeInterval(int $timeInterval): ?PowerOutput
-    {
-        if (is_null($this->bestPowerOutputs)) {
-            return null;
-        }
-
-        return $this->bestPowerOutputs->find(fn (PowerOutput $bestPowerOutput): bool => $bestPowerOutput->getTimeIntervalInSeconds() === $timeInterval);
-    }
-
-    public function withBestPowerOutputs(PowerOutputs $bestPowerOutputs): self
-    {
-        if ($bestPowerOutputs->isEmpty()) {
-            return $this;
-        }
-
-        return clone ($this, [
-            'bestPowerOutputs' => $bestPowerOutputs,
-        ]);
+        ]));
     }
 
     public function getWeather(): ?Weather
@@ -414,10 +458,16 @@ final class Activity implements SupportsAITooling
      */
     public function withLocalImagePaths(array $localImagePaths): self
     {
-        return clone ($this, [
+        $clone = clone ($this, [
             'localImagePaths' => $localImagePaths,
             'totalImageCount' => count($localImagePaths),
         ]);
+
+        if ($this->getLocalImagePaths() !== $clone->getLocalImagePaths()) {
+            $clone->recordThat(new ActivityImagesHaveBeenUpdated($clone->getId(), $clone->getStartDate()));
+        }
+
+        return $clone;
     }
 
     public function getTotalImageCount(): int
@@ -446,9 +496,9 @@ final class Activity implements SupportsAITooling
 
     public function withName(ActivityName $name): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'name' => $name,
-        ]);
+        ]));
     }
 
     public function getDescription(): string
@@ -458,9 +508,9 @@ final class Activity implements SupportsAITooling
 
     public function withDescription(?string $description): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'description' => $description,
-        ]);
+        ]));
     }
 
     public function getDistance(): Kilometer
@@ -470,9 +520,9 @@ final class Activity implements SupportsAITooling
 
     public function withDistance(Kilometer $distance): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'distance' => $distance,
-        ]);
+        ]));
     }
 
     public function getDistanceInDisplayUnit(): NauticalMile|Kilometer
@@ -487,9 +537,9 @@ final class Activity implements SupportsAITooling
 
     public function withElevation(Meter $elevation): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'elevation' => $elevation,
-        ]);
+        ]));
     }
 
     public function getCalories(): ?int
@@ -497,9 +547,23 @@ final class Activity implements SupportsAITooling
         return $this->calories;
     }
 
+    public function withCalories(?int $calories): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'calories' => $calories,
+        ]));
+    }
+
     public function getKilojoules(): ?int
     {
         return $this->kilojoules;
+    }
+
+    public function withKilojoules(?int $kilojoules): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'kilojoules' => $kilojoules,
+        ]));
     }
 
     public function getAveragePower(): ?int
@@ -519,9 +583,9 @@ final class Activity implements SupportsAITooling
 
     public function withAverageSpeed(KmPerHour $averageSpeed): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'averageSpeed' => $averageSpeed,
-        ]);
+        ]));
     }
 
     public function getAverageSpeedInDisplayUnit(): Knot|KmPerHour
@@ -546,9 +610,9 @@ final class Activity implements SupportsAITooling
 
     public function withMaxSpeed(KmPerHour $maxSpeed): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'maxSpeed' => $maxSpeed,
-        ]);
+        ]));
     }
 
     public function getMaxSpeedInDisplayUnit(): Knot|KmPerHour
@@ -571,18 +635,6 @@ final class Activity implements SupportsAITooling
         return $this->averageCadence;
     }
 
-    public function getMaxCadence(): ?int
-    {
-        return $this->maxCadence;
-    }
-
-    public function withMaxCadence(int $maxCadence): self
-    {
-        return clone ($this, [
-            'maxCadence' => $maxCadence,
-        ]);
-    }
-
     public function getMovingTimeInSeconds(): int
     {
         return $this->movingTimeInSeconds;
@@ -595,9 +647,9 @@ final class Activity implements SupportsAITooling
 
     public function withMovingTimeInSeconds(int $movingTimeInSeconds): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'movingTimeInSeconds' => $movingTimeInSeconds,
-        ]);
+        ]));
     }
 
     public function getMovingTimeFormatted(): string
@@ -612,9 +664,9 @@ final class Activity implements SupportsAITooling
 
     public function withElapsedTimeInSeconds(int $elapsedTimeInSeconds): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'elapsedTimeInSeconds' => $elapsedTimeInSeconds,
-        ]);
+        ]));
     }
 
     public function getElapsedTimeFormatted(): string
@@ -634,9 +686,9 @@ final class Activity implements SupportsAITooling
 
     public function withPolyline(?string $polyline): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'polyline' => $polyline,
-        ]);
+        ]));
     }
 
     public function getDeviceName(): ?string
@@ -646,9 +698,14 @@ final class Activity implements SupportsAITooling
 
     public function withDeviceName(?string $deviceName): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'deviceName' => $deviceName,
-        ]);
+        ]));
+    }
+
+    public function getConnectedSensors(): ?ConnectedSensors
+    {
+        return $this->connectedSensors;
     }
 
     public function getDeviceId(): RecordingDeviceId
@@ -663,9 +720,21 @@ final class Activity implements SupportsAITooling
 
     public function withCommute(bool $isCommute): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'isCommute' => $isCommute,
-        ]);
+        ]));
+    }
+
+    public function isGroupActivity(): bool
+    {
+        return $this->isGroupActivity;
+    }
+
+    public function withGroupActivity(bool $isGroupActivity): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'isGroupActivity' => $isGroupActivity,
+        ]));
     }
 
     public function getWorkoutType(): ?WorkoutType
@@ -675,9 +744,9 @@ final class Activity implements SupportsAITooling
 
     public function withWorkoutType(?WorkoutType $workoutType): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'workoutType' => $workoutType,
-        ]);
+        ]));
     }
 
     public function isZwiftRide(): bool
@@ -723,21 +792,101 @@ final class Activity implements SupportsAITooling
 
     public function withRouteGeography(RouteGeography $routeGeography): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'routeGeography' => $routeGeography,
-        ]);
+        ]));
     }
 
-    public function getNormalizedPower(): ?int
+    public function isMissingReverseGeocoding(): bool
     {
-        return $this->normalizedPower;
+        return !$this->routeGeography->isReversedGeocoded()
+            && $this->startingCoordinate instanceof Coordinate
+            && $this->sportType->supportsReverseGeocoding();
     }
 
-    public function withNormalizedPower(?int $normalizedPower): self
+    public function isMissingWeather(): bool
     {
-        return clone ($this, [
-            'normalizedPower' => $normalizedPower,
-        ]);
+        return !$this->getWeather() instanceof Weather
+            && $this->startingCoordinate instanceof Coordinate
+            && $this->sportType->supportsWeather();
+    }
+
+    public function hasMappableRoute(): bool
+    {
+        return $this->sportType->supportsReverseGeocoding()
+            && WorldType::REAL_WORLD === $this->worldType
+            && !in_array($this->polyline, [null, '', '0'], true)
+            && !is_null($this->routeGeography->getStartingPointCountryCode());
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function routeSignature(): ?array
+    {
+        if (!$this->hasMappableRoute()) {
+            return null;
+        }
+
+        return [
+            'name' => $this->getName(),
+            'distance' => $this->distance->toFloat(),
+            'polyline' => $this->polyline,
+            'routeGeography' => $this->routeGeography->jsonSerialize(),
+            'sportType' => $this->sportType->value,
+            'startDateTime' => $this->startDateTime->getTimestamp(),
+            'isCommute' => $this->isCommute,
+            'isGroupActivity' => $this->isGroupActivity,
+            'workoutType' => $this->workoutType?->value,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function updateSignature(): array
+    {
+        return [
+            'startDateTime' => $this->startDateTime->getTimestamp(),
+            'name' => $this->getOriginalName(),
+            'description' => $this->description,
+            'deviceName' => $this->deviceName,
+            'sportType' => $this->sportType->value,
+            'worldType' => $this->worldType->value,
+            'distance' => $this->distance->toFloat(),
+            'averageSpeed' => $this->averageSpeed->toFloat(),
+            'maxSpeed' => $this->maxSpeed->toFloat(),
+            'movingTimeInSeconds' => $this->movingTimeInSeconds,
+            'elapsedTimeInSeconds' => $this->elapsedTimeInSeconds,
+            'elevation' => $this->elevation->toFloat(),
+            'calories' => $this->calories,
+            'kilojoules' => $this->kilojoules,
+            'polyline' => $this->polyline,
+            'startingCoordinateLatitude' => $this->startingCoordinate?->getLatitude()->toFloat(),
+            'startingCoordinateLongitude' => $this->startingCoordinate?->getLongitude()->toFloat(),
+            'routeGeography' => $this->routeGeography->jsonSerialize(),
+            'weather' => $this->weather,
+            'gearId' => (string) $this->gearId,
+            'isCommute' => $this->isCommute,
+            'isGroupActivity' => $this->isGroupActivity,
+            'workoutType' => $this->workoutType?->value,
+        ];
+    }
+
+    private function recordUpdate(self $clone): self
+    {
+        if ($this->routeSignature() !== $clone->routeSignature()) {
+            $clone->recordThat(new ActivityRouteWasUpdated());
+        }
+        if ($this->updateSignature() !== $clone->updateSignature()) {
+            $clone->recordOnlyOnce(new ActivityWasUpdated(
+                activityId: $clone->getId(),
+                startDate: $clone->getStartDate(),
+                previousStartDate: $this->getStartDate()
+            ));
+        }
+
+        return $clone;
     }
 
     /**
@@ -758,6 +907,7 @@ final class Activity implements SupportsAITooling
             'start-date' => $this->getStartDate()->getTimestamp() * 1000, // JS timestamp is in milliseconds,
             'countryCode' => $this->getRouteGeography()->getPassedThroughCountries(),
             'isCommute' => $this->isCommute() ? 'true' : 'false',
+            'isGroupActivity' => $this->isGroupActivity() ? 'true' : 'false',
             'gear' => $this->getGearIdIncludingNone(),
             'workoutType' => $this->getWorkoutType()?->value,
             'device' => $this->getDeviceId(),
@@ -771,16 +921,7 @@ final class Activity implements SupportsAITooling
      */
     public function getSortables(): array
     {
-        $bestAveragePowerSortables = [];
-        foreach (ActivityPowerRepository::TIME_INTERVALS_IN_SECONDS_REDACTED as $interval) {
-            if (!($bestAverage = $this->getBestAveragePowerForTimeInterval($interval)) instanceof PowerOutput) {
-                continue;
-            }
-
-            $bestAveragePowerSortables[sprintf('power-%ss', $interval)] = $bestAverage->getPower();
-        }
-
-        return array_filter(array_merge([
+        return array_filter([
             'start-date' => $this->getStartDate()->getTimestamp(),
             'distance' => (int) ($this->getDistance()->toFloat() * 1000),
             'elevation' => (int) ($this->getElevation()->toFloat() * 1000),
@@ -789,7 +930,7 @@ final class Activity implements SupportsAITooling
             'speed' => (int) ($this->getAverageSpeed()->toFloat() * 1000),
             'heart-rate' => $this->getAverageHeartRate(),
             'calories' => $this->getCalories(),
-        ], $bestAveragePowerSortables));
+        ]);
     }
 
     /**
@@ -802,40 +943,6 @@ final class Activity implements SupportsAITooling
             'elevation' => $this->getElevation()->toUnitSystem($unitSystem)->toFloat(),
             'moving-time' => $this->getMovingTimeInSeconds() / 3600,
             'calories' => $this->getCalories() ?? 0,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function exportForAITooling(): array
-    {
-        return [
-            'id' => $this->getId()->toUnprefixedString(),
-            'startDateTime' => $this->getStartDate(),
-            'sportType' => $this->getSportType()->value,
-            'name' => $this->getName(),
-            'description' => $this->getDescription(),
-            'distanceInKilometer' => $this->getDistance(),
-            'elevationInMeter' => $this->getElevation(),
-            'startingCoordinate' => $this->getStartingCoordinate(),
-            'caloriesBurnt' => $this->getCalories(),
-            'averagePowerInWatts' => $this->getAveragePower(),
-            'maxPowerInWatts' => $this->getMaxPower(),
-            'averageSpeed' => $this->getAverageSpeed(),
-            'maxSpeed' => $this->getMaxSpeed(),
-            'averageHeartRate' => $this->getAverageHeartRate(),
-            'maxHeartRate' => $this->getMaxHeartRate(),
-            'averageCadence' => $this->getAverageCadence(),
-            'movingTimeInSeconds' => $this->getMovingTimeInSeconds(),
-            'recordedOnDevice' => $this->getDeviceName(),
-            'totalImageCount' => $this->getTotalImageCount(),
-            'routeGeography' => $this->getRouteGeography()->jsonSerialize(),
-            'weather' => $this->getWeather(),
-            'gearId' => $this->getGearId()?->toUnprefixedString(),
-            'gearName' => $this->getGearName(),
-            'isCommute' => $this->isCommute(),
-            'workoutType' => $this->getWorkoutType()?->value,
         ];
     }
 }

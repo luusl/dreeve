@@ -52,26 +52,26 @@
                             <th scope="col" class="text-left">
                                 {{ "Activity"|trans }}
                             </th>
-                            <th scope="col" class="narrow">
-                                <span class="sr-only">{{ "Delete"|trans({}, 'admin') }}</span>
+                            <th scope="col" class="narrow sticky-actions">
+                                <span class="sr-only">{{ "Actions"|trans({}, 'admin') }}</span>
                             </th>
                         </tr>
                         </thead>
                         <tbody>
                         {% for fileImport in overview %}
-                            <tr class="group/row {{ fileImport.isFailed() ? 'bg-red-50/60' : '' }}">
+                            <tr class="group/row {{ fileImport.isFailed() ? 'row--failed' : '' }}">
                                 <td class="whitespace-nowrap text-left font-medium text-gray-800">
                                     <div class="flex items-center justify-start gap-2">
                                         {% if fileImport.isFailed() %}
                                             <span class="grid place-items-center size-7 shrink-0 rounded-lg bg-red-100 text-red-500"
-                                                  title="{{ fileImport.getErrorMessage() }}" aria-label="{{ "Failed"|trans({}, 'admin') }}">
+                                                  title="{{ fileImport.getErrorMessage()|e }}" aria-label="{{ "Failed"|trans({}, 'admin') }}">
                                                 <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                     <circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
                                             </span>
                                         {% elseif fileImport.wasSkipped() %}
                                             <span class="grid place-items-center size-7 shrink-0 rounded-lg bg-amber-100 text-amber-500"
-                                                  title="{{ fileImport.getErrorMessage() }}" aria-label="{{ "Skipped"|trans({}, 'admin') }}">
+                                                  title="{{ fileImport.getErrorMessage()|e }}" aria-label="{{ "Skipped"|trans({}, 'admin') }}">
                                                   <svg class="size-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
                                                       <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
                                                     </svg>
@@ -98,33 +98,36 @@
                                 </td>
                                 <td class="whitespace-nowrap text-left">
                                     {% set activityId = fileImport.getActivityId() %}
-                                    {% if activityId and activityPageBuildStatus.hasBeenBuilt(activityId) %}
+                                    {% if activityId %}
                                         <a class="block max-w-100 truncate font-medium text-blue-600 hover:underline"
                                            title="{{ fileImport.getActivityName() }}"
-                                           href="{{ relativeUrl('/activities#/activity/' ~ activityId ~ '.html') }}">
+                                           href="{{ relativeUrl('/activities/' ~ activityId) }}">
                                             {{ fileImport.getActivityName() }}
                                         </a>
-                                    {% elseif activityId %}
-                                        <div class="flex items-center gap-2">
-                                            <span class="block max-w-100 truncate font-medium text-gray-800" title="{{ fileImport.getActivityName() }}">
-                                                {{ fileImport.getActivityName() }}
-                                            </span>
-                                            <span class="pill pill--neutral text-xs"
-                                                  title="{{ "This activity shows up on the app after the next build."|trans({}, 'admin') }}">
-                                                {{ "Pending build"|trans({}, 'admin') }}
-                                            </span>
-                                        </div>
                                     {% endif %}
                                 </td>
-                                <td class="narrow whitespace-nowrap">
-                                    <a href="{{ relativeUrl(path('admin_delete_file_import', {fileImportId: fileImport.getFileImportId()})) }}"
-                                       class="inline-flex items-center justify-center text-gray-500 transition-colors hover:text-red-600"
-                                       title="{{ "Delete"|trans({}, 'admin') }}">
-                                        <span class="sr-only">{{ "Delete"|trans({}, 'admin') }}</span>
-                                        <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/>
-                                        </svg>
-                                    </a>
+                                <td class="narrow whitespace-nowrap sticky-actions">
+                                    <div class="inline-flex items-center gap-2">
+                                        {% if fileImport.hasFileContents() %}
+                                            <a href="{{ relativeUrl(path('admin_download_file_import', {fileImportId: fileImport.getFileImportId()})) }}"
+                                               download="{{ fileImport.getOriginalFilename()|e('html_attr') }}"
+                                               class="inline-flex items-center justify-center text-gray-500 transition-colors hover:text-primary"
+                                               title="{{ "Download original file"|trans({}, 'admin') }}">
+                                                <span class="sr-only">{{ "Download original file"|trans({}, 'admin') }}</span>
+                                                <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V4M7 14H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-2m-1-5-4 5-4-5m9 8h.01"/>
+                                                </svg>
+                                            </a>
+                                        {% endif %}
+                                        <a href="{{ relativeUrl(path('admin_delete_file_import', {fileImportId: fileImport.getFileImportId()})) }}"
+                                           class="inline-flex items-center justify-center text-gray-500 transition-colors hover:text-red-600"
+                                           title="{{ "Delete"|trans({}, 'admin') }}">
+                                            <span class="sr-only">{{ "Delete"|trans({}, 'admin') }}</span>
+                                            <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/>
+                                            </svg>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         {% endfor %}

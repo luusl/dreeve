@@ -6,6 +6,7 @@ namespace App\Tests\Domain\Import\FileParser;
 
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Import\FileParser\ActivityLapsMapper;
 use App\Domain\Import\FileParser\ActivityStreamsMapper;
 use App\Domain\Import\FileParser\CouldNotParseActivityFile;
 use App\Domain\Import\FileParser\RawActivityFile;
@@ -92,12 +93,21 @@ class TcxFileParserTest extends ActivityFileParserTestCase
             [0, 10, 20, 30, 40],
             $parsed->getStreams()->filterOnType(StreamType::TIME)->getData()
         );
-        // The Suunto zero-altitude filter must not touch files that genuinely
-        // have no altitude other than zero.
-        $this->assertSame(
-            [0.0, 0.0, 0.0, 0.0, 0.0],
-            $parsed->getStreams()->filterOnType(StreamType::ALTITUDE)->getData()
-        );
+        // The Suunto zero-altitude filter leaves these zeros alone because the file has
+        // no real altitude data, after which the mapper drops the stream: an altitude
+        // series of nothing but zeroes conveys no elevation.
+        $this->assertNull($parsed->getStreams()->filterOnType(StreamType::ALTITUDE));
+    }
+
+    public function testParseFileWithBomAndLeadingWhitespace(): void
+    {
+        $parsed = $this->parser->parse($this->rawFileFromFixture('activity-leading-whitespace.tcx'));
+        $activity = $parsed->getActivity();
+
+        $this->assertSame(SportType::RIDE, $activity->getSportType());
+        $this->assertSame('Garmin Edge 530', $activity->getDeviceName());
+        $this->assertSame(0.05, $activity->getDistance()->toFloat());
+        $this->assertSame(42, $activity->getCalories());
     }
 
     #[\Override]
@@ -107,7 +117,7 @@ class TcxFileParserTest extends ActivityFileParserTestCase
 
         $this->parser = new TcxFileParser(
             new IncrementingActivityIdFactory(),
-            new IncrementingActivityLapIdFactory(),
+            new ActivityLapsMapper(new IncrementingActivityLapIdFactory()),
             new ActivityStreamsMapper(PausedClock::fromString('2023-10-17 16:15:04')),
             SerializableTimezone::UTC(),
         );

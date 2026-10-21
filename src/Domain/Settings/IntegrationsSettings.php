@@ -10,6 +10,7 @@ use App\Domain\Integration\AI\Chat\ChatCommands;
 use App\Domain\Integration\AI\HuggingFace;
 use App\Domain\Integration\AI\InvalidAIConfiguration;
 use App\Domain\Integration\Notification\Shoutrrr\ConfiguredNotificationUrls;
+use App\Infrastructure\ValueObject\String\Url;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Providers\Anthropic\Anthropic;
 use NeuronAI\Providers\Deepseek\Deepseek;
@@ -31,7 +32,7 @@ final readonly class IntegrationsSettings
         private array $aiConfig,
         private ChatCommands $chatCommands,
         private ConfiguredNotificationUrls $configuredNotificationUrls,
-        private bool $notifyOnSuccessfulBuild,
+        private bool $notifyOnSuccessfulImport,
     ) {
     }
 
@@ -65,6 +66,10 @@ final readonly class IntegrationsSettings
                     throw new InvalidAIConfiguration(sprintf('%s cannot be empty', ucfirst($key)));
                 }
             }
+
+            if ('ollama' === $providerName) {
+                Url::fromString($config['url']);
+            }
         }
 
         $notifications = is_array($data['notifications'] ?? null) ? $data['notifications'] : [];
@@ -80,7 +85,8 @@ final readonly class IntegrationsSettings
             aiConfig: $aiConfig,
             chatCommands: ChatCommands::fromArray($aiConfig['agent']['commands'] ?? []),
             configuredNotificationUrls: ConfiguredNotificationUrls::fromConfig($services),
-            notifyOnSuccessfulBuild: filter_var($notifications['notifyOnSuccessfulBuild'] ?? true, FILTER_VALIDATE_BOOLEAN),
+            // The stored key predates the removal of the build phase, renaming it would reset the user's setting.
+            notifyOnSuccessfulImport: filter_var($notifications['notifyOnSuccessfulBuild'] ?? true, FILTER_VALIDATE_BOOLEAN),
         );
     }
 
@@ -104,9 +110,9 @@ final readonly class IntegrationsSettings
         return $this->configuredNotificationUrls;
     }
 
-    public function shouldNotifyOnSuccessfulBuild(): bool
+    public function shouldNotifyOnSuccessfulImport(): bool
     {
-        return $this->notifyOnSuccessfulBuild;
+        return $this->notifyOnSuccessfulImport;
     }
 
     public function getAIProvider(): AIProviderInterface
@@ -142,7 +148,7 @@ final readonly class IntegrationsSettings
                 model: $this->aiConfig['configuration']['model'],
             ),
             'ollama' => new Ollama(
-                url: (string) $apiKey,
+                url: $this->aiConfig['configuration']['url'],
                 model: $this->aiConfig['configuration']['model'],
             ),
             'openAI' => new OpenAI(

@@ -36,7 +36,7 @@ class DaemonSettingsTest extends TestCase
         $this->assertEquals(
             [
                 CronAction::create(
-                    id: CronActionId::RUN_STRAVA_IMPORT_AND_BUILD_APP,
+                    id: CronActionId::RUN_STRAVA_IMPORT,
                     expression: new \Cron\CronExpression('0 3 * * *'),
                 ),
             ],
@@ -67,7 +67,7 @@ class DaemonSettingsTest extends TestCase
 
         $actions = iterator_to_array($settings->getConfiguredCronActions());
         $this->assertCount(1, $actions);
-        $this->assertSame('0 2 * * *', (string) $actions[0]->getExpression());
+        $this->assertSame('30 2 * * *', (string) $actions[0]->getExpression());
     }
 
     public function testItThrowsForAnInvalidCronExpression(): void

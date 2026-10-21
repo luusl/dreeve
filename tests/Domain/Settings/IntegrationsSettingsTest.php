@@ -35,7 +35,7 @@ class IntegrationsSettingsTest extends TestCase
         $this->assertFalse($settings->isAIIntegrationWithUIEnabled());
         $this->assertSame([], $settings->getChatCommands()->jsonSerialize());
         $this->assertCount(0, iterator_to_array($settings->getConfiguredNotificationUrls()));
-        $this->assertTrue($settings->shouldNotifyOnSuccessfulBuild());
+        $this->assertTrue($settings->shouldNotifyOnSuccessfulImport());
     }
 
     public function testItDisablesTheSuccessfulBuildNotification(): void
@@ -44,7 +44,7 @@ class IntegrationsSettingsTest extends TestCase
             'notifications' => ['notifyOnSuccessfulBuild' => '0'],
         ]);
 
-        $this->assertFalse($settings->shouldNotifyOnSuccessfulBuild());
+        $this->assertFalse($settings->shouldNotifyOnSuccessfulImport());
     }
 
     public function testItEnablesTheAIIntegration(): void
@@ -113,6 +113,37 @@ class IntegrationsSettingsTest extends TestCase
         $this->assertEquals(
             $expectedProvider::class,
             $settings->getAIProvider()::class
+        );
+    }
+
+    public function testItGuardsAValidOllamaUrl(): void
+    {
+        $this->expectExceptionObject(new \InvalidArgumentException('Invalid url "dreeve-ollama:11434/api"'));
+
+        IntegrationsSettings::fromArray(['ai' => [
+            'enabled' => true,
+            'provider' => 'ollama',
+            'configuration' => [
+                'url' => 'dreeve-ollama:11434/api',
+                'model' => 'model',
+            ],
+        ]]);
+    }
+
+    public function testGetAIProviderUsesTheConfiguredOllamaUrl(): void
+    {
+        $settings = IntegrationsSettings::fromArray(['ai' => [
+            'enabled' => true,
+            'provider' => 'ollama',
+            'configuration' => [
+                'url' => 'http://dreeve-ollama:11434/api',
+                'model' => 'model',
+            ],
+        ]]);
+
+        $this->assertEquals(
+            new Ollama('http://dreeve-ollama:11434/api', 'model'),
+            $settings->getAIProvider()
         );
     }
 
@@ -240,11 +271,11 @@ class IntegrationsSettingsTest extends TestCase
             [
                 'provider' => 'ollama',
                 'configuration' => [
-                    'url' => 'url',
+                    'url' => 'http://dreeve-ollama:11434/api',
                     'model' => 'model',
                 ],
             ],
-            new Ollama('key', 'model'),
+            new Ollama('http://dreeve-ollama:11434/api', 'model'),
         ];
 
         yield 'openAI' => [

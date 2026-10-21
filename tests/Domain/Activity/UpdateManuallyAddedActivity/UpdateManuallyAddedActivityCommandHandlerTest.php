@@ -16,13 +16,11 @@ use App\Domain\Activity\WorldType;
 use App\Domain\Gear\GearId;
 use App\Domain\Image\ImageStorage;
 use App\Domain\Import\ImportMode;
+use App\Domain\Settings\DbalSettingsRepository;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\CQRS\Command\CouldNotProcessCommand;
-use App\Infrastructure\KeyValue\KeyValue;
-use App\Infrastructure\KeyValue\KeyValueStore;
-use App\Infrastructure\KeyValue\Value;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Serialization\Json;
@@ -51,8 +49,10 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
             'duration' => ['hours' => 0, 'minutes' => 50, 'seconds' => 0],
             'distance' => '10',
             'elevation' => '120',
+            'calories' => '750',
             'gearId' => 'gear-1',
             'isCommute' => 'true',
+            'isGroupActivity' => 'true',
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
@@ -71,8 +71,10 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
         $this->assertSame(12.0, $activity->getAverageSpeed()->toFloat());
         $this->assertSame(12.0, $activity->getMaxSpeed()->toFloat());
         $this->assertEquals(GearId::fromUnprefixed('1'), $activity->getGearId());
+        $this->assertSame(750, $activity->getCalories());
         $this->assertNull($activity->getDeviceName());
         $this->assertTrue($activity->isCommute());
+        $this->assertTrue($activity->isGroupActivity());
     }
 
     public function testHandleClearsOptionalFields(): void
@@ -93,7 +95,9 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
         $this->assertNull($activity->getDeviceName());
         $this->assertNull($activity->getGearId());
         $this->assertNull($activity->getWorkoutType());
+        $this->assertNull($activity->getCalories());
         $this->assertFalse($activity->isCommute());
+        $this->assertFalse($activity->isGroupActivity());
         $this->assertSame(0.0, $activity->getDistance()->toFloat());
         $this->assertSame(0.0, $activity->getAverageSpeed()->toFloat());
     }
@@ -259,17 +263,14 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
 
     private function provideAppearanceSettingsWithUnitSystem(string $unitSystem): void
     {
-        /** @var KeyValueStore $keyValueStore */
-        $keyValueStore = $this->getContainer()->get(KeyValueStore::class);
-        $keyValueStore->save(KeyValue::fromState(
-            SettingsGroup::APPEARANCE->keyValueKey(),
-            Value::fromString(Json::encode([
-                'locale' => 'en_US',
-                'unitSystem' => $unitSystem,
-                'timeFormat' => 24,
-                'dateFormat' => ['short' => 'd-m-y', 'normal' => 'd-m-Y'],
-            ])),
-        ));
+        /** @var DbalSettingsRepository $settingsRepository */
+        $settingsRepository = $this->getContainer()->get(DbalSettingsRepository::class);
+        $settingsRepository->saveGroup(SettingsGroup::APPEARANCE, [
+            'locale' => 'en_US',
+            'unitSystem' => $unitSystem,
+            'timeFormat' => 24,
+            'dateFormat' => ['short' => 'd-m-y', 'normal' => 'd-m-Y'],
+        ]);
     }
 
     #[\Override]

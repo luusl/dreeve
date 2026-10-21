@@ -36,43 +36,51 @@ final readonly class GeneralSettings
     public static function fromArray(?array $data): self
     {
         $data ??= [];
-        $athlete = $data['athlete'] ?? [];
 
-        $birthday = $athlete['birthday'] ?? null;
+        $birthday = $data['birthday'] ?? null;
         if (!is_string($birthday) || '' === trim($birthday)) {
             throw AthleteHasNotBeenConfigured::because('A "birthday" is required for the athlete in the general settings');
         }
 
-        $maxHeartRateFormula = $athlete['maxHeartRateFormula'] ?? null;
+        $firstName = $data['firstName'] ?? null;
+        if (!is_string($firstName) || '' === trim($firstName)) {
+            throw AthleteHasNotBeenConfigured::because('A "firstName" is required for the athlete in the general settings');
+        }
+
+        $lastName = $data['lastName'] ?? null;
+        if (!is_string($lastName) || '' === trim($lastName)) {
+            throw AthleteHasNotBeenConfigured::because('A "lastName" is required for the athlete in the general settings');
+        }
+
+        $maxHeartRateFormula = $data['maxHeartRateFormula'] ?? null;
         if (!is_string($maxHeartRateFormula) && !is_array($maxHeartRateFormula)) {
             throw AthleteHasNotBeenConfigured::because('A "maxHeartRateFormula" is required for the athlete in the general settings');
         }
 
-        $restingHeartRateFormula = $athlete['restingHeartRateFormula'] ?? 'heuristicAgeBased';
+        $restingHeartRateFormula = $data['restingHeartRateFormula'] ?? 'heuristicAgeBased';
         if (!is_array($restingHeartRateFormula) && !is_int($restingHeartRateFormula)
             && (!is_string($restingHeartRateFormula) || '' === trim($restingHeartRateFormula))) {
             $restingHeartRateFormula = 'heuristicAgeBased';
         }
 
         $athleteBirthDate = AthleteBirthDate::fromString($birthday);
-        $firstName = $athlete['firstName'] ?? null;
-        $lastName = $athlete['lastName'] ?? null;
+        $gender = $data['gender'] ?? null;
 
         return new self(
             appSubTitle: AppSubTitle::fromOptionalString($data['appSubTitle'] ?? null),
             profilePictureUrl: ProfilePictureUrl::fromOptionalString(is_string($data['profilePictureUrl'] ?? null) ? $data['profilePictureUrl'] : null),
             athlete: Athlete::create(
-                athleteId: substr(hash('sha256', sprintf('%s|%s|%s', $firstName ?? '', $lastName ?? '', $athleteBirthDate->format('Y-m-d'))), 0, 12),
+                athleteId: substr(hash('sha256', sprintf('%s|%s|%s', $firstName, $lastName, $athleteBirthDate->format('Y-m-d'))), 0, 12),
                 birthDate: $athleteBirthDate,
                 firstName: $firstName,
                 lastName: $lastName,
-                gender: $athlete['gender'] ?? null,
+                gender: $gender,
                 maxHeartRateFormula: new MaxHeartRateFormulas()->determineFormula($maxHeartRateFormula),
                 restingHeartRateFormula: new RestingHeartRateFormulas()->determineFormula($restingHeartRateFormula),
             ),
-            heartRateZoneConfiguration: HeartRateZoneConfiguration::fromArray($athlete['heartRateZones'] ?? []),
-            ftpHistory: FtpHistory::fromArray($athlete['ftpHistory'] ?? []),
-            weightHistory: $athlete['weightHistory'] ?? [],
+            heartRateZoneConfiguration: HeartRateZoneConfiguration::fromArray($data['heartRateZones'] ?? []),
+            ftpHistory: FtpHistory::fromArray($data['ftpHistory'] ?? []),
+            weightHistory: $data['weightHistory'] ?? [],
         );
     }
 

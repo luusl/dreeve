@@ -1,13 +1,14 @@
 {% extends "html/admin/page/template.html.twig" %}
 {% block main %}
     {% autoescape false %}
+    {% set overviewUrl = path('admin_manage_activity_overview', app.request.query.all) %}
     <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h3 class="text-lg font-semibold">
                 {{ "Activity management"|trans({}, 'admin') }}
             </h3>
             {% if importMode.isFiles() %}
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <a href="{{ relativeUrl(path('admin_file_upload')) }}" type="button" class="btn--add">
                         <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v9m-5 0H5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1h-2M8 9l4-5 4 5m1 8h.01"/>
@@ -101,7 +102,7 @@
                     <th scope="col" class="narrow">
                         {{ "Images"|trans({}, 'admin') }}
                     </th>
-                    <th scope="col" class="narrow">
+                    <th scope="col" class="narrow sticky-actions">
                         <span class="sr-only">{{ "Edit"|trans({}, 'admin') }}</span>
                     </th>
                 </tr>
@@ -110,23 +111,20 @@
                 {% for activity in overview %}
                     <tr class="group/row">
                         <td class="whitespace-nowrap text-left">
-                            {% if activityPageBuildStatus.hasBeenBuilt(activity.getActivityId()) %}
+                            <div class="flex items-center gap-1.5">
                                 <a class="block max-w-100 truncate font-medium text-blue-600 hover:underline"
                                    title="{{ activity.getName() }}"
-                                   href="{{ relativeUrl('/activities#/activity/' ~ activity.getActivityId() ~ '.html') }}">
+                                   href="{{ relativeUrl('/activities/' ~ activity.getActivityId()) }}">
                                     {{ activity.getName() }}
                                 </a>
-                            {% else %}
-                                <div class="flex items-center gap-2">
-                                    <span class="block max-w-100 truncate font-medium text-gray-800" title="{{ activity.getName() }}">
-                                        {{ activity.getName() }}
+                                {% if activity.canBeEnriched() %}
+                                    <span class="shrink-0 text-amber-500" title="{{ "Weather and/or reverse geocoding could not be retrieved when this activity was imported."|trans({}, 'admin') }}">
+                                        <svg class="size-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+                                          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                                        </svg>
                                     </span>
-                                    <span class="pill pill--neutral text-xs"
-                                          title="{{ "This activity shows up on the app after the next build."|trans({}, 'admin') }}">
-                                        {{ "Pending build"|trans({}, 'admin') }}
-                                    </span>
-                                </div>
-                            {% endif %}
+                                {% endif %}
+                            </div>
                         </td>
                         <td class="whitespace-nowrap text-left">
                             {{ activity.getSportType()|trans }}
@@ -163,9 +161,22 @@
                         <td class="narrow whitespace-nowrap">
                             {{ activity.getTotalImageCount() }}
                         </td>
-                        <td class="narrow whitespace-nowrap">
+                        <td class="narrow whitespace-nowrap sticky-actions">
                             <div class="inline-flex items-center gap-2">
-                                <a href="{{ relativeUrl(path('admin_edit_activity', {activityId: activity.getActivityId()})) }}"
+                                {% if activity.canBeEnriched() %}
+                                    <form data-dispatch-command="{{ enrichCommand }}" class="inline-flex">
+                                        <input type="hidden" name="activityId" value="{{ activity.getActivityId() }}">
+                                        <button type="submit" data-has-loading-state
+                                                class="group unstyled cursor-pointer inline-flex items-center justify-center text-gray-500 transition-colors hover:text-primary"
+                                                title="{{ "Retry weather and reverse geocoding"|trans({}, 'admin') }}">
+                                            <span class="sr-only">{{ "Retry weather and reverse geocoding"|trans({}, 'admin') }}</span>
+                                            <svg class="size-5 group-[.is-loading]:animate-spin" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.651 7.65a7.131 7.131 0 0 0-12.68 3.15M18.001 4v4h-4m-7.652 8.35a7.13 7.13 0 0 0 12.68-3.15M6 20v-4h4"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                                <a href="{{ relativeUrlWithRedirectTo(path('admin_edit_activity', {activityId: activity.getActivityId()}), overviewUrl) }}"
                                    class="inline-flex items-center justify-center text-gray-500 transition-colors hover:text-primary"
                                    title="{{ "Edit"|trans({}, 'admin') }}">
                                     <span class="sr-only">{{ "Edit"|trans({}, 'admin') }}</span>
@@ -174,7 +185,7 @@
                                     </svg>
                                 </a>
                                 {% if importMode.isFiles() %}
-                                    <a href="{{ relativeUrl(path('admin_delete_activity', {activityId: activity.getActivityId()})) }}"
+                                    <a href="{{ relativeUrlWithRedirectTo(path('admin_delete_activity', {activityId: activity.getActivityId()}), overviewUrl) }}"
                                        class="inline-flex items-center justify-center text-gray-500 transition-colors hover:text-red-600"
                                        title="{{ "Delete"|trans({}, 'admin') }}">
                                         <span class="sr-only">{{ "Delete"|trans({}, 'admin') }}</span>

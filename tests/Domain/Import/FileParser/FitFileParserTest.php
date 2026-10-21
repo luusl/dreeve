@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Domain\Import\FileParser;
 
 use App\Domain\Activity\SportType\SportType;
+use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Import\FileParser\ActivityLapsMapper;
 use App\Domain\Import\FileParser\ActivityStreamsMapper;
 use App\Domain\Import\FileParser\CouldNotParseActivityFile;
 use App\Domain\Import\FileParser\FitFileParser;
@@ -35,44 +37,53 @@ class FitFileParserTest extends ActivityFileParserTestCase
 
     public function testParse(): void
     {
-        $this->givenFitToolReturnsFixture('fit-document.json');
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document.json'));
 
         $this->assertParsedFileMatchesSnapshot(
-            $this->parser->parse($this->rawFile('/tmp/activity.fit'))
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
+        );
+    }
+
+    public function testParseWithGearChanges(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-gear-changes.json'));
+
+        $this->assertParsedFileMatchesSnapshot(
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
         );
     }
 
     public function testParseDerivesSummaryMetricsFromStreamsWhenMissingFromSession(): void
     {
-        $this->givenFitToolReturnsFixture('fit-document-without-session-summary-metrics.json');
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-without-session-summary-metrics.json'));
 
         $this->assertParsedFileMatchesSnapshot(
-            $this->parser->parse($this->rawFile('/tmp/activity.fit'))
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
         );
     }
 
     public function testParseUsesWorkoutNameAndDescription(): void
     {
-        $this->givenFitToolReturnsFixture('fit-document-with-workout.json');
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-workout.json'));
 
         $this->assertParsedFileMatchesSnapshot(
-            $this->parser->parse($this->rawFile('/tmp/activity.fit'))
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
         );
     }
 
     public function testParseUsesStreamAveragePowerWhenSessionValueDeviatesTooMuch(): void
     {
-        $this->givenFitToolReturnsFixture('fit-document-with-deviating-session-avg-power.json');
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-deviating-session-avg-power.json'));
 
-        $this->assertSame(113, $this->parser->parse($this->rawFile('/tmp/activity.fit'))->getActivity()->getAveragePower());
+        $this->assertSame(113, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getAveragePower());
     }
 
     public function testParseMergesRecordsSplitAcrossSameTimestamp(): void
     {
-        $this->givenFitToolReturnsFixture('fit-document-with-split-records.json');
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-split-records.json'));
 
         $this->assertParsedFileMatchesSnapshot(
-            $this->parser->parse($this->rawFile('/tmp/activity.fit'))
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
         );
     }
 
@@ -80,7 +91,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
     {
         $parser = new FitFileParser(
             new IncrementingActivityIdFactory(),
-            new IncrementingActivityLapIdFactory(),
+            new ActivityLapsMapper(new IncrementingActivityLapIdFactory()),
             new SymfonyProcessFactory(),
             new ActivityStreamsMapper(PausedClock::fromString('2023-10-17 16:15:04')),
             SerializableTimezone::UTC(),
@@ -95,7 +106,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
     {
         $parser = new FitFileParser(
             new IncrementingActivityIdFactory(),
-            new IncrementingActivityLapIdFactory(),
+            new ActivityLapsMapper(new IncrementingActivityLapIdFactory()),
             new SymfonyProcessFactory(),
             new ActivityStreamsMapper(PausedClock::fromString('2023-10-17 16:15:04')),
             SerializableTimezone::UTC(),
@@ -106,21 +117,31 @@ class FitFileParserTest extends ActivityFileParserTestCase
         );
     }
 
+    public function testParseIgnoresADistanceStreamThatOnlyContainsZeroes(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-zero-distance.json'));
+
+        $streams = $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getStreams();
+
+        $this->assertNull($streams->filterOnType(StreamType::DISTANCE));
+        $this->assertNotNull($streams->filterOnType(StreamType::HEART_RATE));
+    }
+
     public function testParseMergesStrapHeartRateFromHrMessages(): void
     {
         // The records carry wrist readings of 120 and 130 bpm; the strap
         // samples in the chained hr messages should replace them with 96 and
         // 98 bpm.
-        $this->givenFitToolReturnsFixture('fit-document-with-hr-mesgs.json');
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-hr-mesgs.json'));
 
         $this->assertParsedFileMatchesSnapshot(
-            $this->parser->parse($this->rawFile('/tmp/activity.fit'))
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
         );
     }
 
     public function testParseIgnoresStrapHeartRateWithoutAnchor(): void
     {
-        $document = $this->fitDocumentFromFixture('fit-document-with-hr-mesgs.json');
+        $document = Json::decode((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-hr-mesgs.json'));
         // Strip the anchor hr message; without it the event_timestamp clock
         // cannot be mapped to wall clock time and the wrist readings are kept.
         array_shift($document['files'][1]['messages']);
@@ -128,7 +149,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
         $this->givenFitToolReturns(Json::encode($document));
 
         $this->assertParsedFileMatchesSnapshot(
-            $this->parser->parse($this->rawFile('/tmp/activity.fit'))
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
         );
     }
 
@@ -141,7 +162,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
         ]);
         $this->givenFitToolReturns(Json::encode($document));
 
-        $this->assertSame('Suunto Vertical', $this->parser->parse($this->rawFile('/tmp/activity.fit'))->getActivity()->getDeviceName());
+        $this->assertSame('Suunto Vertical', $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getDeviceName());
     }
 
     public function testParseFallsBackToManufacturerWhenProductNameMissing(): void
@@ -152,7 +173,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
         ]);
         $this->givenFitToolReturns(Json::encode($document));
 
-        $this->assertSame('Polar Electro', $this->parser->parse($this->rawFile('/tmp/activity.fit'))->getActivity()->getDeviceName());
+        $this->assertSame('Polar Electro', $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getDeviceName());
     }
 
     public function testParseTrailRunSubSport(): void
@@ -164,7 +185,27 @@ class FitFileParserTest extends ActivityFileParserTestCase
         ]);
         $this->givenFitToolReturns(Json::encode($document));
 
-        $this->assertSame(SportType::TRAIL_RUN, $this->parser->parse($this->rawFile('/tmp/activity.fit'))->getActivity()->getSportType());
+        $this->assertSame(SportType::TRAIL_RUN, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getSportType());
+    }
+
+    public function testParseGenericSportWithCustomProfileName(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-generic-sport-profile.json'));
+
+        $this->assertSame(SportType::WORKOUT, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getSportType());
+    }
+
+    public function testParseResolvesGenericSportFromSportProfileName(): void
+    {
+        $document = $this->minimalFitDocument(sessionFields: [
+            ['name' => 'sport', 'value' => 0], // generic
+            ['name' => 'sub_sport', 'value' => 0], // generic
+            ['name' => 'sport_profile_name', 'value' => 'Indoor Rowing'],
+            ['name' => 'start_time', 'value' => self::START_FIT_SECONDS],
+        ]);
+        $this->givenFitToolReturns(Json::encode($document));
+
+        $this->assertSame(SportType::VIRTUAL_ROW, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getSportType());
     }
 
     public function testParseUnsuccessfulProcessThrows(): void
@@ -174,10 +215,41 @@ class FitFileParserTest extends ActivityFileParserTestCase
         $process->method('getErrorOutput')->willReturn('boom');
         $this->processFactory->method('create')->willReturn($process);
 
-        $rawActivityFile = $this->rawFile('/tmp/activity.fit');
+        $rawActivityFile = RawActivityFile::from(Path::fromString('/tmp/activity.fit'), '');
 
         $this->expectExceptionObject(new CouldNotParseActivityFile('fit-tool could not decode "activity.fit": boom', $rawActivityFile));
         $this->parser->parse($rawActivityFile);
+    }
+
+    public function testParseMultiSportFileThrows(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-multisport.json'));
+
+        $rawActivityFile = RawActivityFile::from(Path::fromString('/tmp/activity.fit'), '');
+
+        $this->expectExceptionObject(new CouldNotParseActivityFile('Multi-sport FIT file "activity.fit" import not supported, each leg needs to be imported as a separate file', $rawActivityFile));
+        $this->parser->parse($rawActivityFile);
+    }
+
+    public function testParseMultiSportSessionThrows(): void
+    {
+        $document = $this->minimalFitDocument(sessionFields: [
+            ['name' => 'sport', 'value' => 18], // multisport
+            ['name' => 'start_time', 'value' => self::START_FIT_SECONDS],
+        ]);
+        $this->givenFitToolReturns(Json::encode($document));
+
+        $rawActivityFile = RawActivityFile::from(Path::fromString('/tmp/activity.fit'), '');
+
+        $this->expectExceptionObject(new CouldNotParseActivityFile('Multi-sport FIT file "activity.fit" import not supported, each leg needs to be imported as a separate file', $rawActivityFile));
+        $this->parser->parse($rawActivityFile);
+    }
+
+    public function testParseAllowsMultipleSessionsOfTheSameSport(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-multiple-sessions-of-the-same-sport.json'));
+
+        $this->assertSame(SportType::RIDE, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getSportType());
     }
 
     public function testParseUnsupportedSportThrows(): void
@@ -188,7 +260,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
         ]);
         $this->givenFitToolReturns(Json::encode($document));
 
-        $rawActivityFile = $this->rawFile('/tmp/activity.fit');
+        $rawActivityFile = RawActivityFile::from(Path::fromString('/tmp/activity.fit'), '');
 
         $this->expectExceptionObject(new CouldNotParseActivityFile('Unsupported FIT sport 24 (sub sport null)', $rawActivityFile));
         $this->parser->parse($rawActivityFile);
@@ -213,11 +285,6 @@ class FitFileParserTest extends ActivityFileParserTestCase
         ];
     }
 
-    private function rawFile(string $path): RawActivityFile
-    {
-        return RawActivityFile::from(Path::fromString($path), '');
-    }
-
     private function givenFitToolReturns(string $output): void
     {
         $process = $this->createStub(Process::class);
@@ -229,16 +296,6 @@ class FitFileParserTest extends ActivityFileParserTestCase
             ->willReturn($process);
     }
 
-    private function givenFitToolReturnsFixture(string $fixture): void
-    {
-        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/'.$fixture));
-    }
-
-    private function fitDocumentFromFixture(string $fixture): array
-    {
-        return Json::decode((string) file_get_contents(__DIR__.'/fixtures/'.$fixture));
-    }
-
     #[\Override]
     protected function setUp(): void
     {
@@ -246,7 +303,7 @@ class FitFileParserTest extends ActivityFileParserTestCase
 
         $this->parser = new FitFileParser(
             new IncrementingActivityIdFactory(),
-            new IncrementingActivityLapIdFactory(),
+            new ActivityLapsMapper(new IncrementingActivityLapIdFactory()),
             $this->processFactory = $this->createStub(ProcessFactory::class),
             new ActivityStreamsMapper(PausedClock::fromString('2023-10-17 16:15:04')),
             SerializableTimezone::UTC(),

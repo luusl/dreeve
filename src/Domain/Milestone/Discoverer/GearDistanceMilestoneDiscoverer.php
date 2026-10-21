@@ -22,7 +22,6 @@ final readonly class GearDistanceMilestoneDiscoverer implements MilestoneDiscove
     public function __construct(
         private Connection $connection,
         private SettingsRepository $settingsRepository,
-        private MilestoneIdFactory $milestoneIdFactory,
     ) {
     }
 
@@ -36,7 +35,7 @@ final readonly class GearDistanceMilestoneDiscoverer implements MilestoneDiscove
         20_000, 25_000, 30_000,
     ];
 
-    public function discover(): Milestones
+    public function discover(MilestoneIdFactory $milestoneIdFactory): Milestones
     {
         $rows = $this->connection->executeQuery(
             'SELECT a.startDateTime, a.gearId, a.distance, g.name as gearName
@@ -62,14 +61,12 @@ final readonly class GearDistanceMilestoneDiscoverer implements MilestoneDiscove
             $gearName = $row['gearName'];
             $achievedOn = SerializableDateTime::fromString($row['startDateTime']);
 
-            if (!isset($gearState[$gearId])) {
-                $gearState[$gearId] = [
-                    'distanceM' => 0.0,
-                    'name' => $gearName,
-                    'idx' => 0,
-                    'prev' => null,
-                ];
-            }
+            $gearState[$gearId] ??= [
+                'distanceM' => 0.0,
+                'name' => $gearName,
+                'idx' => 0,
+                'prev' => null,
+            ];
 
             $state = &$gearState[$gearId];
             $state['distanceM'] += $distanceM;
@@ -80,7 +77,7 @@ final readonly class GearDistanceMilestoneDiscoverer implements MilestoneDiscove
                 $thresholdInUnit = $this->settingsRepository->appearance()->getUnitSystem()->distance($threshold);
 
                 $milestone = Milestone::create(
-                    id: $this->milestoneIdFactory->random(),
+                    id: $milestoneIdFactory->next(),
                     achievedOn: $achievedOn,
                     category: MilestoneCategory::GEAR_DISTANCE,
                     context: new GearDistanceContext(

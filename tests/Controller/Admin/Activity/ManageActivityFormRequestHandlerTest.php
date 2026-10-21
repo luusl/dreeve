@@ -20,6 +20,7 @@ use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Gear\GearBuilder;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 {
@@ -48,7 +49,7 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
     {
         $this->withImportMode(ImportMode::FILES);
 
-        static::getContainer()->get(SettingsRepository::class)->save(SettingsGroup::APPEARANCE, [
+        static::getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::APPEARANCE, [
             'sportTypesSortingOrder' => [SportType::WALK->value, SportType::RUN->value],
         ]);
 
@@ -79,6 +80,7 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(1, $form->filter('input[name="startDateTime"][type="datetime-local"]'));
         $this->assertCount(1, $form->filter('input[name="distance"]'));
         $this->assertCount(1, $form->filter('input[name="elevation"]'));
+        $this->assertCount(1, $form->filter('input[name="calories"]'));
         $this->assertCount(1, $form->filter('input[name="duration[hours]"]'));
         $this->assertCount(1, $form->filter('input[name="duration[minutes]"]'));
         $this->assertCount(1, $form->filter('input[name="duration[seconds]"]'));
@@ -129,8 +131,10 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
                 ->withMovingTimeInSeconds(3723)
                 ->withDistance(Kilometer::from(10.5))
                 ->withElevation(Meter::from(120))
+                ->withCalories(750)
                 ->withGearId(GearId::fromUnprefixed('custom-gear'))
                 ->withIsCommute(true)
+                ->withIsGroupActivity(true)
                 ->withLocalImagePaths('activity-1/image.jpg')
                 ->build(),
             [],
@@ -161,9 +165,11 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         // Distance and elevation are rendered in the configured unit system.
         $this->assertSame('10.5', $form->filter('input[name="distance"]')->attr('value'));
         $this->assertSame('120', $form->filter('input[name="elevation"]')->attr('value'));
+        $this->assertSame('750', $form->filter('input[name="calories"]')->attr('value'));
 
         $this->assertNotNull($form->filter('select#activity-gear option[value="gear-custom-gear"]')->attr('selected'));
         $this->assertNotNull($form->filter('input#activity-is-commute')->attr('checked'));
+        $this->assertNotNull($form->filter('input#activity-is-group-activity')->attr('checked'));
 
         // A manually added activity was never recorded, so there is no device to pick.
         $this->assertCount(0, $form->filter('select#activity-device-name'));
@@ -194,7 +200,9 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
                 ->withName('Morning Run')
                 ->withGearId(GearId::fromUnprefixed('5'))
                 ->withDeviceName('Garmin Edge')
+                ->withCalories(500)
                 ->withIsCommute(true)
+                ->withIsGroupActivity(true)
                 ->withLocalImagePaths('activity-1/image.jpg')
                 ->build(),
             [],
@@ -218,18 +226,79 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertNotNull($crawler->filter('select#activity-sport-type')->attr('disabled'));
         $this->assertNotNull($crawler->filter('select#activity-gear')->attr('disabled'));
         $this->assertNotNull($crawler->filter('select#activity-device-name')->attr('disabled'));
+        $this->assertNotNull($crawler->filter('input#activity-calories')->attr('disabled'));
         $this->assertNotNull($crawler->filter('input#activity-is-commute')->attr('disabled'));
+        $this->assertNotNull($crawler->filter('input#activity-is-group-activity')->attr('disabled'));
 
         // Disabled fields are not submitted, so their values are mirrored into hidden inputs.
         $this->assertSame('Morning Run', $crawler->filter('input[type="hidden"][name="name"]')->attr('value'));
         $this->assertCount(1, $crawler->filter('input[type="hidden"][name="sportType"]'));
         $this->assertSame((string) GearId::fromUnprefixed('5'), $crawler->filter('input[type="hidden"][name="gearId"]')->attr('value'));
         $this->assertSame('Garmin Edge', $crawler->filter('input[type="hidden"][name="deviceName"]')->attr('value'));
+        $this->assertSame('500', $crawler->filter('input[type="hidden"][name="calories"]')->attr('value'));
         // The commute checkbox can't submit while disabled, so its real value is preserved.
         $this->assertSame('true', $crawler->filter('input[type="hidden"][name="isCommute"]')->attr('value'));
+        $this->assertSame('true', $crawler->filter('input[type="hidden"][name="isGroupActivity"]')->attr('value'));
 
         // The image upload is hidden entirely, since images can't be managed in Strava API mode.
         $this->assertCount(0, $crawler->filter('[data-image-dropzone]'));
+    }
+
+    #[DataProvider('provideRedirectToQueryParams')]
+    public function testItHonoursASafeRedirectToOnEveryExit(string $redirectTo, string $expected): void
+    {
+        static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->build(),
+            [],
+        ));
+
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request(
+            'GET',
+            '/admin/activities/'.ActivityId::fromUnprefixed('1').'/edit?redirectTo='.urlencode($redirectTo)
+        );
+
+        $this->assertResponseIsSuccessful();
+
+        $this->assertSame($expected, $crawler->filter('form[data-dispatch-command]')->attr('data-redirect'));
+        $this->assertSame($expected, $crawler->filter('a[aria-label="Close"]')->attr('href'));
+        $this->assertSame($expected, $crawler->filter('.btn--secondary')->attr('href'));
+    }
+
+    #[DataProvider('provideRedirectToQueryParams')]
+    public function testDeleteHonoursASafeRedirectToOnEveryExit(string $redirectTo, string $expected): void
+    {
+        static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->build(),
+            [],
+        ));
+
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request(
+            'GET',
+            '/admin/activities/'.ActivityId::fromUnprefixed('1').'/delete?redirectTo='.urlencode($redirectTo)
+        );
+
+        $this->assertResponseIsSuccessful();
+
+        $this->assertSame($expected, $crawler->filter('form[data-dispatch-command]')->attr('data-redirect'));
+        $this->assertSame($expected, $crawler->filter('a[aria-label="Close"]')->attr('href'));
+        $this->assertSame($expected, $crawler->filter('.btn--secondary')->attr('href'));
+    }
+
+    public static function provideRedirectToQueryParams(): \Generator
+    {
+        yield 'a path within the app' => ['/activities/activity-1', '/activities/activity-1'];
+        yield 'a filtered overview' => ['/admin/activities?filters%5BsportType%5D=Run&pagination%5Bpage%5D=2', '/admin/activities?filters%5BsportType%5D=Run&pagination%5Bpage%5D=2'];
+        yield 'protocol relative' => ['//evil.com', '/admin/activities'];
+        yield 'javascript uri' => ['javascript:alert(1)', '/admin/activities'];
+        yield 'absolute url' => ['https://evil.com', '/admin/activities'];
     }
 
     public function testStravaApiModeAllowsAssigningCustomGear(): void
@@ -358,12 +427,14 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertNull($crawler->filter('select#activity-sport-type')->attr('disabled'));
         $this->assertNull($crawler->filter('select#activity-gear')->attr('disabled'));
         $this->assertNull($crawler->filter('select#activity-device-name')->attr('disabled'));
+        $this->assertNull($crawler->filter('input#activity-calories')->attr('disabled'));
         $this->assertNull($crawler->filter('input#activity-is-commute')->attr('disabled'));
 
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="name"]'));
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="sportType"]'));
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="gearId"]'));
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="deviceName"]'));
+        $this->assertCount(0, $crawler->filter('input[type="hidden"][name="calories"]'));
         $this->assertSame('false', $crawler->filter('input[type="hidden"][name="isCommute"]')->attr('value'));
 
         // In files mode all gears are selectable, imported or custom.

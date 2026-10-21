@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Domain\Import\FileParser\Fit;
 
 use App\Domain\Activity\SportType\SportType;
+use App\Domain\Import\FileParser\SportTypeName;
 
 final class FitSportType
 {
+    private const int SPORT_GENERIC = 0;
     private const int SPORT_RUNNING = 1;
     private const int SPORT_CYCLING = 2;
     private const int SPORT_FITNESS_EQUIPMENT = 4;
@@ -21,6 +23,7 @@ final class FitSportType
     private const int SPORT_ALPINE_SKIING = 13;
     private const int SPORT_SNOWBOARDING = 14;
     private const int SPORT_ROWING = 15;
+    private const int SPORT_MOUNTAINEERING = 16;
     private const int SPORT_HIKING = 17;
     private const int SPORT_PADDLING = 19;
     private const int SPORT_E_BIKING = 21;
@@ -40,6 +43,7 @@ final class FitSportType
     private const int SPORT_RACKET = 64;
     private const int SPORT_WHEELCHAIR_PUSH_WALK = 65;
     private const int SPORT_WHEELCHAIR_PUSH_RUN = 66;
+    private const int SPORT_DISC_GOLF = 69;
     private const int SPORT_CRICKET = 71;
     private const int SPORT_VOLLEYBALL = 75;
     private const int SPORT_DANCE = 83;
@@ -56,6 +60,7 @@ final class FitSportType
     private const int SUB_SPORT_INDOOR_ROWING = 14;
     private const int SUB_SPORT_ELLIPTICAL = 15;
     private const int SUB_SPORT_STAIR_CLIMBING = 16;
+    private const int SUB_SPORT_OPEN_WATER = 18;
     private const int SUB_SPORT_STRENGTH_TRAINING = 20;
     private const int SUB_SPORT_INDOOR_WALKING = 27;
     private const int SUB_SPORT_E_BIKE_FITNESS = 28;
@@ -77,9 +82,10 @@ final class FitSportType
     private const int SUB_SPORT_ENDURO = 123;
     private const int SUB_SPORT_E_BIKE_ENDURO = 127;
 
-    public static function resolve(?int $sport, ?int $subSport): ?SportType
+    public static function resolve(?int $sport, ?int $subSport, ?string $sportProfileName = null): ?SportType
     {
         return match ($sport) {
+            self::SPORT_GENERIC => self::resolveGeneric($subSport, $sportProfileName),
             self::SPORT_RUNNING => match (true) {
                 self::SUB_SPORT_TRAIL === $subSport => SportType::TRAIL_RUN,
                 in_array($subSport, [self::SUB_SPORT_TREADMILL, self::SUB_SPORT_INDOOR_RUNNING, self::SUB_SPORT_VIRTUAL_ACTIVITY], true) => SportType::VIRTUAL_RUN,
@@ -103,7 +109,11 @@ final class FitSportType
                 self::SUB_SPORT_PILATES === $subSport => SportType::PILATES,
                 default => SportType::WORKOUT,
             },
-            self::SPORT_SWIMMING => SportType::SWIM,
+            self::SPORT_SWIMMING => match (true) {
+                self::SUB_SPORT_OPEN_WATER === $subSport => SportType::OPEN_WATER_SWIM,
+                // Covers lap swimming (17) and devices that do not set a sub sport at all.
+                default => SportType::POOL_SWIM,
+            },
             self::SPORT_BASKETBALL => SportType::BASKETBALL,
             self::SPORT_SOCCER => SportType::SOCCER,
             self::SPORT_TENNIS => SportType::TENNIS,
@@ -117,12 +127,13 @@ final class FitSportType
             self::SPORT_WALKING => SportType::WALK,
             self::SPORT_CROSS_COUNTRY_SKIING => SportType::NORDIC_SKI,
             self::SPORT_ALPINE_SKIING => self::SUB_SPORT_BACKCOUNTRY === $subSport ? SportType::BACK_COUNTRY_SKI : SportType::ALPINE_SKI,
-            self::SPORT_SNOWBOARDING => SportType::SNOWBOARD,
+            self::SPORT_SNOWBOARDING => self::SUB_SPORT_BACKCOUNTRY === $subSport ? SportType::BACK_COUNTRY_SKI : SportType::SNOWBOARD,
             self::SPORT_ROWING => self::SUB_SPORT_INDOOR_ROWING === $subSport ? SportType::VIRTUAL_ROW : SportType::ROWING,
-            self::SPORT_HIKING => SportType::HIKE,
+            self::SPORT_MOUNTAINEERING, self::SPORT_HIKING => SportType::HIKE,
             self::SPORT_PADDLING, self::SPORT_CANOEING => SportType::CANOEING,
             self::SPORT_E_BIKING => SportType::E_BIKE_RIDE,
             self::SPORT_GOLF => SportType::GOLF,
+            self::SPORT_DISC_GOLF => SportType::WORKOUT,
             self::SPORT_INLINE_SKATING => SportType::INLINE_SKATE,
             self::SPORT_ROCK_CLIMBING => SportType::ROCK_CLIMBING,
             self::SPORT_SAILING => SportType::SAIL,
@@ -150,6 +161,28 @@ final class FitSportType
             self::SPORT_VOLLEYBALL => SportType::VOLLEYBALL,
             self::SPORT_DANCE => SportType::DANCE,
             default => null,
+        };
+    }
+
+    private static function resolveGeneric(?int $subSport, ?string $sportProfileName): SportType
+    {
+        $resolvedByName = null !== $sportProfileName ? SportTypeName::tryResolve($sportProfileName) : null;
+        if ($resolvedByName instanceof SportType) {
+            return $resolvedByName;
+        }
+
+        return match (true) {
+            in_array($subSport, [self::SUB_SPORT_TREADMILL, self::SUB_SPORT_INDOOR_RUNNING], true) => SportType::VIRTUAL_RUN,
+            in_array($subSport, [self::SUB_SPORT_INDOOR_CYCLING, self::SUB_SPORT_SPIN], true) => SportType::VIRTUAL_RIDE,
+            self::SUB_SPORT_INDOOR_ROWING === $subSport => SportType::VIRTUAL_ROW,
+            self::SUB_SPORT_ELLIPTICAL === $subSport => SportType::ELLIPTICAL,
+            self::SUB_SPORT_STAIR_CLIMBING === $subSport => SportType::STAIR_STEPPER,
+            self::SUB_SPORT_STRENGTH_TRAINING === $subSport => SportType::WEIGHT_TRAINING,
+            self::SUB_SPORT_INDOOR_WALKING === $subSport => SportType::WALK,
+            self::SUB_SPORT_YOGA === $subSport => SportType::YOGA,
+            self::SUB_SPORT_PILATES === $subSport => SportType::PILATES,
+            self::SUB_SPORT_HIIT === $subSport => SportType::HIIT,
+            default => SportType::WORKOUT,
         };
     }
 }

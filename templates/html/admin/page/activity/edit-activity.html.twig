@@ -2,20 +2,21 @@
 {% block main %}
     {% autoescape false %}
     {% set isImportedFromStrava = importMode.isStravaApi() %}
+    {% set returnUrl = redirectUrl(relativeUrl(path('admin_manage_activity_overview'))) %}
     <div class="modal-like-form">
         <div class="w-full max-w-3xl overflow-y-auto p-6 bg-white border border-gray-200 rounded-lg shadow-xl">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold">
                     {{ "Edit activity"|trans({}, 'admin') }}
                 </h3>
-                <a href="{{ relativeUrl(path('admin_manage_activity_overview')) }}" aria-label="{{ "Close"|trans({}, 'admin') }}"
+                <a href="{{ returnUrl }}" aria-label="{{ "Close"|trans({}, 'admin') }}"
                    class="grid place-items-center size-8 rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900">
                     <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/>
                     </svg>
                 </a>
             </div>
-            <form data-dispatch-command="{{ dispatchCommand }}" data-redirect="{{ relativeUrl(path('admin_manage_activity_overview')) }}" class="flex flex-col gap-4">
+            <form data-dispatch-command="{{ dispatchCommand }}" data-redirect="{{ returnUrl }}" class="flex flex-col gap-4">
                 <input type="hidden" name="activityId" value="{{ activity.getId() }}">
                 <div data-form-error class="form-error hidden" role="alert"></div>
                 {% embed 'html/admin/component/strava-disabled-form-input.html.twig' with {
@@ -70,6 +71,14 @@
                             </select>
                         {% endblock %}
                     {% endembed %}
+                    {% embed 'html/admin/component/strava-disabled-form-input.html.twig' with {
+                        label: 'Calories'|trans ~ ' (kcal)',
+                        for: 'activity-calories', name: 'calories', value: activity.getCalories(),
+                    } %}
+                        {% block control %}
+                            <input type="number" min="0" step="1" id="activity-calories" name="calories" value="{{ activity.getCalories() }}" {{ disabled ? 'disabled' }}>
+                        {% endblock %}
+                    {% endembed %}
                 </div>
                 <div class="flex items-center gap-2">
                     <input type="hidden" name="isCommute" value="{{ isImportedFromStrava and activity.isCommute() ? 'true' : 'false' }}">
@@ -79,18 +88,26 @@
                         {% if isImportedFromStrava %}{% include 'html/admin/component/strava-imported-badge.html.twig' %}{% endif %}
                     </label>
                 </div>
+                <div class="flex items-center gap-2">
+                    <input type="hidden" name="isGroupActivity" value="{{ isImportedFromStrava and activity.isGroupActivity() ? 'true' : 'false' }}">
+                    <input type="checkbox" id="activity-is-group-activity" name="isGroupActivity" value="true" {{ activity.isGroupActivity() ? 'checked' }} {{ isImportedFromStrava ? 'disabled' }}>
+                    <label for="activity-is-group-activity" class="flex items-center gap-1.5 mt-0!">
+                        {{ "Group activity"|trans({}, 'admin') }}
+                        {% if isImportedFromStrava %}{% include 'html/admin/component/strava-imported-badge.html.twig' %}{% endif %}
+                    </label>
+                </div>
                 {% if not isImportedFromStrava %}
                     <div>
                         <label>{{ "Images"|trans({}, 'admin') }}</label>
                         {% set existingImages = [] %}
                         {% for path in activity.getLocalImagePaths() %}
-                            {% set existingImages = existingImages|merge([{ url: securedImageUrl(path), name: path|split('/')|last, path: path }]) %}
+                            {% set existingImages = existingImages|merge([{ url: relativeUrl(path), name: path|split('/')|last, path: path }]) %}
                         {% endfor %}
                         {% include 'html/admin/component/image-dropzone-upload.html.twig' with { name: 'images', maxImages: 5, existingImages: existingImages } %}
                     </div>
                 {% endif %}
                 <div class="flex justify-end gap-2 border-t border-gray-200 pt-4">
-                    <a href="{{ relativeUrl(path('admin_manage_activity_overview')) }}" type="button" class="btn--secondary">{{ "Cancel"|trans({}, 'admin') }}</a>
+                    <a href="{{ returnUrl }}" type="button" class="btn--secondary">{{ "Cancel"|trans({}, 'admin') }}</a>
                     <button type="submit" data-has-loading-state class="group btn--primary">
                         <span class="label">{{ "Save"|trans({}, 'admin') }}</span>
                         <span class="label--loading">{{ "Saving..."|trans({}, 'admin') }}</span>

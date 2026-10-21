@@ -1,19 +1,20 @@
 import {pointToLineDistance, point, lineString} from "../../../libraries/turf";
 import L from 'leaflet';
 import {createFlyToPlacesControl, createMapToolsControl} from "../maps/leaflet-controls";
+import HeatmapCountriesLayer from "./heatmap-countries-layer";
+import {router} from "../../core/router";
 import '../maps/ctrl-scroll-zoom';
 
 export default class HeatmapDrawer {
-    constructor(wrapper, config, modalManager) {
+    constructor(wrapper, config) {
         this.wrapper = wrapper;
         this.config = config;
-        this.modalManager = modalManager;
         this.placesControl = null;
         this.mapToolsControl = null;
         this.mainFeatureGroup = L.featureGroup();
         this.routePolylines = [];
         this.map = L.map(this.wrapper, {
-            ctrlScrollZoom: true,
+            ctrlScrollZoom: this.config.requireCtrlToZoom,
             minZoom: 1,
             maxZoom: 21,
             preferCanvas: true,
@@ -33,6 +34,14 @@ export default class HeatmapDrawer {
             weight: 0,
             opacity: 0,
         }
+
+        const countriesUrl = this.wrapper.getAttribute('data-leaflet-countries');
+        this.countriesLabel = this.wrapper.getAttribute('data-leaflet-countries-label');
+        this.popupLabels = JSON.parse(this.wrapper.getAttribute('data-leaflet-popup-labels') ?? '{}');
+        this.countriesLayer = countriesUrl
+            ? new HeatmapCountriesLayer(this.map, countriesUrl, this.config.polylineColor)
+            : null;
+
         this.map.on("click", (e) => this._handleMapClick(e));
         this.map.on("popupclose", () => this._resetRouteStyles());
         this.map.on("popupopen", (e) => this._handlePopupOpen(e));
@@ -44,15 +53,19 @@ export default class HeatmapDrawer {
         });
     }
 
+    destroy() {
+        this.map.remove();
+    }
+
     _handlePopupOpen(e) {
         const container = e.popup.getElement();
         if (!container) return;
 
-        container.querySelectorAll('a[data-model-content-url]').forEach(node => {
+        container.querySelectorAll('a[data-router-link]').forEach(node => {
             node.addEventListener("click", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.modalManager.open(node.getAttribute('data-model-content-url'));
+                router.navigateTo(node.getAttribute('href'));
             });
         });
     };
@@ -86,12 +99,12 @@ export default class HeatmapDrawer {
 
         const html = `
             <div class="m-4 text-sm max-h-50 overflow-y-auto no-dark">
-                <div class="font-medium">${nearby.length} nearby route(s):</div>
+                <div class="font-medium">${this.popupLabels.nearbyRoutes.replace('{numberOfRoutes}', nearby.length)}</div>
                  <ul class="divide-default divide-y divide-gray-200">
                     ${nearby.map(entry => `
                      <li class="py-2">
-                      <a href="#" title="${entry.route.name}" class="block truncate font-medium text-blue-600 hover:underline" 
-                        data-model-content-url="${entry.route.activityUrl}">
+                      <a href="${entry.route.activityUrl}" title="${entry.route.name}" class="block truncate font-medium text-blue-600 hover:underline" 
+                        data-router-link>
                         ${entry.route.name}
                       </a>
                       <div class="flex items-center justify-between text-xs text-gray-500">
@@ -165,13 +178,21 @@ export default class HeatmapDrawer {
                 bounds: bounds
             });
         });
+        this.countriesLayer?.setActiveCountryCodes([...countryBounds.keys()]);
         this.mainFeatureGroup.addTo(this.map);
 
         this.placesControl = createFlyToPlacesControl({places});
         this.map.addControl(this.placesControl);
 
         if (!this.mapToolsControl) {
-            this.mapToolsControl = createMapToolsControl({showReset: false});
+            this.mapToolsControl = createMapToolsControl({
+                showReset: false,
+                toggles: this.countriesLayer ? [{
+                    icon: HeatmapCountriesLayer.ICON,
+                    title: this.countriesLabel,
+                    onToggle: (active) => this.countriesLayer.setEnabled(active),
+                }] : [],
+            });
             this.map.addControl(this.mapToolsControl);
         }
 

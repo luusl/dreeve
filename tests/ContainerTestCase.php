@@ -2,15 +2,7 @@
 
 namespace App\Tests;
 
-use App\Domain\Activity\ActivityIntensity;
-use App\Domain\Activity\ActivityTotals;
-use App\Domain\Activity\DailyTrainingLoad;
-use App\Domain\Activity\Eddington\Eddington;
-use App\Domain\Activity\EnrichedActivities;
-use App\Domain\Activity\Stream\StreamBasedActivityHeartRateRepository;
-use App\Domain\Activity\Stream\StreamBasedActivityPowerRepository;
 use App\Domain\Import\ImportMode;
-use App\Infrastructure\Twig\HtmlTwigExtension;
 use Carbon\Carbon;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
@@ -41,26 +33,11 @@ abstract class ContainerTestCase extends KernelTestCase
             self::$ourDbalConnection = self::getContainer()->get(Connection::class);
         }
 
-        // Empty the static cache between tests.
-        EnrichedActivities::reset();
-        DailyTrainingLoad::$cachedLoad = [];
-        ActivityIntensity::$cachedIntensities = [];
-        StreamBasedActivityPowerRepository::$cachedPowerOutputs = [];
-        StreamBasedActivityHeartRateRepository::$cachedHeartRateZones = [];
-        StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivityType = [];
-        StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivity = [];
-        StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesInLastXDays = [];
-        Eddington::$instances = [];
-        ActivityTotals::$instance = null;
-        HtmlTwigExtension::$seenIds = [];
-
         // Empty file systems.
         /** @var \League\Flysystem\FilesystemOperator[] $fileSystems */
         $fileSystems = [
             // $this->getContainer()->get('default.storage'),
             $this->getContainer()->get('file.storage'),
-            $this->getContainer()->get('build_html.storage'),
-            $this->getContainer()->get('build_api.storage'),
         ];
 
         foreach ($fileSystems as $fileSystem) {

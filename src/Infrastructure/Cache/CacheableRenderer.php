@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Cache;
 
+use App\Infrastructure\Cache\Context\CacheContextRegistry;
+use App\Infrastructure\Cache\Render\Render;
+use App\Infrastructure\Cache\Render\RenderCache;
+
 final readonly class CacheableRenderer
 {
     public function __construct(
@@ -17,7 +21,7 @@ final readonly class CacheableRenderer
         $cacheability = $cacheable->getCacheability();
 
         return $this->renderCache->get(
-            cacheKey: $cacheable->getCacheKey().$this->cacheContextRegistry->buildCacheKeySegments($cacheability->getCacheContexts()),
+            cacheKey: $cacheability->getCacheKey().$this->cacheContextRegistry->buildCacheKeySegments($cacheability->getCacheContexts()),
             cacheability: $cacheability,
             callback: fn (): ?string => $cacheable->render(),
         );

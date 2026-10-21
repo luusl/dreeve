@@ -13,6 +13,7 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Gear\GearId;
+use App\Domain\Gear\Sensor\ConnectedSensors;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Velocity\KmPerHour;
@@ -29,11 +30,12 @@ final class ActivityBuilder
     private ImportSource $importSource = ImportSource::STRAVA_API;
     private ExternalReferenceId $externalReferenceId;
     private ActivityName $name;
-    private readonly string $description;
+    private string $description;
     private Kilometer $distance;
     private Meter $elevation;
     private ?Coordinate $startingCoordinate = null;
-    private int $calories;
+    private ?int $calories;
+    private ?int $kilojoules = null;
     private ?int $averagePower = null;
     private ?int $maxPower;
     private KmPerHour $averageSpeed;
@@ -45,6 +47,7 @@ final class ActivityBuilder
     private int $elapsedTimeInSeconds = 10;
     private int $totalImageCount = 0;
     private ?string $deviceName = null;
+    private ?ConnectedSensors $connectedSensors = null;
     /** @var array<string> */
     private array $localImagePaths = [];
     private ?string $polyline = null;
@@ -52,6 +55,7 @@ final class ActivityBuilder
     private readonly ?string $weather;
     private ?GearId $gearId = null;
     private bool $isCommute;
+    private bool $isGroupActivity;
     private ?WorkoutType $workoutType;
 
     private function __construct()
@@ -71,6 +75,7 @@ final class ActivityBuilder
         $this->weather = null;
         $this->routeGeography = RouteGeography::create([]);
         $this->isCommute = false;
+        $this->isGroupActivity = false;
         $this->workoutType = null;
         $this->externalReferenceId = ExternalReferenceId::fromString('1234567');
     }
@@ -78,6 +83,45 @@ final class ActivityBuilder
     public static function fromDefaults(): self
     {
         return new self();
+    }
+
+    public function buildAsNewlyCreated(): Activity
+    {
+        return Activity::create(
+            activityId: $this->activityId,
+            startDateTime: $this->startDateTime,
+            sportType: $this->sportType,
+            worldType: $this->worldType,
+            importSource: $this->importSource,
+            externalReferenceId: $this->externalReferenceId,
+            name: $this->name,
+            description: $this->description,
+            distance: $this->distance,
+            elevation: $this->elevation,
+            startingCoordinate: $this->startingCoordinate,
+            calories: $this->calories,
+            kilojoules: $this->kilojoules,
+            averagePower: $this->averagePower,
+            maxPower: $this->maxPower,
+            averageSpeed: $this->averageSpeed,
+            maxSpeed: $this->maxSpeed,
+            averageHeartRate: $this->averageHeartRate,
+            maxHeartRate: $this->maxHeartRate,
+            averageCadence: $this->averageCadence,
+            movingTimeInSeconds: $this->movingTimeInSeconds,
+            elapsedTimeInSeconds: $this->elapsedTimeInSeconds,
+            deviceName: $this->deviceName,
+            connectedSensors: $this->connectedSensors,
+            totalImageCount: $this->totalImageCount,
+            localImagePaths: $this->localImagePaths,
+            polyline: $this->polyline,
+            routeGeography: $this->routeGeography,
+            weather: $this->weather,
+            gearId: $this->gearId,
+            isCommute: $this->isCommute,
+            isGroupActivity: $this->isGroupActivity,
+            workoutType: $this->workoutType,
+        );
     }
 
     public function build(): Activity
@@ -95,7 +139,7 @@ final class ActivityBuilder
             elevation: $this->elevation,
             startingCoordinate: $this->startingCoordinate,
             calories: $this->calories,
-            kilojoules: null,
+            kilojoules: $this->kilojoules,
             averagePower: $this->averagePower,
             maxPower: $this->maxPower,
             averageSpeed: $this->averageSpeed,
@@ -106,6 +150,7 @@ final class ActivityBuilder
             movingTimeInSeconds: $this->movingTimeInSeconds,
             elapsedTimeInSeconds: $this->elapsedTimeInSeconds,
             deviceName: $this->deviceName,
+            connectedSensors: $this->connectedSensors,
             totalImageCount: $this->totalImageCount,
             localImagePaths: $this->localImagePaths,
             polyline: $this->polyline,
@@ -113,6 +158,7 @@ final class ActivityBuilder
             weather: $this->weather,
             gearId: $this->gearId,
             isCommute: $this->isCommute,
+            isGroupActivity: $this->isGroupActivity,
             workoutType: $this->workoutType,
         );
     }
@@ -131,6 +177,13 @@ final class ActivityBuilder
         return $this;
     }
 
+    public function withDescription(string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
     public function withStartDateTime(SerializableDateTime $startDateTime): self
     {
         $this->startDateTime = $startDateTime;
@@ -145,6 +198,13 @@ final class ActivityBuilder
         return $this;
     }
 
+    public function withKilojoules(?int $kilojoules): self
+    {
+        $this->kilojoules = $kilojoules;
+
+        return $this;
+    }
+
     public function withMovingTimeInSeconds(int $movingTimeInSeconds): self
     {
         $this->movingTimeInSeconds = $movingTimeInSeconds;
@@ -152,7 +212,7 @@ final class ActivityBuilder
         return $this;
     }
 
-    public function withCalories(int $calories): self
+    public function withCalories(?int $calories): self
     {
         $this->calories = $calories;
 
@@ -215,9 +275,30 @@ final class ActivityBuilder
         return $this;
     }
 
+    public function withConnectedSensors(ConnectedSensors $connectedSensors): self
+    {
+        $this->connectedSensors = $connectedSensors;
+
+        return $this;
+    }
+
+    public function withoutConnectedSensors(): self
+    {
+        $this->connectedSensors = null;
+
+        return $this;
+    }
+
     public function withIsCommute(bool $isCommute): self
     {
         $this->isCommute = $isCommute;
+
+        return $this;
+    }
+
+    public function withIsGroupActivity(bool $isGroupActivity): self
+    {
+        $this->isGroupActivity = $isGroupActivity;
 
         return $this;
     }

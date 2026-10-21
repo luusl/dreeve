@@ -1,19 +1,24 @@
-import {fetchJson} from "../../utils";
+import {basePath, fetchJson} from "../../utils";
 import {resolveEchartsCallbacks} from "./echarts-callbacks";
 import {v5Theme, v5DarkTheme} from "./echarts-themes";
-import {FilterStorage, FilterName} from "../data-table/storage";
+import {serialize} from "../data-table/filter-url";
+import {router} from "../../core/router";
 
 export default class ChartManager {
-    constructor(router, modalManager) {
-        this.router = router;
-        this.modalManager = modalManager;
+    constructor() {
         this.allCharts = [];
+        this.theme = null;
+        this.pendingTheme = new Set();
         this.resizeObserver = new ResizeObserver(entries => {
             for (const entry of entries) {
                 const chart = echarts.getInstanceByDom(entry.target);
-                if (chart && entry.target.offsetParent) {
-                    chart.resize();
+                if (!chart || !entry.target.offsetParent) {
+                    continue;
                 }
+                if (this.pendingTheme.delete(chart)) {
+                    chart.setTheme(this.theme);
+                }
+                chart.resize();
             }
         });
 
@@ -22,15 +27,15 @@ export default class ChartManager {
     }
 
     init(rootNode, isDarkMode) {
+        this.theme = isDarkMode ? 'v5-dark' : 'v5';
         const handlers = this.getClickHandlers();
-        const connectedCharts = [];
-        rootNode.querySelectorAll('[data-echarts-options]').forEach(chartNode => {
-            const chart = echarts.init(chartNode, isDarkMode ? 'v5-dark' : 'v5');
-            const rawChartOptions = chartNode.getAttribute('data-echarts-options');
+        rootNode.querySelectorAll('[data-echarts-options], [data-echarts-options-url]').forEach(chartNode => {
+            const chart = echarts.init(chartNode, this.theme);
+            const chartOptionsUrl = chartNode.getAttribute('data-echarts-options-url');
 
-            const loadOptions = rawChartOptions.toLowerCase().endsWith('.json')
-                ? fetchJson(rawChartOptions)
-                : Promise.resolve(JSON.parse(rawChartOptions));
+            const loadOptions = chartOptionsUrl
+                ? fetchJson(chartOptionsUrl)
+                : Promise.resolve(JSON.parse(chartNode.getAttribute('data-echarts-options')));
             chart.showLoading();
 
             loadOptions.then(chartOptions => {
@@ -49,14 +54,10 @@ export default class ChartManager {
                     handlers[clickHandlerName](params, clickData);
                 });
             }
-            if (chartNode.hasAttribute('data-echarts-connect')) {
-                connectedCharts.push(chart);
-            }
 
             this.allCharts.push(chart);
             this.resizeObserver.observe(chartNode);
         });
-        echarts.connect(connectedCharts);
     }
 
     getClickHandlers() {
@@ -66,10 +67,8 @@ export default class ChartManager {
                     return;
                 }
                 const month = (params.dataIndex + 1).toString().padStart(2, "0");
-                const modalId = `month/month-${params.seriesName}-${month}.html`;
 
-                this.modalManager.open(modalId);
-                this.router.pushCurrentRouteToHistoryState(modalId);
+                router.navigateTo(`${basePath()}/monthly-stats/${params.seriesName}-${month}`);
             },
             handleWeeklyStatsClick: (params, clickData) => {
                 if (!params || !params.dataIndex) {
@@ -80,35 +79,49 @@ export default class ChartManager {
                 if (!params.dataIndex in weeks) {
                     return;
                 }
-                FilterStorage.set(FilterName.ACTIVITIES, {
+                const filters = serialize({filters: {
                     "sportType": clickData.sportTypes,
                     "start-date": {"from": weeks[params.dataIndex]['from'], "to": weeks[params.dataIndex]['to']},
-                });
+                }});
 
-                this.router.navigateTo(`/activities`);
+                router.navigateTo(`${basePath()}/activities?${filters}`);
             },
             handleActivityGridChartClick: (params, clickData) => {
                 if (!params || !params.value || params.value < 1) {
                     return;
                 }
 
-                FilterStorage.set(FilterName.ACTIVITIES, {
+                const filters = serialize({filters: {
                     "start-date": {"from": params.value[0], "to": params.value[0]},
-                });
+                }});
 
-                this.router.navigateTo(`/activities`);
+                router.navigateTo(`${basePath()}/activities?${filters}`);
             },
         };
     }
 
     reset() {
         this.resizeObserver.disconnect();
+        // Dropping the references is not enough: echarts keeps its own registry.
+        this.allCharts.forEach(chart => {
+            if (!chart.isDisposed()) {
+                chart.dispose();
+            }
+        });
         this.allCharts = [];
+        this.pendingTheme.clear();
     }
 
     toggleDarkTheme(isDarkMode) {
-        this.allCharts
-            .filter(chart => chart.getDom().offsetParent)
-            .forEach(chart => chart.setTheme(isDarkMode ? 'v5-dark' : 'v5'));
+        this.theme = isDarkMode ? 'v5-dark' : 'v5';
+
+        this.allCharts.forEach(chart => {
+            if (!chart.getDom().offsetParent) {
+                this.pendingTheme.add(chart);
+                return;
+            }
+            this.pendingTheme.delete(chart);
+            chart.setTheme(this.theme);
+        });
     }
 }

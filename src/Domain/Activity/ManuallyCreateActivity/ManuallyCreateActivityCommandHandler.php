@@ -47,7 +47,7 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
         $averageSpeed = KmPerHour::from($distance->toFloat() / ($durationInSeconds / 3600));
 
         $activityId = $this->activityIdFactory->random();
-        $activity = Activity::fromState(
+        $activity = Activity::create(
             activityId: $activityId,
             startDateTime: $command->getStartDateTime(),
             sportType: $command->getSportType(),
@@ -59,7 +59,7 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
             distance: $distance,
             elevation: $elevation,
             startingCoordinate: null,
-            calories: null,
+            calories: $command->getCalories(),
             kilojoules: null,
             averagePower: null,
             maxPower: null,
@@ -71,6 +71,7 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
             movingTimeInSeconds: $durationInSeconds,
             elapsedTimeInSeconds: $durationInSeconds,
             deviceName: null,
+            connectedSensors: null,
             totalImageCount: 0,
             localImagePaths: [],
             polyline: null,
@@ -78,6 +79,7 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
             weather: null,
             gearId: $command->getGearId(),
             isCommute: $command->isCommute(),
+            isGroupActivity: $command->isGroupActivity(),
             workoutType: $command->getWorkoutType(),
         );
 

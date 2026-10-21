@@ -39,6 +39,24 @@ class SportTypeTest extends ContainerTestCase
         $this->assertMatchesJsonSnapshot($snapshot);
     }
 
+    public function testSupportsShiftingStats(): void
+    {
+        $snapshot = [];
+        foreach (SportType::cases() as $sportType) {
+            $snapshot[$sportType->value] = $sportType->supportsShiftingStats();
+        }
+        $this->assertMatchesJsonSnapshot($snapshot);
+    }
+
+    public function testSupportsSplits(): void
+    {
+        $snapshot = [];
+        foreach (SportType::cases() as $sportType) {
+            $snapshot[$sportType->value] = $sportType->supportsSplits();
+        }
+        $this->assertMatchesJsonSnapshot($snapshot);
+    }
+
     public function testGetDisplaySymbols(): void
     {
         $snapshot = [];
@@ -59,6 +77,15 @@ class SportTypeTest extends ContainerTestCase
         $snapshot = [];
         foreach (SportType::cases() as $sportType) {
             $snapshot[$sportType->value] = $sportType->trans($this->getContainer()->get(TranslatorInterface::class));
+        }
+        $this->assertMatchesJsonSnapshot($snapshot);
+    }
+
+    public function testGetSingularTranslations(): void
+    {
+        $snapshot = [];
+        foreach (SportType::cases() as $sportType) {
+            $snapshot[$sportType->value] = $sportType->transSingular($this->getContainer()->get(TranslatorInterface::class));
         }
         $this->assertMatchesJsonSnapshot($snapshot);
     }

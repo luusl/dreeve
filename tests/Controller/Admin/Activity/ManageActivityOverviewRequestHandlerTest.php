@@ -10,6 +10,9 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Import\ImportMode;
+use App\Infrastructure\ValueObject\Geography\Coordinate;
+use App\Infrastructure\ValueObject\Geography\Latitude;
+use App\Infrastructure\ValueObject\Geography\Longitude;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
@@ -20,7 +23,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
 {
     public function testAnonymousUsersAreRedirectedToTheLoginPage(): void
     {
-        $this->markAppAsBuilt();
+        $this->seedActivity();
 
         $this->client->request('GET', '/admin/activities');
 
@@ -45,7 +48,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
     public function testRendersTheTableWithoutPaginationForASinglePage(): void
     {
         $this->seedActivities(3);
-        $this->markAppAsBuilt();
+        $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/activities');
@@ -78,15 +81,10 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertSame('Trail Shoes', $gearOption->text());
     }
 
-    public function testLinksToTheDetailPageOnlyOnceItHasBeenBuilt(): void
+    public function testLinksEveryActivityToItsDetailPage(): void
     {
         $this->seedActivities(2);
-        $this->markAppAsBuilt();
-        // Only the first activity made it into a build, the second one was added afterwards.
-        static::getContainer()->get('build_html.storage')->write(
-            'activity/'.ActivityId::fromUnprefixed('1').'.html',
-            'I am the activity page'
-        );
+        $this->seedActivity();
 
         $this->client->loginUser($this->adminUser());
 
@@ -94,19 +92,60 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
 
         $this->assertResponseIsSuccessful();
 
-        $detailLinks = $crawler->filter('table.data-table tbody a[href*="#/activity/"]');
-        $this->assertCount(1, $detailLinks);
+        $detailLinks = $crawler->filter('table.data-table tbody a[href^="/activities/"]');
+        $this->assertCount(2, $detailLinks);
         $this->assertStringContainsString(
-            '/activities#/activity/'.ActivityId::fromUnprefixed('1').'.html',
+            '/activities/'.ActivityId::fromUnprefixed('1'),
             $detailLinks->first()->attr('href')
         );
         $this->assertSame('Activity 1', trim($detailLinks->first()->text()));
+    }
 
-        // The unbuilt one renders as plain text with an explanatory pill instead.
-        $pendingPills = $crawler->filter('table.data-table tbody td:first-child span.pill');
-        $this->assertCount(1, $pendingPills);
-        $this->assertSame('Pending build', trim($pendingPills->first()->text()));
-        $this->assertStringContainsString('Activity 2', $crawler->filter('table.data-table')->text());
+    public function testWarnsAboutActivitiesThatCanBeEnriched(): void
+    {
+        $activityRepository = static::getContainer()->get(ActivityRepository::class);
+        $activityRepository->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->withSportType(SportType::WALK)
+                ->withStartDateTime(SerializableDateTime::fromString('2026-06-02 08:00:00'))
+                ->withStartingCoordinate(Coordinate::createFromLatAndLng(
+                    Latitude::fromString('50.80'),
+                    Longitude::fromString('4.94'),
+                ))
+                ->build(),
+            [],
+        ));
+        $activityRepository->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
+                ->withSportType(SportType::VIRTUAL_RIDE)
+                ->withStartDateTime(SerializableDateTime::fromString('2026-06-01 08:00:00'))
+                ->build(),
+            [],
+        ));
+
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/activities');
+
+        $this->assertResponseIsSuccessful();
+
+        $rows = $crawler->filter('table.data-table tbody tr');
+        $this->assertCount(1, $rows->eq(0)->filter('span.text-amber-500 svg'));
+        $this->assertCount(1, $rows->eq(0)->filter('form[data-dispatch-command="enrich-activity"]'));
+        $this->assertCount(1, $rows->eq(0)->filter('form[data-dispatch-command="enrich-activity"] button[data-has-loading-state]'));
+        $this->assertStringContainsString(
+            'group-[.is-loading]:animate-spin',
+            $rows->eq(0)->filter('form[data-dispatch-command="enrich-activity"] svg')->attr('class')
+        );
+        $this->assertSame(
+            (string) ActivityId::fromUnprefixed('1'),
+            $rows->eq(0)->filter('form[data-dispatch-command="enrich-activity"] input[name="activityId"]')->attr('value')
+        );
+
+        $this->assertCount(0, $rows->eq(1)->filter('span.text-amber-500 svg'));
+        $this->assertCount(0, $rows->eq(1)->filter('form[data-dispatch-command="enrich-activity"]'));
     }
 
     #[DataProvider('provideSportTypeFilterScenarios')]
@@ -116,7 +155,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         ?string $expectedSelectedOption,
     ): void {
         $this->seedActivities(3);
-        $this->markAppAsBuilt();
+        $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/activities?filters[sportType]='.$sportTypeFilter);
@@ -151,7 +190,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
     public function testRendersTheFilterFormWhenActiveFiltersMatchNothing(): void
     {
         $this->seedActivities(3);
-        $this->markAppAsBuilt();
+        $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/activities?filters[device]=Nonexistent');
@@ -169,7 +208,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
     public function testRendersTheTableWithPaginationWhenResultsExceedASinglePage(): void
     {
         $this->seedActivities(30);
-        $this->markAppAsBuilt();
+        $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/activities');
@@ -197,6 +236,27 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString(
             '/admin/activities/'.ActivityId::fromUnprefixed('1').'/delete',
             $deleteLinks->first()->attr('href')
+        );
+    }
+
+    public function testEditAndDeleteLinksRedirectBackToTheFilteredPage(): void
+    {
+        $this->withImportMode(ImportMode::FILES);
+
+        $this->seedActivities(30);
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/activities?filters[sportType]=Ride&pagination[page]=2&pagination[size]=10');
+
+        $this->assertResponseIsSuccessful();
+        $expectedRedirectTo = 'redirectTo='.rawurlencode('/admin/activities?filters%5BsportType%5D=Ride&pagination%5Bpage%5D=2&pagination%5Bsize%5D=10');
+        $this->assertStringContainsString(
+            $expectedRedirectTo,
+            (string) $crawler->filter('table.data-table tbody a[title="Edit"]')->first()->attr('href')
+        );
+        $this->assertStringContainsString(
+            $expectedRedirectTo,
+            (string) $crawler->filter('table.data-table tbody a[title="Delete"]')->first()->attr('href')
         );
     }
 
@@ -240,7 +300,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
     }
 
     #[\Override]
-    protected function shouldMarkAppAsBuilt(): bool
+    protected function shouldSeedActivity(): bool
     {
         return false;
     }

@@ -64,7 +64,9 @@ final readonly class UpdateManuallyAddedActivityCommandHandler implements Comman
             ->withAverageSpeed($averageSpeed)
             ->withMaxSpeed($averageSpeed)
             ->withGear($command->getGearId())
-            ->withCommute($command->isCommute());
+            ->withCalories($command->getCalories())
+            ->withCommute($command->isCommute())
+            ->withGroupActivity($command->isGroupActivity());
 
         $newImages = $command->getNewImages();
         $removedImages = $command->getRemovedImages();

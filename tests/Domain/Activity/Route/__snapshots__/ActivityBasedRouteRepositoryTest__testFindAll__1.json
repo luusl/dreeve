@@ -1,21 +1,23 @@
 [
     {
         "active": true,
-        "id": "activity-1",
+        "id": "activity-5",
         "activityUrl": null,
-        "startDate": "10-10-2023",
+        "startDate": "02-01-2025",
         "distance": "10.0km",
         "name": "Test activity",
         "startLocation": {
             "state": null
         },
         "countryCodes": [
-            "be"
+            "pl",
+            "cz"
         ],
         "filterables": {
             "sportType": "Ride",
-            "start-date": 1696946434000,
+            "start-date": 1735809120000,
             "isCommute": "false",
+            "isGroupActivity": "true",
             "workoutType": null
         },
         "coordinates": [
@@ -31,7 +33,7 @@
     },
     {
         "active": true,
-        "id": "activity-5",
+        "id": "activity-1",
         "activityUrl": null,
         "startDate": "10-10-2023",
         "distance": "10.0km",
@@ -40,13 +42,13 @@
             "state": null
         },
         "countryCodes": [
-            "pl",
-            "cz"
+            "be"
         ],
         "filterables": {
             "sportType": "Ride",
             "start-date": 1696946434000,
             "isCommute": "false",
+            "isGroupActivity": "false",
             "workoutType": null
         },
         "coordinates": [

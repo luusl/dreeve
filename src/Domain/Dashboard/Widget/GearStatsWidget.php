@@ -6,12 +6,16 @@ namespace App\Domain\Dashboard\Widget;
 
 use App\Domain\Activity\ActivityTypeRepository;
 use App\Domain\Activity\ActivityTypes;
+use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\InvalidDashboardLayout;
 use App\Domain\Gear\FindMovingTimePerGear\FindMovingTimePerGear;
 use App\Domain\Gear\Gear;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Gear\Gears;
 use App\Domain\Gear\MovingTimePerGearChart;
+use App\Domain\Theme\Theme;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\Time\Clock\Clock;
@@ -29,6 +33,7 @@ final readonly class GearStatsWidget implements Widget
         private QueryBus $queryBus,
         private Clock $clock,
         private Environment $twig,
+        private Theme $theme,
     ) {
     }
 
@@ -40,6 +45,11 @@ final readonly class GearStatsWidget implements Widget
     public function getTemplateName(): string
     {
         return 'widget--gear-stats';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES, RootCacheTag::GEAR);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -59,7 +69,7 @@ final readonly class GearStatsWidget implements Widget
         }
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): ?string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): ?string
     {
         $allYears = Years::all($this->clock->getCurrentDateTimeImmutable());
         $allUsedGears = $this->gearRepository->findAllUsed();
@@ -94,14 +104,17 @@ final readonly class GearStatsWidget implements Widget
                 $chartsPerActivityType[$activityType->value] = Json::encode(MovingTimePerGearChart::create(
                     movingTimePerGear: $movingTimePerGear,
                     gears: $gearsPerActivityType[$activityType->value],
+                    theme: $this->theme,
                 )->build());
             }
         }
 
         return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+            'uniqueId' => $dashboardWidgetId->toHtmlIdSuffix(),
             'chartAllGears' => Json::encode(MovingTimePerGearChart::create(
                 movingTimePerGear: $this->queryBus->ask(new FindMovingTimePerGear($allYears, null))->getMovingTimePerGear(),
                 gears: $allUsedGears,
+                theme: $this->theme,
             )->build()),
             'chartsPerActivityType' => $chartsPerActivityType,
         ]);

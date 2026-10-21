@@ -26,26 +26,22 @@ class FinishSetupRequestHandlerTest extends ContainerTestCase
 
     public function testHandleRedirectsWhenTheAppIsReady(): void
     {
-        /** @var \League\Flysystem\InMemory\InMemoryFilesystemAdapter $buildStorage */
-        $buildStorage = $this->getContainer()->get('build_html.storage');
-        $buildStorage->write('index.html', 'I am the index', []);
-
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()->build(),
             [],
         ));
 
-        $this->assertEquals(
-            new RedirectResponse('/', Response::HTTP_FOUND),
-            $this->finishSetupRequestHandler->handle(),
-        );
+        $response = $this->finishSetupRequestHandler->handle();
+
+        $this->assertInstanceOf(RedirectResponse::class, $response);
+        $this->assertSame('/', $response->getTargetUrl());
+        $this->assertSame(Response::HTTP_FOUND, $response->getStatusCode());
     }
 
     #[\Override]
     protected function setUp(): void
     {
         $this->finishSetupRequestHandler = new FinishSetupRequestHandler(
-            $this->getContainer()->get('build_html.storage'),
             $this->getContainer()->get(ActivityIdRepository::class),
             $this->getContainer()->get(Environment::class),
         );

@@ -18,21 +18,19 @@ final readonly class HeatmapConfig implements \JsonSerializable
     ) {
     }
 
-    /**
-     * @param array{float, float}|null $initialCenter [lat, lng]
-     */
     public static function create(
         LeafletConfig $leafletConfig,
-        ?array $initialCenter = null,
-        ?int $initialZoom = null,
+        ?string $initialCenterLatitude = null,
+        ?string $initialCenterLongitude = null,
+        ?string $initialZoom = null,
     ): self {
         return new self(
             leafletConfig: $leafletConfig,
-            initialCenter: $initialCenter ? Coordinate::createFromLatAndLng(
-                Latitude::fromString((string) $initialCenter[0]),
-                Longitude::fromString((string) $initialCenter[1]),
-            ) : null,
-            initialZoom: ZoomLevel::fromOptionalInt($initialZoom),
+            initialCenter: Coordinate::createFromOptionalLatAndLng(
+                Latitude::fromOptionalString($initialCenterLatitude),
+                Longitude::fromOptionalString($initialCenterLongitude),
+            ),
+            initialZoom: ZoomLevel::fromOptionalString($initialZoom),
         );
     }
 
@@ -57,9 +55,7 @@ final readonly class HeatmapConfig implements \JsonSerializable
     public function jsonSerialize(): array
     {
         return [
-            'polylineColor' => $this->getLeafletConfig()->getPolylineColor(),
-            'tileLayerUrls' => $this->getLeafletConfig()->getTileLayerUrls(),
-            'enableGreyScale' => $this->getLeafletConfig()->enableGreyScale(),
+            ...$this->getLeafletConfig()->jsonSerialize(),
             'initialCenter' => $this->getInitialCenter(),
             'initialZoom' => $this->getInitialZoom()?->getValue(),
         ];

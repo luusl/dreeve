@@ -6,23 +6,20 @@ namespace App\Domain\Activity\UpdateActivity;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityName;
+use App\Domain\Activity\ProvideCaloriesFromPayload;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Gear\GearId;
 use App\Domain\Image\NewImage;
 use App\Domain\Image\ProvideLocalImageFromDropZonePayload;
 use App\Domain\Image\RemovedImage;
-use App\Infrastructure\Cache\CacheTag;
-use App\Infrastructure\Cache\CacheTags;
-use App\Infrastructure\Cache\InvalidatesCacheTags;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
 use App\Infrastructure\CQRS\Command\DomainCommand;
-use App\Infrastructure\CQRS\Command\RequiresRebuild;
 
-#[RequiresRebuild]
-final readonly class UpdateActivity extends DomainCommand implements DeserializableCommand, InvalidatesCacheTags
+final readonly class UpdateActivity extends DomainCommand implements DeserializableCommand
 {
+    use ProvideCaloriesFromPayload;
     use ProvideLocalImageFromDropZonePayload;
     use ProvidesCommandName;
 
@@ -37,7 +34,9 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
         private ?string $description,
         private ?string $deviceName,
         private ?GearId $gearId,
+        private ?int $calories,
         private bool $isCommute,
+        private bool $isGroupActivity,
         private array $newImages,
         private array $removedImages,
     ) {
@@ -76,7 +75,9 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
             description: '' !== $description ? $description : null,
             deviceName: '' !== $deviceName ? $deviceName : null,
             gearId: $gearId,
+            calories: self::parseCalories($payload),
             isCommute: filter_var($payload['isCommute'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            isGroupActivity: filter_var($payload['isGroupActivity'] ?? false, FILTER_VALIDATE_BOOLEAN),
             newImages: $newImages,
             removedImages: $removedImages,
         );
@@ -112,9 +113,19 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
         return $this->gearId;
     }
 
+    public function getCalories(): ?int
+    {
+        return $this->calories;
+    }
+
     public function isCommute(): bool
     {
         return $this->isCommute;
+    }
+
+    public function isGroupActivity(): bool
+    {
+        return $this->isGroupActivity;
     }
 
     /**
@@ -131,10 +142,5 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
     public function getRemovedImages(): array
     {
         return $this->removedImages;
-    }
-
-    public function getCacheTagsToInvalidate(): CacheTags
-    {
-        return CacheTags::of(CacheTag::ACTIVITIES);
     }
 }

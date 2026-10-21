@@ -10,6 +10,7 @@ use App\Application\Import\FileImport\ImportActivityFiles\Pipeline\SkipDuplicate
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\Lap\ActivityLapRepository;
+use App\Domain\Activity\Shifting\ActivityDrivetrainUsageRepository;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Import\FileImport;
 use App\Domain\Import\FileImportId;
@@ -19,8 +20,6 @@ use App\Domain\Import\FileParser\CouldNotParseActivityFile;
 use App\Domain\Import\FileParser\RawActivityFile;
 use App\Domain\Import\FileParser\UnsupportedFileType;
 use App\Domain\Import\WatchDirectory;
-use App\Infrastructure\Cache\CacheTag;
-use App\Infrastructure\Cache\RenderCache;
 use App\Infrastructure\CQRS\Command\Command;
 use App\Infrastructure\CQRS\Command\CommandHandler;
 use App\Infrastructure\DependencyInjection\Mutex\WithMutex;
@@ -29,7 +28,7 @@ use App\Infrastructure\Mutex\Mutex;
 use App\Infrastructure\Time\Clock\Clock;
 use Symfony\Component\DependencyInjection\Attribute\AutowireIterator;
 
-#[WithMutex(lockName: LockName::IMPORT_DATA_OR_BUILD_APP)]
+#[WithMutex(lockName: LockName::IMPORT_DATA)]
 final readonly class ImportActivityFilesCommandHandler implements CommandHandler
 {
     /**
@@ -42,10 +41,10 @@ final readonly class ImportActivityFilesCommandHandler implements CommandHandler
         private ActivityRepository $activityRepository,
         private ActivityStreamRepository $activityStreamRepository,
         private ActivityLapRepository $activityLapRepository,
+        private ActivityDrivetrainUsageRepository $activityDrivetrainUsageRepository,
         private FileImportRepository $fileImportRepository,
         private Mutex $mutex,
         private Clock $clock,
-        private RenderCache $renderCache,
     ) {
     }
 
@@ -131,6 +130,10 @@ final readonly class ImportActivityFilesCommandHandler implements CommandHandler
                 $this->activityLapRepository->add($lap);
             }
 
+            foreach ($context->getDrivetrainUsages() as $drivetrainUsage) {
+                $this->activityDrivetrainUsageRepository->add($drivetrainUsage);
+            }
+
             $file = $context->getFile();
             assert($file instanceof RawActivityFile);
 
@@ -163,9 +166,5 @@ final readonly class ImportActivityFilesCommandHandler implements CommandHandler
             $countSkipped,
             $countFailed,
         ));
-
-        if ($countImported > 0) {
-            $this->renderCache->invalidateTags(CacheTag::ACTIVITIES);
-        }
     }
 }

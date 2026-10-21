@@ -1,5 +1,6 @@
-import {FilterStorage, FilterName} from "../data-table/storage";
 import {FilterManager} from "../data-table/filter-manager";
+import {parse, serialize} from "../data-table/filter-url";
+import {router} from "../../core/router";
 
 export default class PhotoWall {
     constructor(wrapper) {
@@ -13,16 +14,12 @@ export default class PhotoWall {
         }));
     }
 
-    async render() {
-        const {default: LightGallery} = await import(
-            /* webpackChunkName: "lightgallery" */ './light-gallery'
-        );
-        this.lightGallery = new LightGallery(this.wrapper);
-        const redraw = (updateStorage = true) => {
+    render() {
+        const redraw = (syncUrl = true) => {
             const activeFilters = this.filterManager.getActiveFilters();
             this.filterManager.updateDropdownState(activeFilters);
-            if (updateStorage) {
-                this.filterManager.updateStorage(FilterName.PHOTO_WALL, activeFilters);
+            if (syncUrl) {
+                router.replaceQuery(serialize({filters: this.filterManager.toUrlFilters()}));
             }
 
             const images = this.filterManager.applyFiltersToRows(this.allImages);
@@ -32,23 +29,19 @@ export default class PhotoWall {
 
             this.resetBtn.classList.toggle('hidden', !(Object.keys(activeFilters).length > 0));
 
-            const activeImages = images.filter((image) => image.active);
             const resultCount = this.wrapper.querySelector('[data-dataTable-result-count]');
-            if (resultCount) resultCount.innerText = activeImages.length;
-
-            this.lightGallery.refresh(activeImages);
+            if (resultCount) resultCount.innerText = images.filter((image) => image.active).length;
         };
 
-        this.filterManager.prefillFromStorage(FilterName.PHOTO_WALL);
+        this.filterManager.prefillFromUrl(parse(new URLSearchParams(location.search)).filters);
         redraw(false);
 
         this.wrapper.querySelectorAll('[data-dataTable-filter]').forEach(el => el.addEventListener('input', redraw));
-        this.lightGallery.bindEvents();
 
         if (this.resetBtn) {
             this.resetBtn.addEventListener('click', e => {
                 e.preventDefault();
-                this.filterManager.resetAll(FilterName.PHOTO_WALL);
+                this.filterManager.resetAll();
                 redraw();
             });
         }

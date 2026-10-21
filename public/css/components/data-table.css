@@ -11,6 +11,10 @@ table.data-table {
                 @apply px-2;
             }
 
+            &.sticky-actions {
+                @apply sticky right-0 z-1 bg-gray-50;
+            }
+
             &[data-dataTable-sort] {
                 @apply cursor-pointer transition-colors hover:bg-gray-100;
             }
@@ -33,13 +37,41 @@ table.data-table {
         tr {
             @apply border-b hover:bg-gray-50;
 
+            &.row--failed {
+                @apply bg-red-50/60;
+
+                &:not(:hover) > .sticky-actions {
+                    background-color: color-mix(in oklab, var(--color-red-50) 60%, var(--color-white));
+                }
+            }
+
             td, th {
                 @apply px-6 py-2.5 group-hover/row:bg-gray-50;
 
                 &.narrow {
                     @apply px-2;
                 }
+
+                &.sticky-actions {
+                    @apply sticky right-0 z-1 bg-white group-hover/row:bg-gray-50;
+                }
+            }
+        }
+
+        tr.clusterize-loading {
+            @apply hover:bg-transparent;
+
+            td {
+                @apply p-0;
+
+                > div {
+                    @apply sticky left-0 w-[100cqi] px-6 py-10;
+                }
             }
         }
     }
+}
+
+.scroll-area:has(> table.data-table) {
+    container-type: inline-size;
 }

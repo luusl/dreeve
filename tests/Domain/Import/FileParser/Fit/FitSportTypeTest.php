@@ -17,6 +17,29 @@ class FitSportTypeTest extends TestCase
         $this->assertSame($expectedSportType, FitSportType::resolve($sport, $subSport));
     }
 
+    #[DataProvider('provideSportProfileNameMappings')]
+    public function testResolveUsesSportProfileNameForGenericSport(string $sportProfileName, SportType $expectedSportType): void
+    {
+        $this->assertSame($expectedSportType, FitSportType::resolve(0, 0, $sportProfileName));
+    }
+
+    public function testResolveDoesNotLetSportProfileNameOverrideAKnownSport(): void
+    {
+        $this->assertSame(SportType::RIDE, FitSportType::resolve(2, null, 'Padel'));
+    }
+
+    public static function provideSportProfileNameMappings(): array
+    {
+        return [
+            'unknown custom profile' => ['Foil', SportType::WORKOUT],
+            'empty' => ['', SportType::WORKOUT],
+            'alias table' => ['Indoor Rowing', SportType::VIRTUAL_ROW],
+            'sport type value' => ['Padel', SportType::PADEL],
+            'case and spacing insensitive' => ['trail running', SportType::TRAIL_RUN],
+            'backcountry snowboard profile' => ['Backcountry Snowboard', SportType::BACK_COUNTRY_SKI],
+        ];
+    }
+
     public static function provideSportMappings(): array
     {
         return [
@@ -51,8 +74,9 @@ class FitSportTypeTest extends TestCase
             'fitness equipment / treadmill' => [4, 1, SportType::VIRTUAL_RUN],
             'fitness equipment / indoor walking' => [4, 27, SportType::WALK],
             'fitness equipment / pilates' => [4, 44, SportType::PILATES],
-            'swimming' => [5, null, SportType::SWIM],
-            'swimming / lap swimming' => [5, 17, SportType::SWIM],
+            'swimming' => [5, null, SportType::POOL_SWIM],
+            'swimming / lap swimming' => [5, 17, SportType::POOL_SWIM],
+            'swimming / open water' => [5, 18, SportType::OPEN_WATER_SWIM],
             'basketball' => [6, null, SportType::BASKETBALL],
             'soccer' => [7, null, SportType::SOCCER],
             'tennis' => [8, null, SportType::TENNIS],
@@ -67,8 +91,11 @@ class FitSportTypeTest extends TestCase
             'alpine skiing / resort' => [13, 38, SportType::ALPINE_SKI],
             'alpine skiing / backcountry' => [13, 37, SportType::BACK_COUNTRY_SKI],
             'snowboarding' => [14, null, SportType::SNOWBOARD],
+            'snowboarding / resort' => [14, 38, SportType::SNOWBOARD],
+            'snowboarding / backcountry' => [14, 37, SportType::BACK_COUNTRY_SKI],
             'rowing' => [15, null, SportType::ROWING],
             'rowing / indoor rowing' => [15, 14, SportType::VIRTUAL_ROW],
+            'mountaineering' => [16, null, SportType::HIKE],
             'hiking' => [17, null, SportType::HIKE],
             'paddling' => [19, null, SportType::CANOEING],
             'e-biking' => [21, null, SportType::E_BIKE_RIDE],
@@ -96,11 +123,19 @@ class FitSportTypeTest extends TestCase
             'racket / table tennis' => [64, 97, SportType::TABLE_TENNIS],
             'wheelchair push walk' => [65, null, SportType::WHEELCHAIR],
             'wheelchair push run' => [66, null, SportType::WHEELCHAIR],
+            'disc golf' => [69, null, SportType::WORKOUT],
             'cricket' => [71, null, SportType::CRICKET],
             'volleyball' => [75, null, SportType::VOLLEYBALL],
             'dance' => [83, null, SportType::DANCE],
             'canoeing' => [88, null, SportType::CANOEING],
-            'generic' => [0, null, null],
+            'generic' => [0, null, SportType::WORKOUT],
+            'generic / generic' => [0, 0, SportType::WORKOUT],
+            'generic / treadmill' => [0, 1, SportType::VIRTUAL_RUN],
+            'generic / indoor cycling' => [0, 6, SportType::VIRTUAL_RIDE],
+            'generic / indoor rowing' => [0, 14, SportType::VIRTUAL_ROW],
+            'generic / strength' => [0, 20, SportType::WEIGHT_TRAINING],
+            'generic / yoga' => [0, 43, SportType::YOGA],
+            'generic / trail (ambiguous)' => [0, 3, SportType::WORKOUT],
             'transition' => [3, null, null],
             'flying' => [20, null, null],
             'driving' => [24, null, null],

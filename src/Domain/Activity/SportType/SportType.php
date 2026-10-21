@@ -41,7 +41,8 @@ enum SportType: string implements TranslatableInterface
     case ROWING = 'Rowing';
     case STAND_UP_PADDLING = 'StandUpPaddling';
     case SURFING = 'Surfing';
-    case SWIM = 'Swim';
+    case POOL_SWIM = 'Swim';
+    case OPEN_WATER_SWIM = 'OpenWaterSwim';
     case WIND_SURF = 'Windsurf';
     // Winter sports.
     case BACK_COUNTRY_SKI = 'BackcountrySki';
@@ -108,7 +109,7 @@ enum SportType: string implements TranslatableInterface
         }
 
         return match ($this) {
-            self::SWIM => SecPer100Meter::zero(),
+            self::POOL_SWIM, self::OPEN_WATER_SWIM => SecPer100Meter::zero(),
             default => KmPerHour::zero(),
         };
     }
@@ -166,7 +167,7 @@ enum SportType: string implements TranslatableInterface
         }
 
         return match ($this) {
-            self::SWIM => 'activity--sport-type--swim',
+            self::POOL_SWIM, self::OPEN_WATER_SWIM => 'activity--sport-type--swim',
             default => 'activity--sport-type--generic',
         };
     }
@@ -192,7 +193,71 @@ enum SportType: string implements TranslatableInterface
             self::ROWING => $translator->trans('Rowing', locale: $locale),
             self::STAND_UP_PADDLING => $translator->trans('Stand Up Paddling', locale: $locale),
             self::SURFING => $translator->trans('Surfing', locale: $locale),
-            self::SWIM => $translator->trans('Swim', locale: $locale),
+            self::POOL_SWIM => $translator->trans('Pool Swim', locale: $locale),
+            self::OPEN_WATER_SWIM => $translator->trans('Open Water Swim', locale: $locale),
+            self::WIND_SURF => $translator->trans('Wind Surf', locale: $locale),
+            self::BACK_COUNTRY_SKI => $translator->trans('Back Country Ski', locale: $locale),
+            self::ALPINE_SKI => $translator->trans('Alpine Ski', locale: $locale),
+            self::NORDIC_SKI => $translator->trans('Nordic Ski', locale: $locale),
+            self::ICE_SKATE => $translator->trans('Ice Skate', locale: $locale),
+            self::SNOWBOARD => $translator->trans('Snowboard', locale: $locale),
+            self::SNOWSHOE => $translator->trans('Snowshoe', locale: $locale),
+            self::INLINE_SKATE => $translator->trans('Inline Skate', locale: $locale),
+            self::ROLLER_SKI => $translator->trans('Roller Ski', locale: $locale),
+            self::SKATEBOARD => $translator->trans('Skateboard', locale: $locale),
+            self::BADMINTON => $translator->trans('Badminton', locale: $locale),
+            self::CROSSFIT => $translator->trans('Crossfit', locale: $locale),
+            self::ELLIPTICAL => $translator->trans('Elliptical', locale: $locale),
+            self::GOLF => $translator->trans('Golf', locale: $locale),
+            self::HAND_CYCLE => $translator->trans('Hand Cycle', locale: $locale),
+            self::HIIT => $translator->trans('HIIT', locale: $locale),
+            self::PICKLE_BALL => $translator->trans('Pickle Ball', locale: $locale),
+            self::PILATES => $translator->trans('Pilates', locale: $locale),
+            self::RACQUET_BALL => $translator->trans('Racquet Ball', locale: $locale),
+            self::PADEL => $translator->trans('Padel', locale: $locale),
+            self::PHYSICAL_THERAPY => $translator->trans('Physical Therapy', locale: $locale),
+            self::ROCK_CLIMBING => $translator->trans('Rock Climbing', locale: $locale),
+            self::VIRTUAL_ROW => $translator->trans('Virtual Row', locale: $locale),
+            self::SAIL => $translator->trans('Sail', locale: $locale),
+            self::SOCCER => $translator->trans('Soccer', locale: $locale),
+            self::BASKETBALL => $translator->trans('Basketball', locale: $locale),
+            self::VOLLEYBALL => $translator->trans('Volleyball', locale: $locale),
+            self::CRICKET => $translator->trans('Cricket', locale: $locale),
+            self::DANCE => $translator->trans('Dance', locale: $locale),
+            self::SQUASH => $translator->trans('Squash', locale: $locale),
+            self::STAIR_STEPPER => $translator->trans('Stair Stepper', locale: $locale),
+            self::TABLE_TENNIS => $translator->trans('Table Tennis', locale: $locale),
+            self::TENNIS => $translator->trans('Tennis', locale: $locale),
+            self::WEIGHT_TRAINING => $translator->trans('Weight Training', locale: $locale),
+            self::WHEELCHAIR => $translator->trans('Wheelchair', locale: $locale),
+            self::WORKOUT => $translator->trans('Workout', locale: $locale),
+            self::YOGA => $translator->trans('Yoga', locale: $locale),
+        };
+    }
+
+    public function transSingular(TranslatorInterface $translator, ?string $locale = null): string
+    {
+        return match ($this) {
+            self::RIDE => $translator->trans('Ride', locale: $locale),
+            self::MOUNTAIN_BIKE_RIDE => $translator->trans('Mountain Bike Ride', locale: $locale),
+            self::GRAVEL_RIDE => $translator->trans('Gravel Ride', locale: $locale),
+            self::E_BIKE_RIDE => $translator->trans('E-Bike Ride', locale: $locale),
+            self::E_MOUNTAIN_BIKE_RIDE => $translator->trans('E-Mountain Bike Ride', locale: $locale),
+            self::VIRTUAL_RIDE => $translator->trans('Virtual Ride', locale: $locale),
+            self::VELO_MOBILE => $translator->trans('Velo Mobile', locale: $locale),
+            self::RUN => $translator->trans('Run', locale: $locale),
+            self::TRAIL_RUN => $translator->trans('Trail Run', locale: $locale),
+            self::VIRTUAL_RUN => $translator->trans('Virtual Run', locale: $locale),
+            self::WALK => $translator->trans('Walk', locale: $locale),
+            self::HIKE => $translator->trans('Hike', locale: $locale),
+            self::CANOEING => $translator->trans('Canoeing', locale: $locale),
+            self::KAYAKING => $translator->trans('Kayaking', locale: $locale),
+            self::KITE_SURF => $translator->trans('Kite Surf', locale: $locale),
+            self::ROWING => $translator->trans('Rowing', locale: $locale),
+            self::STAND_UP_PADDLING => $translator->trans('Stand Up Paddling', locale: $locale),
+            self::SURFING => $translator->trans('Surfing', locale: $locale),
+            self::POOL_SWIM => $translator->trans('Pool Swim', locale: $locale),
+            self::OPEN_WATER_SWIM => $translator->trans('Open Water Swim', locale: $locale),
             self::WIND_SURF => $translator->trans('Wind Surf', locale: $locale),
             self::BACK_COUNTRY_SKI => $translator->trans('Back Country Ski', locale: $locale),
             self::ALPINE_SKI => $translator->trans('Alpine Ski', locale: $locale),
@@ -248,7 +313,8 @@ enum SportType: string implements TranslatableInterface
             // WATER.
             SportType::CANOEING, SportType::KAYAKING, SportType::KITE_SURF,
             SportType::ROWING, SportType::STAND_UP_PADDLING,
-            SportType::SURFING, SportType::SWIM, SportType::WIND_SURF => ActivityType::WATER_SPORTS,
+            SportType::SURFING, SportType::POOL_SWIM, SportType::OPEN_WATER_SWIM,
+            SportType::WIND_SURF => ActivityType::WATER_SPORTS,
             // WINTER.
             SportType::BACK_COUNTRY_SKI, SportType::ALPINE_SKI, SportType::NORDIC_SKI,
             SportType::ICE_SKATE, SportType::SNOWBOARD, SportType::SNOWSHOE => ActivityType::WINTER_SPORTS,
@@ -285,6 +351,30 @@ enum SportType: string implements TranslatableInterface
         ]);
     }
 
+    public function supportsSplits(): bool
+    {
+        if (in_array($this->getActivityType(), [ActivityType::RUN, ActivityType::WALK])) {
+            return true;
+        }
+
+        return in_array($this, [
+            self::POOL_SWIM,
+            self::OPEN_WATER_SWIM,
+        ]);
+    }
+
+    public function supportsShiftingStats(): bool
+    {
+        return in_array($this, [
+            self::RIDE,
+            self::MOUNTAIN_BIKE_RIDE,
+            self::GRAVEL_RIDE,
+            self::E_BIKE_RIDE,
+            self::E_MOUNTAIN_BIKE_RIDE,
+            self::VELO_MOBILE,
+        ]);
+    }
+
     public function supportsReverseGeocoding(): bool
     {
         return !in_array($this, [
@@ -302,7 +392,7 @@ enum SportType: string implements TranslatableInterface
             self::TABLE_TENNIS,
             self::WEIGHT_TRAINING,
             self::WORKOUT,
-            self::SWIM,
+            self::POOL_SWIM,
             self::ICE_SKATE,
             self::YOGA,
             self::STAIR_STEPPER,
@@ -331,7 +421,7 @@ enum SportType: string implements TranslatableInterface
             self::TABLE_TENNIS,
             self::WEIGHT_TRAINING,
             self::WORKOUT,
-            self::SWIM,
+            self::POOL_SWIM,
             self::ICE_SKATE,
             self::YOGA,
             self::BASKETBALL,

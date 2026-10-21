@@ -10,7 +10,7 @@ export default class LeafletMap {
         this.config = config;
 
         this.map = L.map(mapNode, {
-            ctrlScrollZoom: true,
+            ctrlScrollZoom: config.requireCtrlToZoom,
             minZoom: data.minZoom,
             maxZoom: data.maxZoom,
             zoomSnap: .5,
@@ -35,7 +35,7 @@ export default class LeafletMap {
                 weight: 2,
                 opacity: 0.9,
                 lineJoin: 'round',
-                smoothFactor: 2.0
+                smoothFactor: 1.0
             }).addTo(featureGroup);
 
             if (this.data.showStartMarker) {
@@ -63,7 +63,7 @@ export default class LeafletMap {
             return;
         }
 
-        const eChartNode = document.querySelector('div[data-echarts-options][data-leaflet-echart-connect]');
+        const eChartNode = document.querySelector('div[data-echarts-options-url][data-leaflet-echart-connect]');
         if (!eChartNode) {
             return;
         }
@@ -97,6 +97,10 @@ export default class LeafletMap {
         } catch (error) {
             console.error('Failed to load coordinate map:', error);
         }
+    }
+
+    destroy() {
+        this.map.remove();
     }
 
     addCircleMarker(latLng, fillColor, {radius = 8, opacity = 1} = {}) {

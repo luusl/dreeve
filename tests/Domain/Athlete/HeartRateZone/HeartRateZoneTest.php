@@ -23,6 +23,20 @@ class HeartRateZoneTest extends TestCase
         );
     }
 
+    #[DataProvider(methodName: 'provideTestColorData')]
+    public function testGetColor(string $name, string $expectedColor): void
+    {
+        $this->assertEquals(
+            $expectedColor,
+            new HeartRateZone(
+                name: $name,
+                mode: HeartRateZoneMode::RELATIVE,
+                from: 60,
+                to: 80,
+            )->getColor(),
+        );
+    }
+
     public function testGetFromPercentage(): void
     {
         $this->assertEquals(
@@ -77,6 +91,17 @@ class HeartRateZoneTest extends TestCase
                 to: 80,
             )->getToPercentage(110),
         );
+    }
+
+    public static function provideTestColorData(): array
+    {
+        return [
+            [HeartRateZone::ONE, '#DF584A'],
+            [HeartRateZone::TWO, '#D63522'],
+            [HeartRateZone::THREE, '#BD2D22'],
+            [HeartRateZone::FOUR, '#942319'],
+            [HeartRateZone::FIVE, '#6A1009'],
+        ];
     }
 
     public static function provideTestRangeInBpmData(): array

@@ -4,12 +4,16 @@
 
 	servers {
 		trusted_proxies static private_ranges
+		timeouts {
+			read_body 60s
+		}
 	}
 
 	frankenphp {
-		num_threads 3
+		# Let FrankenPHP size the thread pool itself. It scales up under load.
+		max_threads auto
 		worker {
-			num 2
+			num {$FRANKENPHP_NUM_WORKERS:4}
 			file ./public/index.php
 		}
 	}
@@ -29,11 +33,13 @@ import /etc/frankenphp/snippets/paths.caddyfile
 
 	# Disable Topics tracking if not enabled explicitly: https://github.com/jkarlin/topics
 	header {
-		Cache-Control "no-cache, no-store, must-revalidate"
 		?Permissions-Policy "browsing-topics=()"
 	}
 
-	# Path-routing rules (static html, /files/*, /gear-maintenance/*, /assets/*).
+	@notAppServedFile not path /files/*
+	header @notAppServedFile Cache-Control "no-cache, no-store, must-revalidate"
+
+	# Path-routing rules (/files/*, /assets/*).
 	import paths
 
 	# Serve everything else trough Symfony.
@@ -69,9 +75,4 @@ import /etc/frankenphp/snippets/paths.caddyfile
 	file_server {
 		hide *.php *.yaml *.yml */log
 	}
-}
-
-# Reverse proxy for custom domain
-{$PROXY_HOST}:{$PROXY_PORT} {
-	reverse_proxy localhost:8080
 }

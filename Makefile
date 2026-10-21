@@ -35,7 +35,7 @@ composer:
 download-database:
 	@make stop
 	rm -Rf storage/database/dreeve.*
-	scp $(user)@$(server):/home/docker/stacks/dreeve/storage/database/dreeve.db ./storage/database/dreeve.db
+	scp $(user)@$(server):/home/docker/volumes/dreeve/storage/database/dreeve.db ./storage/database/dreeve.db
 	@make dc cmd="up -d --build"
 
 download-assets:
@@ -88,9 +88,18 @@ app-build-assets:
 	@make dcr cmd="npx @tailwindcss/cli -i public/css/tailwind.css -o public/css/tailwind.output.css"
 	@make dcr cmd="node_modules/.bin/webpack --config webpack.config.js"
 
-app-serve-docs:
-	docsify serve docs
+app-docs-install:
+	npm --prefix docs ci
 
+app-docs-serve:
+	@rm -f docs/.astro/dev.json
+	npm --prefix docs run dev
+
+app-docs-build:
+	npm --prefix docs run build
+
+clear-cache:
+	docker compose exec app bin/console app:cache:render:clear
 # Ollama models
 ollama-run-llama32:
 	docker compose exec ollama ollama pull llama3.2

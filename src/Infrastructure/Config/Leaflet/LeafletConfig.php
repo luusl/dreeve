@@ -14,25 +14,24 @@ final readonly class LeafletConfig implements \JsonSerializable
         /** @var Url[] */
         private array $tileLayerUrls,
         private bool $enableGreyScale,
+        private bool $requireCtrlToZoom,
     ) {
     }
 
     /**
-     * @param string[]|string $tileLayerUrls
+     * @param string[] $tileLayerUrls
      */
     public static function create(
         string $polylineColor,
-        string|array $tileLayerUrls,
+        array $tileLayerUrls,
         bool $enableGreyScale,
+        bool $requireCtrlToZoom,
     ): self {
-        if (is_string($tileLayerUrls)) {
-            $tileLayerUrls = [$tileLayerUrls];
-        }
-
         return new self(
             polylineColor: CssColor::fromString($polylineColor),
             tileLayerUrls: array_map(Url::fromString(...), $tileLayerUrls),
             enableGreyScale: $enableGreyScale,
+            requireCtrlToZoom: $requireCtrlToZoom,
         );
     }
 
@@ -54,6 +53,11 @@ final readonly class LeafletConfig implements \JsonSerializable
         return $this->enableGreyScale;
     }
 
+    public function requireCtrlToZoom(): bool
+    {
+        return $this->requireCtrlToZoom;
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -63,6 +67,7 @@ final readonly class LeafletConfig implements \JsonSerializable
             'polylineColor' => $this->getPolylineColor(),
             'tileLayerUrls' => $this->getTileLayerUrls(),
             'enableGreyScale' => $this->enableGreyScale(),
+            'requireCtrlToZoom' => $this->requireCtrlToZoom(),
         ];
     }
 }
