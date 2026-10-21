@@ -8,6 +8,20 @@
             @apply block text-sm font-medium text-gray-700;
         }
 
+        label:has(
+            + :is(input, select, textarea)[required]:enabled,
+            + * > :is(input, select, textarea)[required]:enabled,
+            + [data-multiselect-required]
+        ),
+        [data-required-checkbox-group] > label:not(:has(input)),
+        label.required {
+            &::after {
+                content: "*";
+                content: "*" / "";
+                @apply ms-0.5 text-red-600;
+            }
+        }
+
         .description {
             @apply mt-0.5 text-xs text-gray-500;
         }
@@ -22,7 +36,7 @@
             }
         }
 
-        input:where([type="text"], [type="number"], [type="date"], [type="datetime-local"], [type="password"], [type="email"], [type="search"], [type="url"]):not(.unstyled),
+        input:where([type="text"], [type="number"], [type="date"], [type="datetime-local"], [type="time"], [type="password"], [type="email"], [type="search"], [type="url"]):not(.unstyled),
         textarea:not(.unstyled),
         select:not(.unstyled) {
             @apply mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary;

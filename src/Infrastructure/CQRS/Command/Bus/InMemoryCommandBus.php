@@ -26,23 +26,21 @@ final class InMemoryCommandBus implements CommandBus
     public function __construct(
         #[AutowireIterator('app.command_handler')]
         private readonly iterable $commandHandlers,
+        private readonly TransactionalCommandMiddleware $transactionalCommandMiddleware,
     ) {
     }
 
     public function dispatch(Command $command): void
     {
-        // Initializing the bus here allows us to dispatch command in commandHandlers.
-        // Otherwise, we end up with infinite recursion in the container.
-        if (!isset($this->bus)) {
-            $this->bus = new MessageBus([
-                new HandleMessageMiddleware(
-                    new HandlersLocator(
-                        new HandlerBuilder(HandlerBuilderType::COMMAND_HANDLER)
-                            ->fromCallables($this->commandHandlers),
-                    ),
+        $this->bus ??= new MessageBus([
+            $this->transactionalCommandMiddleware,
+            new HandleMessageMiddleware(
+                new HandlersLocator(
+                    new HandlerBuilder(HandlerBuilderType::COMMAND_HANDLER)
+                        ->fromCallables($this->commandHandlers),
                 ),
-            ]);
-        }
+            ),
+        ]);
 
         try {
             $this->bus->dispatch($command);

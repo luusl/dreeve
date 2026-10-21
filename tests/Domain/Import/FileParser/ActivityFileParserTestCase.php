@@ -7,6 +7,7 @@ namespace App\Tests\Domain\Import\FileParser;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\Lap\ActivityLapRepository;
+use App\Domain\Activity\Shifting\ActivityDrivetrainUsageRepository;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Import\FileParser\ParsedActivityFile;
 use App\Domain\Import\FileParser\RawActivityFile;
@@ -20,7 +21,7 @@ abstract class ActivityFileParserTestCase extends ContainerTestCase
     use MatchesSnapshots;
     use ProvideSnapshotAssertion;
 
-    protected function assertParsedFileMatchesSnapshot(ParsedActivityFile $parsed): void
+    protected function assertParsedFileMatchesSnapshot(ParsedActivityFile $parsed, bool $hasDrivetrainUsage = false): void
     {
         $activity = $parsed->getActivity();
 
@@ -30,9 +31,11 @@ abstract class ActivityFileParserTestCase extends ContainerTestCase
         foreach ($parsed->getStreams() as $stream) {
             $this->getContainer()->get(ActivityStreamRepository::class)->add($stream);
         }
-        $this->getContainer()->get(ActivityRepository::class)->markActivityStreamsAsImported($activity->getId());
         foreach ($parsed->getLaps() as $lap) {
             $this->getContainer()->get(ActivityLapRepository::class)->add($lap);
+        }
+        foreach ($parsed->getDrivetrainUsages() as $drivetrainUsage) {
+            $this->getContainer()->get(ActivityDrivetrainUsageRepository::class)->add($drivetrainUsage);
         }
 
         $this->assertMatchesJsonSnapshot(
@@ -42,6 +45,13 @@ abstract class ActivityFileParserTestCase extends ContainerTestCase
             $this->getConnection()->executeQuery('SELECT * FROM ActivityLap ORDER BY lapNumber ASC')->fetchAllAssociative()
         );
         $this->assertCompressedDatabaseQueryMatchesSnapshot('SELECT * FROM ActivityStream ORDER BY streamType ASC');
+        $drivetrainUsage = $this->getConnection()->executeQuery('SELECT * FROM ActivityDrivetrainUsage ORDER BY position, gearNumber')->fetchAllAssociative();
+        if (!$hasDrivetrainUsage) {
+            $this->assertSame([], $drivetrainUsage);
+
+            return;
+        }
+        $this->assertMatchesJsonSnapshot($drivetrainUsage);
     }
 
     protected function rawFileFromFixture(string $name): RawActivityFile

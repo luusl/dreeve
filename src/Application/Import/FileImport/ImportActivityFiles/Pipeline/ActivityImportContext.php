@@ -7,8 +7,10 @@ namespace App\Application\Import\FileImport\ImportActivityFiles\Pipeline;
 use App\Domain\Activity\Activity;
 use App\Domain\Activity\ImportSource;
 use App\Domain\Activity\Lap\ActivityLaps;
+use App\Domain\Activity\Shifting\ActivityDrivetrainUsages;
 use App\Domain\Activity\Stream\ActivityStreams;
 use App\Domain\Import\FileParser\RawActivityFile;
+use App\Domain\Import\SupportedFileExtension;
 use App\Infrastructure\ValueObject\String\Path;
 
 final readonly class ActivityImportContext
@@ -19,6 +21,7 @@ final readonly class ActivityImportContext
         private ?Activity $activity,
         private ActivityStreams $streams,
         private ActivityLaps $laps,
+        private ActivityDrivetrainUsages $drivetrainUsages,
     ) {
     }
 
@@ -31,17 +34,14 @@ final readonly class ActivityImportContext
             activity: null,
             streams: ActivityStreams::empty(),
             laps: ActivityLaps::empty(),
+            drivetrainUsages: ActivityDrivetrainUsages::empty(),
         );
     }
 
     public function getImportSource(): ImportSource
     {
-        return match ($this->filePath->getExtension()) {
-            'fit' => ImportSource::FIT_FILE,
-            'tcx' => ImportSource::TCX_FILE,
-            'gpx' => ImportSource::GPX_FILE,
-            default => throw new \RuntimeException(sprintf('Unknown file extension "%s"', $this->filePath->getExtension())),
-        };
+        return SupportedFileExtension::tryFrom($this->filePath->getExtension())?->getImportSource()
+            ?? throw new \RuntimeException(sprintf('Unknown file extension "%s"', $this->filePath->getExtension()));
     }
 
     public function withActivity(Activity $activity): self
@@ -62,6 +62,13 @@ final readonly class ActivityImportContext
     {
         return clone ($this, [
             'laps' => $laps,
+        ]);
+    }
+
+    public function withDrivetrainUsages(ActivityDrivetrainUsages $drivetrainUsages): self
+    {
+        return clone ($this, [
+            'drivetrainUsages' => $drivetrainUsages,
         ]);
     }
 
@@ -95,5 +102,10 @@ final readonly class ActivityImportContext
     public function getLaps(): ActivityLaps
     {
         return $this->laps;
+    }
+
+    public function getDrivetrainUsages(): ActivityDrivetrainUsages
+    {
+        return $this->drivetrainUsages;
     }
 }

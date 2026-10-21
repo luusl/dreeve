@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Rewind;
 
-use App\Domain\Activity\ActivityFragmentPath;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\Image\Image;
 use App\Domain\Activity\Image\ImageRepository;
@@ -19,6 +18,7 @@ use App\Domain\Rewind\FindActivityStartTimesPerHour\FindActivityStartTimesPerHou
 use App\Domain\Rewind\FindAvailableRewindOptions\FindAvailableRewindOptions;
 use App\Domain\Rewind\FindCaloriesBurnt\FindCaloriesBurnt;
 use App\Domain\Rewind\FindCarbonSaved\FindCarbonSaved;
+use App\Domain\Rewind\FindGroupActivityCount\FindGroupActivityCount;
 use App\Domain\Rewind\FindLongestActivity\FindLongestActivity;
 use App\Domain\Rewind\FindMovingTimePerDay\FindMovingTimePerDay;
 use App\Domain\Rewind\FindMovingTimePerSportType\FindMovingTimePerSportType;
@@ -32,6 +32,7 @@ use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Time\Year;
 use App\Infrastructure\ValueObject\Time\Years;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -46,6 +47,7 @@ final readonly class RewindItemsBuilder
         private Environment $twig,
         private TranslatorInterface $translator,
         private Theme $theme,
+        private UrlGeneratorInterface $urlGenerator,
     ) {
     }
 
@@ -74,6 +76,7 @@ final readonly class RewindItemsBuilder
         $totalActivityCountResponse = $this->queryBus->ask(new FindTotalActivityCount($yearsToQuery));
         $kilogramCarbonSaved = $this->queryBus->ask(new FindCarbonSaved($yearsToQuery))->getKgCoCarbonSaved();
         $calories = $this->queryBus->ask(new FindCaloriesBurnt($yearsToQuery))->getCalories();
+        $groupActivityCount = $this->queryBus->ask(new FindGroupActivityCount($yearsToQuery))->getGroupActivityCount();
 
         $rewindItems = RewindItems::empty();
 
@@ -127,7 +130,7 @@ final readonly class RewindItemsBuilder
                 content: $this->twig->render('html/rewind/rewind-biggest-activity.html.twig', [
                     'activity' => $longestActivity,
                     'leaflet' => $leafletMap ? [
-                        'polylineUrl' => ActivityFragmentPath::for($longestActivity->getId(), 'polylines'),
+                        'polylineUrl' => $this->urlGenerator->generate('activity_polylines', ['activityId' => (string) $longestActivity->getId()]),
                         'map' => $leafletMap,
                     ] : null,
                 ])
@@ -137,9 +140,14 @@ final readonly class RewindItemsBuilder
                 title: $this->translator->trans('Distance'),
                 subTitle: $this->translator->trans('Total distance per month'),
                 content: $this->twig->render('html/rewind/rewind-chart.html.twig', [
-                    'chart' => Json::encode(DistancePerMonthChart::create(
-                        distancePerMonth: $totalsPerMonthResponse->getDistancePerMonth(),
-                        unitSystem: $unitSystem,
+                    'chart' => Json::encode(PerMonthChart::create(
+                        valuesPerMonth: array_map(
+                            fn (array $row): array => [$row[0], $row[1], $row[2]->toUnitSystem($unitSystem)->toFloat()],
+                            $totalsPerMonthResponse->getDistancePerMonth(),
+                        ),
+                        yAxisName: $this->translator->trans('Distance in {unit}', ['{unit}' => $unitSystem->distanceSymbol()]),
+                        yAxisNameGap: 40,
+                        gridLeft: '20px',
                         translator: $this->translator,
                         theme: $this->theme,
                     )->build()),
@@ -152,8 +160,14 @@ final readonly class RewindItemsBuilder
                 title: $this->translator->trans('Moving time'),
                 subTitle: $this->translator->trans('Total moving time per month'),
                 content: $this->twig->render('html/rewind/rewind-chart.html.twig', [
-                    'chart' => Json::encode(MovingTimePerMonthChart::create(
-                        movingTimePerMonth: $totalsPerMonthResponse->getMovingTimePerMonth(),
+                    'chart' => Json::encode(PerMonthChart::create(
+                        valuesPerMonth: array_map(
+                            fn (array $row): array => [$row[0], $row[1], $row[2] / 3600],
+                            $totalsPerMonthResponse->getMovingTimePerMonth(),
+                        ),
+                        yAxisName: $this->translator->trans('Moving time in hours'),
+                        yAxisNameGap: 30,
+                        gridLeft: '20px',
                         translator: $this->translator,
                         theme: $this->theme,
                     )->build()),
@@ -166,9 +180,14 @@ final readonly class RewindItemsBuilder
                 title: $this->translator->trans('Elevation'),
                 subTitle: $this->translator->trans('Total elevation per month'),
                 content: $this->twig->render('html/rewind/rewind-chart.html.twig', [
-                    'chart' => Json::encode(ElevationPerMonthChart::create(
-                        elevationPerMonth: $totalsPerMonthResponse->getElevationPerMonth(),
-                        unitSystem: $unitSystem,
+                    'chart' => Json::encode(PerMonthChart::create(
+                        valuesPerMonth: array_map(
+                            fn (array $row): array => [$row[0], $row[1], $row[2]->toUnitSystem($unitSystem)->toFloat()],
+                            $totalsPerMonthResponse->getElevationPerMonth(),
+                        ),
+                        yAxisName: $this->translator->trans('Elevation in {unit}', ['{unit}' => $unitSystem->elevationSymbol()]),
+                        yAxisNameGap: 40,
+                        gridLeft: '25px',
                         translator: $this->translator,
                         theme: $this->theme,
                     )->build()),
@@ -228,8 +247,11 @@ final readonly class RewindItemsBuilder
                 title: $this->translator->trans('Activity count'),
                 subTitle: $this->translator->trans('Number of activities per month'),
                 content: $this->twig->render('html/rewind/rewind-chart.html.twig', [
-                    'chart' => Json::encode(ActivityCountPerMonthChart::create(
-                        activityCountPerMonth: $this->queryBus->ask(new FindActivityCountPerMonth($yearsToQuery))->getActivityCountPerMonth(),
+                    'chart' => Json::encode(PerMonthChart::create(
+                        valuesPerMonth: $this->queryBus->ask(new FindActivityCountPerMonth($yearsToQuery))->getActivityCountPerMonth(),
+                        yAxisName: null,
+                        yAxisNameGap: 0,
+                        gridLeft: '2px',
                         translator: $this->translator,
                         theme: $this->theme,
                     )->build()),
@@ -246,6 +268,17 @@ final readonly class RewindItemsBuilder
                 ]),
                 totalMetric: (int) round($kilogramCarbonSaved->toFloat()),
                 totalMetricLabel: 'kg CO₂',
+            ))
+            ->add(RewindItem::from(
+                icon: 'group',
+                title: $this->translator->trans('Group activities'),
+                subTitle: $this->translator->trans("You weren't alone out there"),
+                content: $this->twig->render('html/rewind/rewind-group-activities.html.twig', [
+                    'groupActivityCount' => $groupActivityCount,
+                    'totalActivityCount' => $totalActivityCountResponse->getTotalActivityCount(),
+                ]),
+                totalMetric: $groupActivityCount,
+                totalMetricLabel: $this->translator->trans('activities'),
             ))
             ->add(RewindItem::from(
                 icon: 'calories',

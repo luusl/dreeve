@@ -16,7 +16,6 @@ use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 final readonly class PeakPowerOutputsWidget implements Widget, DependsOnCurrentDay
 {
@@ -24,7 +23,7 @@ final readonly class PeakPowerOutputsWidget implements Widget, DependsOnCurrentD
         private ActivityRepository $activityRepository,
         private ActivityPowerRepository $activityPowerRepository,
         private ActivityTypeRepository $activityTypeRepository,
-        private Environment $twig,
+        private WidgetRenderer $widgetRenderer,
         private TranslatorInterface $translator,
     ) {
     }
@@ -34,6 +33,11 @@ final readonly class PeakPowerOutputsWidget implements Widget, DependsOnCurrentD
         return $this->translator->trans('Peak power outputs');
     }
 
+    public function getAdminLabel(): string
+    {
+        return $this->getLabel();
+    }
+
     public function getTemplateName(): string
     {
         return 'widget--peak-power-outputs';
@@ -41,7 +45,7 @@ final readonly class PeakPowerOutputsWidget implements Widget, DependsOnCurrentD
 
     public function getCacheTags(): CacheTags
     {
-        return CacheTags::of(RootCacheTag::ACTIVITIES, RootCacheTag::SETTINGS_METRICS);
+        return CacheTags::of(RootCacheTag::ACTIVITIES, RootCacheTag::SETTINGS_ATHLETE_WEIGHT);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -82,7 +86,7 @@ final readonly class PeakPowerOutputsWidget implements Widget, DependsOnCurrentD
             $activityIds = $activityIds->mergeWith($powerOutputs->getActivityIds());
         }
 
-        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+        return $this->widgetRenderer->render($this, $configuration, [
             'uniqueId' => $dashboardWidgetId->toHtmlIdSuffix(),
             'powerOutputsPerActivityType' => $bestAllTimePowerOutputsPerActivityType,
             'activitiesPerActivityId' => $this->activityRepository->findByIds($activityIds->unique())->keyByActivityId(),

@@ -8,6 +8,7 @@ use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\CQRS\Command\CouldNotProcessCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\CommandDeserializer;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
+use App\Infrastructure\CQRS\Command\ProvidesFlashMessage;
 use App\Infrastructure\CQRS\Command\SuppressesFlashMessage;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,7 +34,7 @@ final readonly class DispatchCommandRequestHandler
     ) {
     }
 
-    #[Route(path: '/admin/dispatchCommand', name: 'admin_dispatch_command', methods: ['POST'], priority: 10)]
+    #[Route(path: '/admin/dispatch-command', name: 'admin_dispatch_command', methods: ['POST'], priority: 10)]
     public function handle(Request $request): JsonResponse
     {
         $token = new CsrfToken(self::CSRF_TOKEN_ID, $request->headers->get(self::CSRF_TOKEN_HEADER, ''));
@@ -59,7 +60,9 @@ final readonly class DispatchCommandRequestHandler
         if (!$suppressesFlash && $session instanceof FlashBagAwareSessionInterface) {
             $session->getFlashBag()->add(
                 type: 'success',
-                message: $this->translator->trans('Your changes have been saved.', [], 'admin')
+                message: $command instanceof ProvidesFlashMessage
+                    ? $command->getFlashMessage($this->translator)
+                    : $this->translator->trans('Your changes have been saved.', [], 'admin')
             );
         }
 

@@ -1,0 +1,56 @@
+{
+    "id": "activity-9756441741",
+    "name": "Watopia Flat Forward in London",
+    "description": "",
+    "sportType": "VirtualRide",
+    "workoutType": null,
+    "worldType": "zwift",
+    "importSource": "stravaApi",
+    "startDateLocal": "2023-08-31T16:35:35",
+    "distanceInMeter": 33548,
+    "elevationInMeter": 278,
+    "movingTimeInSeconds": 3786,
+    "elapsedTimeInSeconds": 3786,
+    "averageSpeedInKmPerHour": 31.9,
+    "maxSpeedInKmPerHour": 76.82,
+    "calories": 695,
+    "kilojoules": 728,
+    "averageHeartRate": 154,
+    "maxHeartRate": 174,
+    "averagePower": 192,
+    "maxPower": 479,
+    "averageCadence": 84,
+    "isCommute": false,
+    "deviceName": "Zwift",
+    "gearId": "gear-b12659861",
+    "location": {
+        "countryCode": null,
+        "state": "Watopia",
+        "city": null
+    },
+    "passedThroughCountries": [],
+    "startLatLng": [
+        51.51,
+        -0.08
+    ],
+    "encodedPolyline": null,
+    "hasGpx": false,
+    "images": [
+        {
+            "id": "activityImage-aea2d7b4-53a7-11ee-a5e1-9a34a3268d74",
+            "url": "http://localhost:8080/files/activities/aea2d7b4-53a7-11ee-a5e1-9a34a3268d74.jpg"
+        },
+        {
+            "id": "activityImage-aea2d7b4-53a7-11ee-a5e1-9a34a3268d74",
+            "url": "http://localhost:8080/files/activities/aea2d7b4-53a7-11ee-a5e1-9a34a3268d74.jpg"
+        },
+        {
+            "id": "activityImage-aea2d7b4-53a7-11ee-a5e1-9a34a3268d74",
+            "url": "http://localhost:8080/files/activities/aea2d7b4-53a7-11ee-a5e1-9a34a3268d74.jpg"
+        },
+        {
+            "id": "activityImage-aea2d7b4-53a7-11ee-a5e1-9a34a3268d74",
+            "url": "http://localhost:8080/files/activities/aea2d7b4-53a7-11ee-a5e1-9a34a3268d74.jpg"
+        }
+    ]
+}

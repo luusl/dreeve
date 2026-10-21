@@ -38,7 +38,10 @@ final readonly class ManuallyCreateActivity extends DomainCommand implements Des
         private float $elevation,
         private ?GearId $gearId,
         private ?int $calories,
+        private ?int $averageHeartRate,
+        private ?int $maxHeartRate,
         private bool $isCommute,
+        private bool $isGroupActivity,
         private array $newImages,
     ) {
     }
@@ -46,6 +49,7 @@ final readonly class ManuallyCreateActivity extends DomainCommand implements Des
     public static function fromPayload(array $payload): self
     {
         [$newImages] = self::parseImages($payload, 'images');
+        [$averageHeartRate, $maxHeartRate] = self::parseHeartRates($payload);
 
         return new self(
             name: self::parseName($payload),
@@ -58,7 +62,10 @@ final readonly class ManuallyCreateActivity extends DomainCommand implements Des
             elevation: self::parsePositiveNumber($payload, 'elevation'),
             gearId: self::parseGearId($payload),
             calories: self::parseCalories($payload),
+            averageHeartRate: $averageHeartRate,
+            maxHeartRate: $maxHeartRate,
             isCommute: self::parseIsCommute($payload),
+            isGroupActivity: self::parseIsGroupActivity($payload),
             newImages: $newImages,
         );
     }
@@ -113,9 +120,24 @@ final readonly class ManuallyCreateActivity extends DomainCommand implements Des
         return $this->calories;
     }
 
+    public function getAverageHeartRate(): ?int
+    {
+        return $this->averageHeartRate;
+    }
+
+    public function getMaxHeartRate(): ?int
+    {
+        return $this->maxHeartRate;
+    }
+
     public function isCommute(): bool
     {
         return $this->isCommute;
+    }
+
+    public function isGroupActivity(): bool
+    {
+        return $this->isGroupActivity;
     }
 
     /**

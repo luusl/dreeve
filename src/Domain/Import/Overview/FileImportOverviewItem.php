@@ -1,0 +1,138 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Import\Overview;
+
+use App\Domain\Activity\ActivityId;
+use App\Domain\Activity\ImportSource;
+use App\Domain\Import\FileImportId;
+use App\Domain\Import\FileImportStatus;
+use App\Infrastructure\Repository\Item;
+use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+
+final readonly class FileImportOverviewItem implements Item
+{
+    private function __construct(
+        private ?FileImportId $fileImportId,
+        private string $originalFilename,
+        private ImportSource $source,
+        private FileImportStatus $status,
+        private ?SerializableDateTime $importedOn,
+        private ?string $errorMessage,
+        private ?ActivityId $activityId,
+        private ?string $activityName,
+        private ?SerializableDateTime $activityStartDate,
+        private bool $hasFileContents,
+    ) {
+    }
+
+    public static function fromState(
+        FileImportId $fileImportId,
+        string $originalFilename,
+        ImportSource $source,
+        FileImportStatus $status,
+        SerializableDateTime $importedOn,
+        ?string $errorMessage,
+        ?ActivityId $activityId,
+        ?string $activityName,
+        ?SerializableDateTime $activityStartDate,
+        bool $hasFileContents,
+    ): self {
+        return new self(
+            fileImportId: $fileImportId,
+            originalFilename: $originalFilename,
+            source: $source,
+            status: $status,
+            importedOn: $importedOn,
+            errorMessage: $errorMessage,
+            activityId: $activityId,
+            activityName: $activityName,
+            activityStartDate: $activityStartDate,
+            hasFileContents: $hasFileContents,
+        );
+    }
+
+    public static function queued(
+        string $originalFilename,
+        ImportSource $source,
+    ): self {
+        return new self(
+            fileImportId: null,
+            originalFilename: $originalFilename,
+            source: $source,
+            status: FileImportStatus::QUEUED,
+            importedOn: null,
+            errorMessage: null,
+            activityId: null,
+            activityName: null,
+            activityStartDate: null,
+            hasFileContents: false,
+        );
+    }
+
+    public function getFileImportId(): ?FileImportId
+    {
+        return $this->fileImportId;
+    }
+
+    public function getOriginalFilename(): string
+    {
+        return $this->originalFilename;
+    }
+
+    public function getSource(): ImportSource
+    {
+        return $this->source;
+    }
+
+    public function getStatus(): FileImportStatus
+    {
+        return $this->status;
+    }
+
+    public function isFailed(): bool
+    {
+        return FileImportStatus::FAILED === $this->status;
+    }
+
+    public function isQueued(): bool
+    {
+        return FileImportStatus::QUEUED === $this->status;
+    }
+
+    public function wasSkipped(): bool
+    {
+        return FileImportStatus::SKIPPED === $this->status;
+    }
+
+    public function hasFileContents(): bool
+    {
+        return $this->hasFileContents;
+    }
+
+    public function getErrorMessage(): ?string
+    {
+        return $this->errorMessage;
+    }
+
+    public function getActivityId(): ?ActivityId
+    {
+        return $this->activityId;
+    }
+
+    public function getActivityName(): ?string
+    {
+        return $this->activityName;
+    }
+
+    public function getActivityStartDate(): ?SerializableDateTime
+    {
+        return $this->activityStartDate;
+    }
+
+    public function getImportedOn(): ?SerializableDateTime
+    {
+        return $this->importedOn;
+    }
+}

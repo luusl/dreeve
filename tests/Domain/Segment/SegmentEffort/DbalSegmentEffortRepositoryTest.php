@@ -11,21 +11,26 @@ use App\Domain\Segment\SegmentEffort\SegmentEffortsWereDeleted;
 use App\Domain\Segment\SegmentEffort\SegmentEffortWasAdded;
 use App\Domain\Segment\SegmentId;
 use App\Domain\Segment\SegmentIds;
+use App\Domain\Segment\SegmentRepository;
+use App\Domain\Segment\SegmentType;
 use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\ValueObject\String\Name;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
+use App\Tests\Domain\Segment\SegmentBuilder;
 use App\Tests\Infrastructure\Eventing\SpyEventBus;
-use Spatie\Snapshots\MatchesSnapshots;
 
 class DbalSegmentEffortRepositoryTest extends ContainerTestCase
 {
-    use MatchesSnapshots;
-
     private SegmentEffortRepository $segmentEffortRepository;
     private SpyEventBus $eventBus;
 
     public function testFindAndSave(): void
     {
+        $this->getContainer()->get(SegmentRepository::class)->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withName(Name::fromString('Segment One'))
+            ->build());
         $segmentEffort = SegmentEffortBuilder::fromDefaults()
             ->withRank(1)
             ->build();
@@ -45,6 +50,10 @@ class DbalSegmentEffortRepositoryTest extends ContainerTestCase
 
     public function testFindTopXBySegmentId(): void
     {
+        $this->getContainer()->get(SegmentRepository::class)->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withName(Name::fromString('Segment One'))
+            ->build());
         $segmentEffortOne = SegmentEffortBuilder::fromDefaults()
             ->withSegmentEffortId(SegmentEffortId::fromUnprefixed(1))
             ->withSegmentId(SegmentId::fromUnprefixed(1))
@@ -74,6 +83,10 @@ class DbalSegmentEffortRepositoryTest extends ContainerTestCase
 
     public function testFindAndCountBySegmentId(): void
     {
+        $this->getContainer()->get(SegmentRepository::class)->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withName(Name::fromString('Segment One'))
+            ->build());
         $segmentEffortOne = SegmentEffortBuilder::fromDefaults()
             ->withSegmentEffortId(SegmentEffortId::fromUnprefixed(1))
             ->withSegmentId(SegmentId::fromUnprefixed(1))
@@ -105,6 +118,10 @@ class DbalSegmentEffortRepositoryTest extends ContainerTestCase
 
     public function testFindByActivityId(): void
     {
+        $this->getContainer()->get(SegmentRepository::class)->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withName(Name::fromString('Segment One'))
+            ->build());
         $segmentEffortOne = SegmentEffortBuilder::fromDefaults()
             ->withSegmentEffortId(SegmentEffortId::fromUnprefixed(1))
             ->withActivityId(ActivityId::fromUnprefixed(1))
@@ -134,6 +151,14 @@ class DbalSegmentEffortRepositoryTest extends ContainerTestCase
 
     public function testItRanksAnEffortAgainstEveryOtherEffortOnTheSameSegment(): void
     {
+        $this->getContainer()->get(SegmentRepository::class)->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withName(Name::fromString('Segment One'))
+            ->build());
+        $this->getContainer()->get(SegmentRepository::class)->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(2))
+            ->withName(Name::fromString('Segment One'))
+            ->build());
         // Two segments, ridden by three activities, so ranks only come out right when efforts
         // of other activities are taken into account.
         foreach ([[1, 1, 1, 300], [2, 1, 2, 100], [3, 1, 3, 200], [4, 2, 1, 60], [5, 2, 2, 30]] as [$effortId, $segmentId, $activityId, $elapsedTime]) {
@@ -183,6 +208,103 @@ class DbalSegmentEffortRepositoryTest extends ContainerTestCase
             1,
             $this->getConnection()->executeQuery('SELECT COUNT(*) FROM SegmentEffort')->fetchOne()
         );
+    }
+
+    public function testItReadsTheNameFromTheSegment(): void
+    {
+        $this->getContainer()->get(SegmentRepository::class)->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withName(Name::fromString('Kwaremont'))
+            ->build());
+        $this->segmentEffortRepository->add(SegmentEffortBuilder::fromDefaults()
+            ->withSegmentEffortId(SegmentEffortId::fromUnprefixed(1))
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withActivityId(ActivityId::fromUnprefixed(1))
+            ->build());
+
+        $this->assertSame('Kwaremont', $this->segmentEffortRepository->find(SegmentEffortId::fromUnprefixed(1))->getName());
+        $this->assertSame('Kwaremont', $this->segmentEffortRepository->findBySegmentId(SegmentId::fromUnprefixed(1))->getFirst()?->getName());
+        $this->assertSame('Kwaremont', $this->segmentEffortRepository->findTopXBySegmentId(SegmentId::fromUnprefixed(1), 1)->getFirst()?->getName());
+        $this->assertSame('Kwaremont', $this->segmentEffortRepository->findByActivityId(ActivityId::fromUnprefixed(1))->getFirst()?->getName());
+    }
+
+    public function testDeleteForActivityAndSegmentType(): void
+    {
+        $segmentRepository = $this->getContainer()->get(SegmentRepository::class);
+        $segmentRepository->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withType(SegmentType::CUSTOM)
+            ->build());
+        $segmentRepository->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(2))
+            ->withType(SegmentType::IMPORTED)
+            ->build());
+        foreach ([[1, 1, 1], [2, 2, 1], [3, 1, 2]] as [$effortId, $segmentId, $activityId]) {
+            $this->segmentEffortRepository->add(SegmentEffortBuilder::fromDefaults()
+                ->withSegmentEffortId(SegmentEffortId::fromUnprefixed($effortId))
+                ->withSegmentId(SegmentId::fromUnprefixed($segmentId))
+                ->withActivityId(ActivityId::fromUnprefixed($activityId))
+                ->build());
+        }
+
+        $this->segmentEffortRepository->deleteForActivityAndSegmentType(ActivityId::fromUnprefixed(1), SegmentType::CUSTOM);
+
+        $this->assertEquals(
+            ['segmentEffort-2', 'segmentEffort-3'],
+            $this->getConnection()->executeQuery('SELECT segmentEffortId FROM SegmentEffort ORDER BY segmentEffortId')->fetchFirstColumn()
+        );
+        $this->assertEquals(
+            [new SegmentEffortsWereDeleted(SegmentIds::fromArray([SegmentId::fromUnprefixed(1)]))],
+            $this->eventBus->getPublishedEvents()
+        );
+    }
+
+    public function testItDoesNotPublishWhenTheActivityHadNoEffortsOnSegmentsOfThatType(): void
+    {
+        $this->getContainer()->get(SegmentRepository::class)->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withType(SegmentType::IMPORTED)
+            ->build());
+        $this->segmentEffortRepository->add(SegmentEffortBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(1))
+            ->withActivityId(ActivityId::fromUnprefixed(1))
+            ->build());
+
+        $this->segmentEffortRepository->deleteForActivityAndSegmentType(ActivityId::fromUnprefixed(1), SegmentType::CUSTOM);
+
+        $this->assertEquals(
+            1,
+            $this->getConnection()->executeQuery('SELECT COUNT(*) FROM SegmentEffort')->fetchOne()
+        );
+        $this->assertEmpty($this->eventBus->getPublishedEvents());
+    }
+
+    public function testDeleteForSegment(): void
+    {
+        foreach ([[1, 1], [2, 2], [3, 1]] as [$effortId, $segmentId]) {
+            $this->segmentEffortRepository->add(SegmentEffortBuilder::fromDefaults()
+                ->withSegmentEffortId(SegmentEffortId::fromUnprefixed($effortId))
+                ->withSegmentId(SegmentId::fromUnprefixed($segmentId))
+                ->build());
+        }
+
+        $this->segmentEffortRepository->deleteForSegment(SegmentId::fromUnprefixed(1));
+
+        $this->assertEquals(
+            ['segmentEffort-2'],
+            $this->getConnection()->executeQuery('SELECT segmentEffortId FROM SegmentEffort')->fetchFirstColumn()
+        );
+        $this->assertEquals(
+            [new SegmentEffortsWereDeleted(SegmentIds::fromArray([SegmentId::fromUnprefixed(1)]))],
+            $this->eventBus->getPublishedEvents()
+        );
+    }
+
+    public function testItDoesNotPublishWhenTheSegmentHadNoEfforts(): void
+    {
+        $this->segmentEffortRepository->deleteForSegment(SegmentId::fromUnprefixed(1));
+
+        $this->assertEmpty($this->eventBus->getPublishedEvents());
     }
 
     public function testItPublishesTheSegmentThatWasRiddenWhenAnEffortIsAdded(): void

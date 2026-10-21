@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Settings;
 
-use App\Infrastructure\KeyValue\Key;
+use function Symfony\Component\String\u;
 
 enum SettingsGroup: string
 {
@@ -17,20 +17,16 @@ enum SettingsGroup: string
     case INTEGRATIONS = 'integrations';
     case DAEMON = 'daemon';
     case SECURITY = 'security';
+    case ATHLETE_WEIGHT = 'athleteWeight';
 
-    public function keyValueKey(): Key
+    public static function fromSlug(string $slug): ?self
     {
-        return match ($this) {
-            self::GENERAL => Key::SETTINGS_GENERAL,
-            self::APPEARANCE => Key::SETTINGS_APPEARANCE,
-            self::MAPS => Key::SETTINGS_MAPS,
-            self::IMPORT => Key::SETTINGS_IMPORT,
-            self::METRICS => Key::SETTINGS_METRICS,
-            self::ZWIFT => Key::SETTINGS_ZWIFT,
-            self::INTEGRATIONS => Key::SETTINGS_INTEGRATIONS,
-            self::DAEMON => Key::SETTINGS_DAEMON,
-            self::SECURITY => Key::SETTINGS_SECURITY,
-        };
+        return self::tryFrom((string) u($slug)->camel());
+    }
+
+    public function getSlug(): string
+    {
+        return (string) u($this->value)->kebab();
     }
 
     /**
@@ -48,6 +44,7 @@ enum SettingsGroup: string
             self::INTEGRATIONS => IntegrationsSettings::fromArray($data),
             self::DAEMON => DaemonSettings::fromArray($data),
             self::SECURITY => SecuritySettings::fromArray($data),
+            self::ATHLETE_WEIGHT => AthleteWeightSettings::fromArray($data),
         };
     }
 }

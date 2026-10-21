@@ -8,21 +8,18 @@ use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\Route\Signature\ActivityRouteSignatureRepository;
 use App\Domain\Activity\Route\Signature\DbalActivityRouteSignatureRepository;
-use App\Domain\Activity\Route\Signature\RouteCells;
-use App\Domain\Activity\Route\Signature\RouteGrid;
-use App\Domain\Activity\Route\Signature\RouteWaypoints;
+use App\Domain\Geography\Grid\RouteCells;
+use App\Domain\Geography\Grid\RouteGrid;
+use App\Domain\Geography\Grid\RouteWaypoints;
+use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
-use Spatie\Snapshots\MatchesSnapshots;
 
 class DbalActivityRouteSignatureRepositoryTest extends ContainerTestCase
 {
-    use MatchesSnapshots;
-
     private ActivityRouteSignatureRepository $activityRouteSignatureRepository;
-    private RouteGrid $routeGrid;
 
     public function testAdd(): void
     {
@@ -46,7 +43,13 @@ class DbalActivityRouteSignatureRepositoryTest extends ContainerTestCase
             ->executeQuery('SELECT activityId, polylineChecksum, cellCount FROM ActivityRouteSignature ORDER BY activityId')
             ->fetchAllAssociative();
 
-        $this->assertMatchesJsonSnapshot(Json::encode($results));
+        $this->assertEquals(
+            [
+                ['activityId' => 'activity-test', 'polylineChecksum' => 'aaaaaaaa', 'cellCount' => 3],
+                ['activityId' => 'activity-test-2', 'polylineChecksum' => 'bbbbbbbb', 'cellCount' => 1],
+            ],
+            $results,
+        );
         $this->assertEquals(
             [10, 20, 30],
             Json::uncompressAndDecode($this->getConnection()->executeQuery(
@@ -61,6 +64,29 @@ class DbalActivityRouteSignatureRepositoryTest extends ContainerTestCase
         );
     }
 
+    public function testFind(): void
+    {
+        $activityRouteSignature = ActivityRouteSignatureBuilder::fromDefaults()
+            ->withActivityId(ActivityId::fromUnprefixed('test'))
+            ->withPolylineChecksum('aaaaaaaa')
+            ->withCells(RouteCells::fromArray([10, 20, 30]))
+            ->withWaypoints(RouteWaypoints::fromArray([5100000, 300000, 5100100, 300100]))
+            ->build();
+        $this->activityRouteSignatureRepository->add($activityRouteSignature);
+
+        $this->assertEquals(
+            $activityRouteSignature,
+            $this->activityRouteSignatureRepository->find(ActivityId::fromUnprefixed('test'))
+        );
+    }
+
+    public function testFindThrowsWhenNotFound(): void
+    {
+        $this->expectExceptionObject(new EntityNotFound('ActivityRouteSignature for "activity-test" not found'));
+
+        $this->activityRouteSignatureRepository->find(ActivityId::fromUnprefixed('test'));
+    }
+
     public function testFindActivityIdsThatNeedRouteSignatureCalculation(): void
     {
         $polyline = (string) EncodedPolyline::fromCoordinates([[51.0, 3.0], [51.01, 3.01]]);
@@ -69,7 +95,7 @@ class DbalActivityRouteSignatureRepositoryTest extends ContainerTestCase
         $this->activityRouteSignatureRepository->add(
             ActivityRouteSignatureBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('up-to-date'))
-                ->withPolylineChecksum($this->routeGrid->checksumFor(EncodedPolyline::fromString($polyline)))
+                ->withPolylineChecksum(RouteGrid::checksumFor(EncodedPolyline::fromString($polyline)))
                 ->build()
         );
 
@@ -133,10 +159,6 @@ class DbalActivityRouteSignatureRepositoryTest extends ContainerTestCase
     {
         parent::setUp();
 
-        $this->routeGrid = new RouteGrid();
-        $this->activityRouteSignatureRepository = new DbalActivityRouteSignatureRepository(
-            $this->getConnection(),
-            $this->routeGrid,
-        );
+        $this->activityRouteSignatureRepository = new DbalActivityRouteSignatureRepository($this->getConnection());
     }
 }

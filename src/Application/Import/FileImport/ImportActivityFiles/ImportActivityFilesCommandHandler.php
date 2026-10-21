@@ -10,6 +10,10 @@ use App\Application\Import\FileImport\ImportActivityFiles\Pipeline\SkipDuplicate
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\Lap\ActivityLapRepository;
+use App\Domain\Activity\Scan\ActivityScan;
+use App\Domain\Activity\Scan\ActivityScanRepository;
+use App\Domain\Activity\Scan\ActivityScanType;
+use App\Domain\Activity\Shifting\ActivityDrivetrainUsageRepository;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Import\FileImport;
 use App\Domain\Import\FileImportId;
@@ -39,7 +43,9 @@ final readonly class ImportActivityFilesCommandHandler implements CommandHandler
         private iterable $steps,
         private ActivityRepository $activityRepository,
         private ActivityStreamRepository $activityStreamRepository,
+        private ActivityScanRepository $activityScanRepository,
         private ActivityLapRepository $activityLapRepository,
+        private ActivityDrivetrainUsageRepository $activityDrivetrainUsageRepository,
         private FileImportRepository $fileImportRepository,
         private Mutex $mutex,
         private Clock $clock,
@@ -118,14 +124,19 @@ final readonly class ImportActivityFilesCommandHandler implements CommandHandler
                 activity: $activity,
                 rawData: [],
             ));
+            $command->getImportedActivities()->add($activity);
 
             foreach ($context->getStreams() as $stream) {
                 $this->activityStreamRepository->add($stream);
             }
-            $this->activityRepository->markActivityStreamsAsImported($activityId);
+            $this->activityScanRepository->add(ActivityScan::create(activityId: $activityId, type: ActivityScanType::STREAMS));
 
             foreach ($context->getLaps() as $lap) {
                 $this->activityLapRepository->add($lap);
+            }
+
+            foreach ($context->getDrivetrainUsages() as $drivetrainUsage) {
+                $this->activityDrivetrainUsageRepository->add($drivetrainUsage);
             }
 
             $file = $context->getFile();

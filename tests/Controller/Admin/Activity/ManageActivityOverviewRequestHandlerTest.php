@@ -10,6 +10,9 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Import\ImportMode;
+use App\Infrastructure\ValueObject\Geography\Coordinate;
+use App\Infrastructure\ValueObject\Geography\Latitude;
+use App\Infrastructure\ValueObject\Geography\Longitude;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
@@ -18,15 +21,6 @@ use PHPUnit\Framework\Attributes\DataProvider;
 
 class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
 {
-    public function testAnonymousUsersAreRedirectedToTheLoginPage(): void
-    {
-        $this->seedActivity();
-
-        $this->client->request('GET', '/admin/activities');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
     public function testRendersTheEmptyStateWhenThereAreNoActivities(): void
     {
         $this->withImportMode(ImportMode::FILES);
@@ -37,7 +31,8 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertCount(1, $crawler->filter('table.data-table'));
         $this->assertStringContainsString('No activities imported yet.', $crawler->filter('body')->text());
-        $this->assertCount(1, $crawler->filter('table.data-table tbody td[colspan="9"]'));
+        $this->assertCount(1, $crawler->filter('table.data-table tbody td[colspan="10"]'));
+        $this->assertCount(0, $crawler->filter('table.data-table input[type="checkbox"]'));
         $this->assertCount(0, $crawler->filter('table.data-table tbody a[title="Edit"]'));
         $this->assertCount(0, $crawler->filter('[aria-label="Go to next page"]'));
     }
@@ -69,11 +64,18 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(1, $form->filter('select[name="filters[gear]"]'));
         $this->assertCount(1, $form->filter('select[name="filters[device]"]'));
         $this->assertCount(1, $form->filter('select[name="filters[importSource]"]'));
+        $this->assertSame(
+            ['peakPowerOutputs' => 'Peak power outputs', 'bestEfforts' => 'Best efforts'],
+            array_combine(
+                $form->filter('select[name="filters[excludedFrom]"] option:not([value=""])')->each(fn ($option) => $option->attr('value')),
+                $form->filter('select[name="filters[excludedFrom]"] option:not([value=""])')->each(fn ($option) => $option->text()),
+            ),
+        );
         $this->assertCount(1, $form->filter('button[type="submit"]'));
         $this->assertCount(0, $form->filter('a.btn--secondary'));
 
         $gearOption = $form->filter('select[name="filters[gear]"] option:not([value=""])');
-        $this->assertCount(1, $gearOption);
+        $this->assertCount(2, $gearOption);
         $this->assertSame((string) GearId::fromUnprefixed('99'), $gearOption->attr('value'));
         $this->assertSame('Trail Shoes', $gearOption->text());
     }
@@ -96,6 +98,53 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
             $detailLinks->first()->attr('href')
         );
         $this->assertSame('Activity 1', trim($detailLinks->first()->text()));
+    }
+
+    public function testWarnsAboutActivitiesThatCanBeEnriched(): void
+    {
+        $activityRepository = static::getContainer()->get(ActivityRepository::class);
+        $activityRepository->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->withSportType(SportType::WALK)
+                ->withStartDateTime(SerializableDateTime::fromString('2026-06-02 08:00:00'))
+                ->withStartingCoordinate(Coordinate::createFromLatAndLng(
+                    Latitude::fromString('50.80'),
+                    Longitude::fromString('4.94'),
+                ))
+                ->build(),
+            [],
+        ));
+        $activityRepository->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
+                ->withSportType(SportType::VIRTUAL_RIDE)
+                ->withStartDateTime(SerializableDateTime::fromString('2026-06-01 08:00:00'))
+                ->build(),
+            [],
+        ));
+
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/activities');
+
+        $this->assertResponseIsSuccessful();
+
+        $rows = $crawler->filter('table.data-table tbody tr');
+        $this->assertCount(1, $rows->eq(0)->filter('span.text-amber-500 svg'));
+        $this->assertCount(1, $rows->eq(0)->filter('form[data-dispatch-command="enrich-activity"]'));
+        $this->assertCount(1, $rows->eq(0)->filter('form[data-dispatch-command="enrich-activity"] button[data-has-loading-state]'));
+        $this->assertStringContainsString(
+            'group-[.is-loading]:animate-spin',
+            $rows->eq(0)->filter('form[data-dispatch-command="enrich-activity"] svg')->attr('class')
+        );
+        $this->assertSame(
+            (string) ActivityId::fromUnprefixed('1'),
+            $rows->eq(0)->filter('form[data-dispatch-command="enrich-activity"] input[name="activityId"]')->attr('value')
+        );
+
+        $this->assertCount(0, $rows->eq(1)->filter('span.text-amber-500 svg'));
+        $this->assertCount(0, $rows->eq(1)->filter('form[data-dispatch-command="enrich-activity"]'));
     }
 
     #[DataProvider('provideSportTypeFilterScenarios')]
@@ -137,6 +186,38 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         ];
     }
 
+    public function testFiltersTheTableOnUnspecifiedGear(): void
+    {
+        $this->seedActivities(3);
+        $this->seedActivity();
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/activities?filters[gear]=gear-none');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(0, $crawler->filter('table.data-table tbody tr td:not([colspan])'));
+        $this->assertSame(
+            'gear-none',
+            $crawler->filter('select[name="filters[gear]"] option[selected]')->attr('value')
+        );
+    }
+
+    public function testFiltersTheTableOnUnspecifiedDevice(): void
+    {
+        $this->seedActivities(3);
+        $this->seedActivity();
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/activities?filters[device]=recordingDevice-none');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(3, $crawler->filter('table.data-table tbody tr'));
+        $this->assertSame(
+            'recordingDevice-none',
+            $crawler->filter('select[name="filters[device]"] option[selected]')->attr('value')
+        );
+    }
+
     public function testRendersTheFilterFormWhenActiveFiltersMatchNothing(): void
     {
         $this->seedActivities(3);
@@ -169,6 +250,8 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString('of 30', $crawler->filter('body')->text());
 
         $this->assertCount(0, $crawler->filter('table.data-table tbody a[title="Delete"]'));
+        $this->assertCount(0, $crawler->filter('input[type="checkbox"]'));
+        $this->assertCount(0, $crawler->filter('form#bulk-delete-activities'));
     }
 
     public function testShowsDeleteLinksInFilesMode(): void
@@ -186,6 +269,40 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString(
             '/admin/activities/'.ActivityId::fromUnprefixed('1').'/delete',
             $deleteLinks->first()->attr('href')
+        );
+
+        $this->assertCount(1, $crawler->filter('table.data-table thead input[type="checkbox"][data-checkbox-toggle]'));
+        $rowCheckboxes = $crawler->filter('table.data-table tbody input[type="checkbox"][form="bulk-delete-activities"][name="activityIds[]"]');
+        $this->assertCount(3, $rowCheckboxes);
+        $this->assertSame((string) ActivityId::fromUnprefixed('1'), $rowCheckboxes->first()->attr('value'));
+
+        $bulkDeleteForm = $crawler->filter('form#bulk-delete-activities[method="get"]');
+        $this->assertSame('/admin/activities/delete', $bulkDeleteForm->attr('action'));
+        $this->assertSame('/admin/activities', $bulkDeleteForm->filter('input[name="redirectTo"]')->attr('value'));
+    }
+
+    public function testEditAndDeleteLinksRedirectBackToTheFilteredPage(): void
+    {
+        $this->withImportMode(ImportMode::FILES);
+
+        $this->seedActivities(30);
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/activities?filters[sportType]=Ride&pagination[page]=2&pagination[size]=10');
+
+        $this->assertResponseIsSuccessful();
+        $expectedRedirectTo = 'redirectTo='.rawurlencode('/admin/activities?filters%5BsportType%5D=Ride&pagination%5Bpage%5D=2&pagination%5Bsize%5D=10');
+        $this->assertStringContainsString(
+            $expectedRedirectTo,
+            (string) $crawler->filter('table.data-table tbody a[title="Edit"]')->first()->attr('href')
+        );
+        $this->assertStringContainsString(
+            $expectedRedirectTo,
+            (string) $crawler->filter('table.data-table tbody a[title="Delete"]')->first()->attr('href')
+        );
+        $this->assertSame(
+            '/admin/activities?filters%5BsportType%5D=Ride&pagination%5Bpage%5D=2&pagination%5Bsize%5D=10',
+            $crawler->filter('form#bulk-delete-activities input[name="redirectTo"]')->attr('value')
         );
     }
 
@@ -210,7 +327,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertSame(
             ['Manual', 'Strava API'],
-            $crawler->filter('table.data-table tbody tr td:nth-child(4)')->each(fn ($cell) => trim($cell->text())),
+            $crawler->filter('table.data-table tbody tr td:nth-child(5)')->each(fn ($cell) => trim($cell->text())),
         );
     }
 

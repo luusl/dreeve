@@ -2,6 +2,7 @@
 
 namespace App\Tests\Controller\Admin\Activity;
 
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
@@ -20,35 +21,15 @@ use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Gear\GearBuilder;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 {
-    public function testAnonymousUsersAreRedirectedToTheLoginPage(): void
-    {
-        $this->client->request('GET', '/admin/activities/'.ActivityId::fromUnprefixed('1').'/edit');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
-    public function testAnonymousUsersAreRedirectedToTheLoginPageOnDelete(): void
-    {
-        $this->client->request('GET', '/admin/activities/'.ActivityId::fromUnprefixed('1').'/delete');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
-    public function testAnonymousUsersAreRedirectedToTheLoginPageOnAdd(): void
-    {
-        $this->client->request('GET', '/admin/activities/add');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
     public function testRendersTheAddFormInFilesMode(): void
     {
         $this->withImportMode(ImportMode::FILES);
 
-        static::getContainer()->get(SettingsRepository::class)->save(SettingsGroup::APPEARANCE, [
+        static::getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::APPEARANCE, [
             'sportTypesSortingOrder' => [SportType::WALK->value, SportType::RUN->value],
         ]);
 
@@ -80,6 +61,8 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(1, $form->filter('input[name="distance"]'));
         $this->assertCount(1, $form->filter('input[name="elevation"]'));
         $this->assertCount(1, $form->filter('input[name="calories"]'));
+        $this->assertCount(1, $form->filter('input[name="averageHeartRate"]'));
+        $this->assertCount(1, $form->filter('input[name="maxHeartRate"]'));
         $this->assertCount(1, $form->filter('input[name="duration[hours]"]'));
         $this->assertCount(1, $form->filter('input[name="duration[minutes]"]'));
         $this->assertCount(1, $form->filter('input[name="duration[seconds]"]'));
@@ -89,10 +72,12 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
             $crawler->filter('select#activity-workout-type option')->each(fn ($option) => $option->text()),
         );
 
-        // Every sport type can be picked, in the order configured by the user.
         $sportTypeOptions = $crawler->filter('select#activity-sport-type option')->each(fn ($option) => $option->attr('value'));
         $this->assertCount(count(SportType::cases()), $sportTypeOptions);
-        $this->assertSame([SportType::WALK->value, SportType::RUN->value], array_slice($sportTypeOptions, 0, 2));
+        $this->assertSame(
+            [SportType::WALK->value, SportType::HIKE->value, SportType::RUN->value],
+            array_slice($sportTypeOptions, 0, 3),
+        );
 
         // Distance and elevation are entered in the configured unit system.
         $this->assertStringContainsString('(km)', $crawler->filter('label[for="activity-distance"]')->text());
@@ -105,6 +90,8 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 
         // Images can be attached right away.
         $this->assertCount(1, $crawler->filter('[data-image-dropzone]'));
+
+        $this->assertCount(0, $crawler->filter('a.btn--danger'));
     }
 
     public function testRendersTheManuallyAddedActivityFormPrefilledOnEdit(): void
@@ -131,8 +118,11 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
                 ->withDistance(Kilometer::from(10.5))
                 ->withElevation(Meter::from(120))
                 ->withCalories(750)
+                ->withAverageHeartRate(140)
+                ->withMaxHeartRate(172)
                 ->withGearId(GearId::fromUnprefixed('custom-gear'))
                 ->withIsCommute(true)
+                ->withIsGroupActivity(true)
                 ->withLocalImagePaths('activity-1/image.jpg')
                 ->build(),
             [],
@@ -164,9 +154,12 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertSame('10.5', $form->filter('input[name="distance"]')->attr('value'));
         $this->assertSame('120', $form->filter('input[name="elevation"]')->attr('value'));
         $this->assertSame('750', $form->filter('input[name="calories"]')->attr('value'));
+        $this->assertSame('140', $form->filter('input[name="averageHeartRate"]')->attr('value'));
+        $this->assertSame('172', $form->filter('input[name="maxHeartRate"]')->attr('value'));
 
         $this->assertNotNull($form->filter('select#activity-gear option[value="gear-custom-gear"]')->attr('selected'));
         $this->assertNotNull($form->filter('input#activity-is-commute')->attr('checked'));
+        $this->assertNotNull($form->filter('input#activity-is-group-activity')->attr('checked'));
 
         // A manually added activity was never recorded, so there is no device to pick.
         $this->assertCount(0, $form->filter('select#activity-device-name'));
@@ -178,6 +171,11 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         // The existing image can be managed.
         $this->assertCount(1, $crawler->filter('[data-image-dropzone]'));
         $this->assertStringContainsString('image.jpg', (string) $crawler->filter('[data-image-dropzone]')->attr('data-existing-images'));
+
+        $this->assertSame(
+            '/admin/activities/activity-1/delete',
+            $crawler->filter('a.btn--danger')->attr('href'),
+        );
     }
 
     public function testAddFormIsNotAvailableInStravaApiMode(): void
@@ -195,11 +193,14 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
                 ->withName('Morning Run')
+                ->withWorkoutType(WorkoutType::RACE)
                 ->withGearId(GearId::fromUnprefixed('5'))
                 ->withDeviceName('Garmin Edge')
                 ->withCalories(500)
                 ->withIsCommute(true)
+                ->withIsGroupActivity(true)
                 ->withLocalImagePaths('activity-1/image.jpg')
+                ->withExcludedFrom(ActivityExclusion::PEAK_POWER_OUTPUTS)
                 ->build(),
             [],
         ));
@@ -220,22 +221,98 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         // All Strava-sourced fields are disabled.
         $this->assertNotNull($crawler->filter('input#activity-name')->attr('disabled'));
         $this->assertNotNull($crawler->filter('select#activity-sport-type')->attr('disabled'));
+        $this->assertNotNull($crawler->filter('select#activity-workout-type')->attr('disabled'));
         $this->assertNotNull($crawler->filter('select#activity-gear')->attr('disabled'));
         $this->assertNotNull($crawler->filter('select#activity-device-name')->attr('disabled'));
         $this->assertNotNull($crawler->filter('input#activity-calories')->attr('disabled'));
         $this->assertNotNull($crawler->filter('input#activity-is-commute')->attr('disabled'));
+        $this->assertNotNull($crawler->filter('input#activity-is-group-activity')->attr('disabled'));
 
         // Disabled fields are not submitted, so their values are mirrored into hidden inputs.
         $this->assertSame('Morning Run', $crawler->filter('input[type="hidden"][name="name"]')->attr('value'));
         $this->assertCount(1, $crawler->filter('input[type="hidden"][name="sportType"]'));
+        $this->assertSame('race', $crawler->filter('input[type="hidden"][name="workoutType"]')->attr('value'));
         $this->assertSame((string) GearId::fromUnprefixed('5'), $crawler->filter('input[type="hidden"][name="gearId"]')->attr('value'));
         $this->assertSame('Garmin Edge', $crawler->filter('input[type="hidden"][name="deviceName"]')->attr('value'));
         $this->assertSame('500', $crawler->filter('input[type="hidden"][name="calories"]')->attr('value'));
         // The commute checkbox can't submit while disabled, so its real value is preserved.
         $this->assertSame('true', $crawler->filter('input[type="hidden"][name="isCommute"]')->attr('value'));
+        $this->assertSame('true', $crawler->filter('input[type="hidden"][name="isGroupActivity"]')->attr('value'));
+
+        // Exclusions are local data, so they stay editable for Strava activities.
+        $this->assertNull($crawler->filter('input[type="checkbox"][name="excludedFrom[peakPowerOutputs]"]')->attr('disabled'));
+        $this->assertNotNull($crawler->filter('input[type="checkbox"][name="excludedFrom[peakPowerOutputs]"]')->attr('checked'));
+        $this->assertNull($crawler->filter('input[type="checkbox"][name="excludedFrom[bestEfforts]"]')->attr('checked'));
 
         // The image upload is hidden entirely, since images can't be managed in Strava API mode.
         $this->assertCount(0, $crawler->filter('[data-image-dropzone]'));
+
+        $this->assertCount(0, $crawler->filter('a.btn--danger'));
+    }
+
+    #[DataProvider('provideRedirectToQueryParams')]
+    public function testItHonoursASafeRedirectToOnEveryExit(string $redirectTo, string $expected): void
+    {
+        static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->build(),
+            [],
+        ));
+
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request(
+            'GET',
+            '/admin/activities/'.ActivityId::fromUnprefixed('1').'/edit?redirectTo='.urlencode($redirectTo)
+        );
+
+        $this->assertResponseIsSuccessful();
+
+        $this->assertSame($expected, $crawler->filter('form[data-dispatch-command]')->attr('data-redirect'));
+        $this->assertSame($expected, $crawler->filter('a[aria-label="Close"]')->attr('href'));
+        $this->assertSame($expected, $crawler->filter('.btn--secondary')->attr('href'));
+    }
+
+    #[DataProvider('provideRedirectToQueryParams')]
+    public function testDeleteHonoursASafeRedirectToOnEveryExit(string $redirectTo, string $expected): void
+    {
+        $this->withImportMode(ImportMode::FILES);
+
+        static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->build(),
+            [],
+        ));
+        static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
+                ->build(),
+            [],
+        ));
+
+        $this->client->loginUser($this->adminUser());
+
+        foreach ([
+            '/admin/activities/'.ActivityId::fromUnprefixed('1').'/delete?redirectTo='.urlencode($redirectTo),
+            '/admin/activities/delete?activityIds[]=activity-1&activityIds[]=activity-2&redirectTo='.urlencode($redirectTo),
+        ] as $url) {
+            $crawler = $this->client->request('GET', $url);
+
+            $this->assertResponseIsSuccessful();
+
+            $this->assertSame($expected, $crawler->filter('form[data-dispatch-command]')->attr('data-redirect'));
+            $this->assertSame($expected, $crawler->filter('a[aria-label="Close"]')->attr('href'));
+            $this->assertSame($expected, $crawler->filter('.btn--secondary')->attr('href'));
+        }
+    }
+
+    public static function provideRedirectToQueryParams(): \Generator
+    {
+        yield 'a path within the app' => ['/activities/activity-1', '/activities/activity-1'];
+        yield 'a filtered overview' => ['/admin/activities?filters%5BsportType%5D=Run&pagination%5Bpage%5D=2', '/admin/activities?filters%5BsportType%5D=Run&pagination%5Bpage%5D=2'];
+        yield 'absolute url' => ['https://evil.com', '/admin/activities'];
     }
 
     public function testStravaApiModeAllowsAssigningCustomGear(): void
@@ -349,6 +426,7 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
                 ->withName('Morning Run')
+                ->withWorkoutType(WorkoutType::RACE)
                 ->withIsCommute(false)
                 ->build(),
             [],
@@ -362,6 +440,7 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 
         $this->assertNull($crawler->filter('input#activity-name')->attr('disabled'));
         $this->assertNull($crawler->filter('select#activity-sport-type')->attr('disabled'));
+        $this->assertNull($crawler->filter('select#activity-workout-type')->attr('disabled'));
         $this->assertNull($crawler->filter('select#activity-gear')->attr('disabled'));
         $this->assertNull($crawler->filter('select#activity-device-name')->attr('disabled'));
         $this->assertNull($crawler->filter('input#activity-calories')->attr('disabled'));
@@ -369,10 +448,17 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="name"]'));
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="sportType"]'));
+        $this->assertCount(0, $crawler->filter('input[type="hidden"][name="workoutType"]'));
+        $this->assertSame(
+            ['None', 'Race', 'Workout', 'Long run'],
+            $crawler->filter('select#activity-workout-type option')->each(fn ($option) => $option->text()),
+        );
+        $this->assertNotNull($crawler->filter('select#activity-workout-type option[value="race"]')->attr('selected'));
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="gearId"]'));
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="deviceName"]'));
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="calories"]'));
         $this->assertSame('false', $crawler->filter('input[type="hidden"][name="isCommute"]')->attr('value'));
+        $this->assertNull($crawler->filter('input[type="checkbox"][name="excludedFrom[peakPowerOutputs]"]')->attr('checked'));
 
         // In files mode all gears are selectable, imported or custom.
         $this->assertSame(
@@ -382,6 +468,11 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 
         // The image upload is available.
         $this->assertCount(1, $crawler->filter('[data-image-dropzone]'));
+
+        $this->assertSame(
+            '/admin/activities/activity-1/delete',
+            $crawler->filter('a.btn--danger')->attr('href'),
+        );
     }
 
     public function testRendersTheDeleteConfirmationForTheActivity(): void
@@ -402,9 +493,69 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString('Delete activity', $crawler->filter('h3')->text());
         $this->assertStringContainsString('Morning Run', $crawler->filter('body')->text());
 
-        $form = $crawler->filter('form[data-dispatch-command="delete-activity"]');
+        $form = $crawler->filter('form[data-dispatch-command="delete-activities"]');
         $this->assertCount(1, $form);
 
-        $this->assertSame((string) ActivityId::fromUnprefixed('1'), $form->filter('input[name="activityId"]')->attr('value'));
+        $this->assertSame((string) ActivityId::fromUnprefixed('1'), $form->filter('input[name="activityIds[]"]')->attr('value'));
+        $this->assertCount(0, $crawler->filter('[data-activities-to-delete]'));
+    }
+
+    public function testRendersTheDeleteConfirmationForMultipleActivities(): void
+    {
+        $this->withImportMode(ImportMode::FILES);
+
+        static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->withName('Morning Run')
+                ->build(),
+            [],
+        ));
+        static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
+                ->withName('Evening <Walk>')
+                ->build(),
+            [],
+        ));
+
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/activities/delete?activityIds[]=activity-1&activityIds[]=activity-2');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertStringContainsString('Delete activities', $crawler->filter('h3')->text());
+        $this->assertStringContainsString('Are you sure you want to delete 2 activities?', $crawler->filter('body')->text());
+
+        $form = $crawler->filter('form[data-dispatch-command="delete-activities"]');
+        $this->assertCount(1, $form);
+        $this->assertSame(
+            ['activity-1', 'activity-2'],
+            $form->filter('input[name="activityIds[]"]')->each(fn ($input): ?string => $input->attr('value')),
+        );
+
+        $listedActivities = $crawler->filter('[data-activities-to-delete] li');
+        $this->assertCount(2, $listedActivities);
+        $this->assertStringContainsString('Morning Run', $listedActivities->eq(0)->text());
+        $this->assertStringContainsString('Evening <Walk>', $listedActivities->eq(1)->text());
+    }
+
+    public function testBulkDeleteIsNotAvailableInStravaApiMode(): void
+    {
+        $this->client->loginUser($this->adminUser());
+
+        $this->client->request('GET', '/admin/activities/delete?activityIds[]=activity-1');
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    public function testBulkDeleteRequiresAtLeastOneActivity(): void
+    {
+        $this->withImportMode(ImportMode::FILES);
+        $this->client->loginUser($this->adminUser());
+
+        $this->client->request('GET', '/admin/activities/delete');
+
+        $this->assertResponseStatusCodeSame(404);
     }
 }

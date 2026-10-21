@@ -10,10 +10,12 @@ use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\DbalActivityRepository;
 use App\Domain\Activity\Route\RouteGeography;
 use App\Domain\Activity\SportType\SportType;
+use App\Domain\Activity\SportType\SportTypes;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\Sensor\ConnectedSensor;
 use App\Domain\Gear\Sensor\ConnectedSensors;
 use App\Domain\Gear\Sensor\SensorType;
+use App\Domain\Integration\Weather\OpenMeteo\Weather;
 use App\Infrastructure\Eventing\EventBus;
 use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\Measurement\Length\Kilometer;
@@ -189,6 +191,9 @@ class DbalActivityRepositoryTest extends ContainerTestCase
             ->withMovingTimeInSeconds(999)
             ->withElevation(Meter::from(9999))
             ->withCalories(1234)
+            ->withKilojoules(4321)
+            ->withAverageHeartRate(142)
+            ->withMaxHeartRate(175)
             ->withPolyline('updated polyline')
             ->withStartingCoordinate(Coordinate::createFromLatAndLng(
                 latitude: Latitude::fromString('20'),
@@ -196,7 +201,9 @@ class DbalActivityRepositoryTest extends ContainerTestCase
             ))
             ->withGear(GearId::fromUnprefixed('updated'))
             ->withRouteGeography(RouteGeography::create(['state' => 'updated location']))
-            ->withCommute(true);
+            ->withWeather(Weather::fromState(['temperature_2m' => 18.5]))
+            ->withCommute(true)
+            ->withGroupActivity(true);
 
         $this->activityRepository->update(ActivityWithRawData::fromState(
             activity: $activity,
@@ -212,6 +219,22 @@ class DbalActivityRepositoryTest extends ContainerTestCase
         $this->assertSame(
             1234,
             $persistedActivity->getCalories()
+        );
+        $this->assertSame(
+            4321,
+            $persistedActivity->getKilojoules()
+        );
+        $this->assertSame(
+            142,
+            $persistedActivity->getAverageHeartRate()
+        );
+        $this->assertSame(
+            175,
+            $persistedActivity->getMaxHeartRate()
+        );
+        $this->assertSame(
+            18.5,
+            $persistedActivity->getWeather()?->getTemperatureInCelsius()->toFloat()
         );
         $this->assertEquals(
             'Updated name',
@@ -258,6 +281,7 @@ class DbalActivityRepositoryTest extends ContainerTestCase
             $persistedActivity->getRouteGeography()
         );
         $this->assertTrue($persistedActivity->isCommute());
+        $this->assertTrue($persistedActivity->isGroupActivity());
         $this->assertEquals(
             Coordinate::createFromLatAndLng(
                 latitude: Latitude::fromString('20'),
@@ -268,29 +292,6 @@ class DbalActivityRepositoryTest extends ContainerTestCase
         $this->assertEquals(
             SportType::BADMINTON,
             $persistedActivity->getSportType()
-        );
-    }
-
-    public function testActivityNeedsStreamImport(): void
-    {
-        $activity = ActivityBuilder::fromDefaults()->build();
-        $activityWithRawData = ActivityWithRawData::fromState(
-            $activity,
-            ['raw' => 'data']
-        );
-
-        $this->activityRepository->add($activityWithRawData);
-
-        $this->assertTrue(
-            $this->activityRepository->activityNeedsStreamImport($activity->getId())
-        );
-        $this->assertFalse(
-            $this->activityRepository->activityNeedsStreamImport(ActivityId::fromUnprefixed('test'))
-        );
-
-        $this->activityRepository->markActivityStreamsAsImported($activity->getId());
-        $this->assertFalse(
-            $this->activityRepository->activityNeedsStreamImport($activity->getId())
         );
     }
 
@@ -340,6 +341,87 @@ class DbalActivityRepositoryTest extends ContainerTestCase
             from: SerializableDateTime::fromString('2024-01-01 00:00:00'),
             till: SerializableDateTime::fromString('2024-02-01 00:00:00'),
         )->isEmpty());
+    }
+
+    public function testFindMostRecent(): void
+    {
+        foreach ([
+            1 => '2023-10-01 00:00:00',
+            2 => '2023-10-02 00:00:00',
+            3 => '2023-10-03 00:00:00',
+        ] as $activityId => $startDateTime) {
+            $this->activityRepository->add(ActivityWithRawData::fromState(
+                ActivityBuilder::fromDefaults()
+                    ->withActivityId(ActivityId::fromUnprefixed($activityId))
+                    ->withStartDateTime(SerializableDateTime::fromString($startDateTime))
+                    ->build(),
+                ['raw' => 'data']
+            ));
+        }
+
+        $this->assertEquals(
+            [
+                ActivityId::fromUnprefixed(3),
+                ActivityId::fromUnprefixed(2),
+            ],
+            $this->activityRepository->findMostRecent(2)->map(fn (Activity $activity): ActivityId => $activity->getId())
+        );
+    }
+
+    public function testFindMostRecentRestrictedToSportTypes(): void
+    {
+        foreach ([
+            1 => SportType::RIDE,
+            2 => SportType::RUN,
+            3 => SportType::RIDE,
+        ] as $activityId => $sportType) {
+            $this->activityRepository->add(ActivityWithRawData::fromState(
+                ActivityBuilder::fromDefaults()
+                    ->withActivityId(ActivityId::fromUnprefixed($activityId))
+                    ->withStartDateTime(SerializableDateTime::fromString(sprintf('2023-10-0%d 00:00:00', $activityId)))
+                    ->withSportType($sportType)
+                    ->build(),
+                ['raw' => 'data']
+            ));
+        }
+
+        $this->assertEquals(
+            [ActivityId::fromUnprefixed(2)],
+            $this->activityRepository->findMostRecent(
+                limit: 5,
+                restrictToSportTypes: SportTypes::fromArray([SportType::RUN]),
+            )->map(fn (Activity $activity): ActivityId => $activity->getId())
+        );
+    }
+
+    public function testFindMostRecentOnlyActivitiesWithARoute(): void
+    {
+        foreach ([
+            1 => 'a-polyline',
+            2 => null,
+            3 => '',
+            4 => 'another-polyline',
+        ] as $activityId => $polyline) {
+            $this->activityRepository->add(ActivityWithRawData::fromState(
+                ActivityBuilder::fromDefaults()
+                    ->withActivityId(ActivityId::fromUnprefixed($activityId))
+                    ->withStartDateTime(SerializableDateTime::fromString(sprintf('2023-10-0%d 00:00:00', $activityId)))
+                    ->withPolyline($polyline)
+                    ->build(),
+                ['raw' => 'data']
+            ));
+        }
+
+        $this->assertEquals(
+            [
+                ActivityId::fromUnprefixed(4),
+                ActivityId::fromUnprefixed(1),
+            ],
+            $this->activityRepository->findMostRecent(
+                limit: 10,
+                onlyActivitiesWithARoute: true,
+            )->map(fn (Activity $activity): ActivityId => $activity->getId())
+        );
     }
 
     public function testDelete(): void

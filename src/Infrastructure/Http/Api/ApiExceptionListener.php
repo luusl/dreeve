@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Api;
 
 use App\Infrastructure\Config\PlatformEnvironment;
+use App\Infrastructure\Http\ServerErrorLogger;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +19,7 @@ final readonly class ApiExceptionListener implements EventSubscriberInterface
 
     public function __construct(
         private PlatformEnvironment $platformEnvironment,
+        private ServerErrorLogger $serverErrorLogger,
     ) {
     }
 
@@ -38,6 +40,12 @@ final readonly class ApiExceptionListener implements EventSubscriberInterface
             default => Response::HTTP_INTERNAL_SERVER_ERROR,
         };
 
+        $this->serverErrorLogger->log(
+            exception: $exception,
+            statusCode: $statusCode,
+            request: $event->getRequest()
+        );
+
         $event->allowCustomResponseCode();
         $event->setResponse(new ApiErrorResponse(
             statusCode: $statusCode,
@@ -55,6 +63,7 @@ final readonly class ApiExceptionListener implements EventSubscriberInterface
             Response::HTTP_FORBIDDEN => 'forbidden',
             Response::HTTP_NOT_FOUND => 'not_found',
             Response::HTTP_METHOD_NOT_ALLOWED => 'method_not_allowed',
+            Response::HTTP_UNSUPPORTED_MEDIA_TYPE => 'unsupported_media_type',
             Response::HTTP_TOO_MANY_REQUESTS => 'too_many_requests',
             default => 'internal_error',
         };

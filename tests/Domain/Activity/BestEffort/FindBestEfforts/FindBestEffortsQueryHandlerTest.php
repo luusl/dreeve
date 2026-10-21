@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Tests\Domain\Activity\BestEffort\FindBestEfforts;
 
+use App\Domain\Activity\ActivityExclusion;
+use App\Domain\Activity\ActivityExclusions;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
@@ -136,6 +138,21 @@ class FindBestEffortsQueryHandlerTest extends ContainerTestCase
         $this->assertEquals(
             ['activity-2', 'activity-1'],
             $response->getBestEfforts()->map(fn ($bestEffort): string => (string) $bestEffort->getActivityId())
+        );
+
+        $this->activityRepository->update(ActivityWithRawData::fromState(
+            $this->activityRepository->find(ActivityId::fromUnprefixed('2'))->withExcludedFrom(ActivityExclusions::fromArray([ActivityExclusion::BEST_EFFORTS])),
+            []
+        ));
+        $response = $this->queryHandler->handle(new FindBestEfforts());
+
+        $this->assertEquals(
+            ['activity-1'],
+            $response->getBestEfforts()->map(fn ($bestEffort): string => (string) $bestEffort->getActivityId())
+        );
+        $this->assertEquals(
+            ['activity-1' => SerializableDateTime::fromString('2023-01-02 10:00:00')],
+            $response->getStartDateTimePerActivity()
         );
     }
 

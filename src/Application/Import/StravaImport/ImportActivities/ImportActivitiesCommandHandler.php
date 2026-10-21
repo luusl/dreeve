@@ -11,6 +11,9 @@ use App\Domain\Activity\ActivityIds;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityVisibility;
 use App\Domain\Activity\ActivityWithRawData;
+use App\Domain\Activity\Scan\ActivityScan;
+use App\Domain\Activity\Scan\ActivityScanRepository;
+use App\Domain\Activity\Scan\ActivityScanType;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Settings\SettingsRepository;
@@ -38,6 +41,7 @@ final readonly class ImportActivitiesCommandHandler implements CommandHandler
         private ActivityRepository $activityRepository,
         private ActivityIdRepository $activityIdRepository,
         private ActivityStreamRepository $activityStreamRepository,
+        private ActivityScanRepository $activityScanRepository,
         private SettingsRepository $settingsRepository,
         private Mutex $mutex,
         #[AutowireIterator('app.activity_import.pipeline_step')]
@@ -94,6 +98,7 @@ final readonly class ImportActivitiesCommandHandler implements CommandHandler
         }
 
         $delta = 1;
+        $numberOfNewActivitiesProcessed = 0;
         foreach ($stravaActivities as $rawStravaData) {
             if (!SportType::tryFrom($rawStravaData['sport_type'])) {
                 $command->getOutput()->writeln(sprintf(
@@ -164,8 +169,9 @@ final readonly class ImportActivitiesCommandHandler implements CommandHandler
                     activity: $activity,
                     rawData: $context->getRawStravaData()
                 ));
+                $command->getImportedActivities()->add($activity);
 
-                $numberOfNewActivitiesToProcessPerImport->increaseNumberOfProcessedActivities();
+                ++$numberOfNewActivitiesProcessed;
             } else {
                 $this->activityRepository->update(ActivityWithRawData::fromState(
                     activity: $activity,
@@ -180,7 +186,7 @@ final readonly class ImportActivitiesCommandHandler implements CommandHandler
                 $this->activityStreamRepository->add($stream);
             }
             if ($context->streamsWereImported()) {
-                $this->activityRepository->markActivityStreamsAsImported($activityId);
+                $this->activityScanRepository->add(ActivityScan::create(activityId: $activityId, type: ActivityScanType::STREAMS));
             }
 
             unset($activityIdsToDelete[(string) $context->getActivity()->getId()]);
@@ -194,7 +200,7 @@ final readonly class ImportActivitiesCommandHandler implements CommandHandler
                 $activity->getStartDate()->format('d-m-Y'))
             );
 
-            if ($numberOfNewActivitiesToProcessPerImport->maxNumberProcessed()) {
+            if ($numberOfNewActivitiesToProcessPerImport->hasBeenReachedBy($numberOfNewActivitiesProcessed)) {
                 // Stop importing activities, we reached the max number to process for this batch.
                 break;
             }
@@ -203,7 +209,7 @@ final readonly class ImportActivitiesCommandHandler implements CommandHandler
             ++$delta;
         }
 
-        if ($numberOfNewActivitiesToProcessPerImport->maxNumberProcessed()) {
+        if ($numberOfNewActivitiesToProcessPerImport->hasBeenReachedBy($numberOfNewActivitiesProcessed)) {
             // Shortcut the process here to make sure no activities are deleted yet.
             return;
         }

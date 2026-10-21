@@ -1,8 +1,10 @@
-{% include 'html/navigation/breadcrumbs.html.twig' with {'breadcrumbs': [
-    {
-        'url': 'dashboard/power-output',
-        'label': 'Peak power outputs'|trans
-    }]} %}
+<div class="flex items-center justify-between gap-4 mb-4">
+    {% include 'html/navigation/breadcrumbs.html.twig' with {'breadcrumbs': [
+        {
+            'url': 'dashboard/power-output',
+            'label': 'Peak power outputs'|trans
+        }], 'disableMargin': true} %}
+</div>
 {% autoescape false %}
     <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-xs space-y-4">
         <div class="mb-4 flex items-center justify-between">

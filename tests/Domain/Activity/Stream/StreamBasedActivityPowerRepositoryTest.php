@@ -2,6 +2,8 @@
 
 namespace App\Tests\Domain\Activity\Stream;
 
+use App\Domain\Activity\ActivityExclusion;
+use App\Domain\Activity\ActivityExclusions;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityType;
@@ -14,11 +16,6 @@ use App\Domain\Activity\Stream\Metric\ActivityStreamMetricRepository;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricType;
 use App\Domain\Activity\Stream\PowerOutput;
 use App\Domain\Activity\Stream\StreamType;
-use App\Domain\Settings\SettingsGroup;
-use App\Infrastructure\KeyValue\KeyValue;
-use App\Infrastructure\KeyValue\KeyValueStore;
-use App\Infrastructure\KeyValue\Value;
-use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
@@ -138,9 +135,10 @@ class StreamBasedActivityPowerRepositoryTest extends ContainerTestCase
             startDate: SerializableDateTime::fromString('2020-06-02 10:00:00'),
             bestAverages: [5 => 400],
         );
-        $this->getContainer()->get(KeyValueStore::class)->save(KeyValue::fromState(
-            SettingsGroup::METRICS->keyValueKey(),
-            Value::fromString(Json::encode(['excludeActivitiesFromPeakPowerOutputs' => ['1']])),
+        $activityRepository = $this->getContainer()->get(ActivityRepository::class);
+        $activityRepository->update(ActivityWithRawData::fromState(
+            $activityRepository->find(ActivityId::fromUnprefixed('1'))->withExcludedFrom(ActivityExclusions::fromArray([ActivityExclusion::PEAK_POWER_OUTPUTS])),
+            [],
         ));
 
         $powerOutputs = $this->activityPowerRepository->findBestForSportTypes(

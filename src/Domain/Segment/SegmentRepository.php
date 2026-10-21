@@ -12,9 +12,13 @@ interface SegmentRepository
 
     public function update(Segment $segment): void;
 
+    public function delete(Segment $segment): void;
+
     public function find(SegmentId $segmentId): Segment;
 
     public function findAll(Pagination $pagination): Segments;
+
+    public function findByType(SegmentType $type): Segments;
 
     /**
      * @return SegmentId[]
@@ -23,5 +27,5 @@ interface SegmentRepository
 
     public function count(): int;
 
-    public function deleteOrphaned(): void;
+    public function deleteOrphanedImported(): void;
 }

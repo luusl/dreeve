@@ -18,10 +18,14 @@
     "movingTimeInSeconds": 3600,
     "recordedOnDevice": null,
     "totalImageCount": 0,
-    "routeGeography": [],
+    "startingPointCountryCode": null,
+    "startingPointState": null,
     "weather": null,
     "gearId": "b12659861",
     "gearName": "Retro Race Bike",
     "isCommute": false,
-    "workoutType": null
+    "isGroupActivity": false,
+    "workoutType": null,
+    "stravaUrl": "https://www.strava.com/activities/123456789",
+    "url": "http://localhost:8080/activities/activity-123456789"
 }

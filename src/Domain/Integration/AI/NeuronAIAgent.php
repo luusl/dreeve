@@ -7,7 +7,7 @@ namespace App\Domain\Integration\AI;
 use App\Domain\Settings\SettingsRepository;
 use NeuronAI\Agent\Agent;
 use NeuronAI\Agent\SystemPrompt;
-use NeuronAI\Chat\History\ChatHistoryInterface;
+use NeuronAI\Chat\History\MessageStoreInterface;
 use NeuronAI\Providers\AIProviderInterface;
 use NeuronAI\Tools\Toolkits\ToolkitInterface;
 
@@ -19,9 +19,15 @@ final class NeuronAIAgent extends Agent
     public function __construct(
         private readonly SettingsRepository $settingsRepository,
         private readonly ToolkitInterface $toolkit,
-        private readonly ChatHistoryInterface $history,
+        private readonly MessageStoreInterface $historyStore,
     ) {
         parent::__construct();
+    }
+
+    #[\Override]
+    public function workflowId(): string
+    {
+        return 'chat';
     }
 
     #[\Override]
@@ -55,17 +61,17 @@ final class NeuronAIAgent extends Agent
                 'Include markdown to structure your response, but stay away from code blocks.',
                 'You may use markdown lists or bullet points if they help clarify the response, but only if they add value.',
                 'You may use markdown tables if they help clarify the response, but only if they add value.',
-                'Add links to the strava activity whenever you can',
-                'Add links to the strava segments whenever you can',
-                'Add links to the strava challenges whenever you can',
+                'When you link to an activity or segment, use the "url" from the tool result.',
+                'Only use the "stravaUrl" when the user explicitly asks for a Strava link.',
+                'Never construct links yourself.',
                 'If you do not know the answer to a question, admit it honestly; do not fabricate information.',
             ]
         );
     }
 
     #[\Override]
-    protected function chatHistory(): ChatHistoryInterface
+    protected function messageStore(): MessageStoreInterface
     {
-        return $this->history;
+        return $this->historyStore;
     }
 }

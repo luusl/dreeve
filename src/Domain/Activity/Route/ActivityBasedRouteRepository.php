@@ -19,13 +19,14 @@ final readonly class ActivityBasedRouteRepository extends DbalRepository impleme
 {
     public function findAll(): Routes
     {
-        $query = 'SELECT activityId, name, distance, polyline, routeGeography, sportType, startDateTime, isCommute, workoutType
+        $query = 'SELECT activityId, name, distance, polyline, routeGeography, sportType, startDateTime, isCommute, isGroupActivity, workoutType
                     FROM Activity
                     WHERE sportType IN (:sportTypes)
                     AND polyline IS NOT NULL AND polyline <> ""
                     AND routeGeography IS NOT NULL AND routeGeography <> ""
                     AND JSON_EXTRACT(routeGeography, "$.country_code") IS NOT NULL
-                    AND worldType = :worldType';
+                    AND worldType = :worldType
+                    ORDER BY startDateTime DESC';
 
         $results = $this->connection->executeQuery(
             sql: $query,
@@ -54,6 +55,7 @@ final readonly class ActivityBasedRouteRepository extends DbalRepository impleme
                 routeGeography: RouteGeography::create(Json::decode($result['routeGeography'])),
                 sportType: SportType::from($result['sportType']),
                 isCommute: (bool) $result['isCommute'],
+                isGroupActivity: (bool) $result['isGroupActivity'],
                 workoutType: WorkoutType::tryFrom($result['workoutType'] ?? ''),
                 on: SerializableDateTime::fromString($result['startDateTime']),
             ));

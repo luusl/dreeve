@@ -2,9 +2,9 @@
 {% autoescape false %}
     <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-semibold">
-            {{ "Most recent milestones"|trans }}
+            {{ widgetTitle|e }}
         </h3>
-        <a href="{{ relativeUrl('milestones') }}" data-router-link
+        <a href="{{ relativeUrl(path('milestones')) }}"
            class="shrink-0 inline-flex items-center p-2 text-sm font-medium rounded-lg text-blue-600 hover:bg-gray-100">
             {{ "View all"|trans }}
         </a>
@@ -19,6 +19,7 @@
                         </div>
                     {% endif %}
                     <h3 class="text-sm font-bold text-gray-900 truncate">{{ milestoneTitle(milestone) }}</h3>
+                    <time class="ms-auto shrink-0 text-xs text-gray-500">{{ milestone.getAchievedOn()|formatDate('normal') }}</time>
                 </div>
                 <div class="text-sm text-gray-600">
                     {% if milestone.getActivityId() %}

@@ -87,8 +87,8 @@ services:
     NeuronAI\Agent\AgentInterface:
         class: App\Domain\Integration\AI\NeuronAIAgent
 
-    NeuronAI\Chat\History\ChatHistoryInterface:
-        class: App\Domain\Integration\AI\Chat\SFSChatHistory
+    NeuronAI\Chat\History\MessageStoreInterface:
+        class: App\Domain\Integration\AI\Chat\SFSMessageStore
 
     NeuronAI\Tools\Toolkits\ToolkitInterface:
         class: App\Domain\Integration\AI\Tool\Toolkit
@@ -105,7 +105,7 @@ services:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:STRAVA_REFRESH_TOKEN)%']
 
-    App\Domain\Api\Token:
+    App\Infrastructure\Security\Api\Token:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:DREEVE_API_KEY)%']
 
@@ -123,6 +123,16 @@ services:
 
     GuzzleHttp\Client:
       class: GuzzleHttp\Client
+      arguments:
+        $config:
+          connect_timeout: 5
+          timeout: 30
 
     Money\MoneyFormatter:
         factory: '@App\Infrastructure\DependencyInjection\MoneyFormatterFactory'
+
+    monolog.formatter.errors:
+        class: Monolog\Formatter\LineFormatter
+        arguments:
+            $format: "[%%datetime%%] %%channel%%.%%level_name%%: %%message%%\n"
+            $allowInlineLineBreaks: true

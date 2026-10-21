@@ -6,20 +6,14 @@ namespace App\Domain\Activity\Route\Signature;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIds;
+use App\Domain\Geography\Grid\RouteGrid;
+use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\Repository\DbalRepository;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
-use Doctrine\DBAL\Connection;
 
 final readonly class DbalActivityRouteSignatureRepository extends DbalRepository implements ActivityRouteSignatureRepository
 {
-    public function __construct(
-        Connection $connection,
-        private RouteGrid $routeGrid,
-    ) {
-        parent::__construct($connection);
-    }
-
     public function add(ActivityRouteSignature $activityRouteSignature): void
     {
         $sql = 'INSERT INTO ActivityRouteSignature (activityId, polylineChecksum, cellCount, cells, waypoints)
@@ -32,6 +26,23 @@ final readonly class DbalActivityRouteSignatureRepository extends DbalRepository
             'cells' => Json::encodeAndCompress($activityRouteSignature->getCells()->toArray()),
             'waypoints' => Json::encodeAndCompress($activityRouteSignature->getWaypoints()->toArray()),
         ]);
+    }
+
+    public function find(ActivityId $activityId): ActivityRouteSignature
+    {
+        $sql = 'SELECT * FROM ActivityRouteSignature WHERE activityId = :activityId';
+
+        if (!$result = $this->connection->executeQuery($sql, ['activityId' => $activityId])->fetchAssociative()) {
+            throw new EntityNotFound(sprintf('ActivityRouteSignature for "%s" not found', $activityId));
+        }
+
+        return ActivityRouteSignature::fromState(
+            activityId: ActivityId::fromString($result['activityId']),
+            polylineChecksum: $result['polylineChecksum'],
+            cellCount: (int) $result['cellCount'],
+            cells: array_values(array_map(intval(...), (array) Json::uncompressAndDecode($result['cells']))),
+            waypoints: array_values(array_map(intval(...), (array) Json::uncompressAndDecode($result['waypoints']))),
+        );
     }
 
     public function deleteForActivity(ActivityId $activityId): void
@@ -55,7 +66,7 @@ final readonly class DbalActivityRouteSignatureRepository extends DbalRepository
             fn (array $result): ActivityId => ActivityId::fromString($result['activityId']),
             array_filter(
                 $this->connection->executeQuery($sql)->fetchAllAssociative(),
-                fn (array $result): bool => $this->routeGrid->checksumFor(
+                fn (array $result): bool => RouteGrid::checksumFor(
                     EncodedPolyline::fromString($result['polyline'])
                 ) !== $result['polylineChecksum']
             )

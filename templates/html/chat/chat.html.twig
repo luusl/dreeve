@@ -1,8 +1,17 @@
-{% include 'html/navigation/breadcrumbs.html.twig' with {'breadcrumbs': [
-    {
-        'url': 'chat',
-        'label': 'Virtual workout assistant'|trans
-    }]} %}
+<div class="flex items-center justify-between gap-4 mb-4">
+    {% include 'html/navigation/breadcrumbs.html.twig' with {'breadcrumbs': [
+        {
+            'url': 'chat',
+            'label': 'Virtual workout assistant'|trans
+        }], 'disableMargin': true} %}
+    {% include 'html/navigation/admin-edit-link.html.twig' with {
+        path: 'admin/settings/integrations',
+        redirectTo: 'chat',
+        title: "AI integration settings"|trans,
+        label: "Settings"|trans({}, 'admin'),
+        icon: 'cog'
+    } %}
+</div>
 {% autoescape false %}
 <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-xs space-y-4">
   <div class="mb-4 flex items-center justify-between">
@@ -20,7 +29,7 @@
   </div>
   <div class="grid grid-cols-1">
     <div class="flex flex-col-reverse items-center border rounded-t bg-gray-50 h-[calc(100vh-265px)] overflow-y-auto">
-      <div class="chat--wrapper w-full flex flex-col gap-6 p-8" data-chat-commands='{{ chatCommands }}'>
+      <div class="chat--wrapper w-full flex flex-col gap-6 p-8" data-chat-commands="{{ chatCommands|e('html_attr') }}">
         {% for chatMessage in chatHistory %}
             {% include 'html/chat/message.html.twig' with {'chatMessage': chatMessage, 'isThinking': false } %}
         {% endfor %}

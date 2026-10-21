@@ -2,16 +2,22 @@ import {pointToLineDistance, point, lineString} from "../../../libraries/turf";
 import L from 'leaflet';
 import {createFlyToPlacesControl, createMapToolsControl} from "../maps/leaflet-controls";
 import HeatmapCountriesLayer from "./heatmap-countries-layer";
-import {router} from "../../core/router";
+import HeatmapTilesLayer from "./heatmap-tiles-layer";
 import '../maps/ctrl-scroll-zoom';
 
 export default class HeatmapDrawer {
+    static CLICK_TOLERANCE_IN_PIXELS = 10;
+    static MIN_RADIUS_IN_METERS = 15;
+    static MAX_RADIUS_IN_METERS = 100;
+    static BAND_IN_METERS = 15;
+
     constructor(wrapper, config) {
         this.wrapper = wrapper;
         this.config = config;
         this.placesControl = null;
         this.mapToolsControl = null;
         this.mainFeatureGroup = L.featureGroup();
+        this.routesVisible = true;
         this.routePolylines = [];
         this.map = L.map(this.wrapper, {
             ctrlScrollZoom: this.config.requireCtrlToZoom,
@@ -37,13 +43,39 @@ export default class HeatmapDrawer {
 
         const countriesUrl = this.wrapper.getAttribute('data-leaflet-countries');
         this.countriesLabel = this.wrapper.getAttribute('data-leaflet-countries-label');
+        this.popupLabels = JSON.parse(this.wrapper.getAttribute('data-leaflet-popup-labels') ?? '{}');
         this.countriesLayer = countriesUrl
             ? new HeatmapCountriesLayer(this.map, countriesUrl, this.config.polylineColor)
+            : null;
+        this.filtersNode = this.wrapper.closest('.heatmap-wrapper')?.querySelector('[data-heatmap-filters]');
+        const tilesUrl = this.wrapper.getAttribute('data-leaflet-tiles');
+        this.tilesLabel = this.wrapper.getAttribute('data-leaflet-tiles-label');
+        this.tilesLayer = tilesUrl
+            ? new HeatmapTilesLayer(
+                this.map,
+                tilesUrl,
+                this.config.polylineColor,
+                this.wrapper.closest('.heatmap-wrapper')?.querySelector('[data-heatmap-tiles-stats]'),
+            )
             : null;
 
         this.map.on("click", (e) => this._handleMapClick(e));
         this.map.on("popupclose", () => this._resetRouteStyles());
-        this.map.on("popupopen", (e) => this._handlePopupOpen(e));
+    }
+
+    _setFiltersDisabled(disabled) {
+        if (this.filtersNode) this.filtersNode.disabled = disabled;
+    }
+
+    _setRoutesVisible(visible) {
+        this.routesVisible = visible;
+        if (visible) {
+            this.mainFeatureGroup.addTo(this.map);
+            return;
+        }
+
+        this.map.closePopup();
+        this.map.removeLayer(this.mainFeatureGroup);
     }
 
     _resetRouteStyles() {
@@ -52,58 +84,48 @@ export default class HeatmapDrawer {
         });
     }
 
-    destroy() {
-        this.map.remove();
-    }
-
-    _handlePopupOpen(e) {
-        const container = e.popup.getElement();
-        if (!container) return;
-
-        container.querySelectorAll('a[data-router-link]').forEach(node => {
-            node.addEventListener("click", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                router.navigateTo(node.getAttribute('href'));
-            });
-        });
-    };
-
     _handleMapClick(e) {
-        const clickPoint = point([e.latlng.lng, e.latlng.lat]);
-        const NEARBY_DISTANCE_IN_METERS = 100;
-        this._resetRouteStyles();
-
-        const nearby = [];
-        const notNearby = [];
-
-        this.routePolylines.forEach((entry) => {
-            const line = lineString(entry.coordinates.map(ll => [ll[1], ll[0]]));
-            const dist = pointToLineDistance(clickPoint, line, {units: "meters"});
-
-            if (dist <= NEARBY_DISTANCE_IN_METERS) {
-                nearby.push(entry);
-            } else {
-                notNearby.push(entry);
-            }
-        });
-
-        if (nearby.length === 0) {
+        if (!this.routesVisible) {
             return;
         }
 
-        notNearby.forEach(entry => {
-            entry.polyline.setStyle(this.inactivePolylineStyle);
+        const clickPoint = point([e.latlng.lng, e.latlng.lat]);
+        const containerPoint = this.map.latLngToContainerPoint(e.latlng);
+        const metersPerPixel = this.map.distance(e.latlng, this.map.containerPointToLatLng(containerPoint.add([1, 0])));
+        const radius = Math.min(
+            HeatmapDrawer.MAX_RADIUS_IN_METERS,
+            Math.max(HeatmapDrawer.MIN_RADIUS_IN_METERS, HeatmapDrawer.CLICK_TOLERANCE_IN_PIXELS * metersPerPixel)
+        );
+        this._resetRouteStyles();
+
+        const searchBounds = e.latlng.toBounds((radius + HeatmapDrawer.BAND_IN_METERS) * 2);
+        const distances = this.routePolylines.map((entry) => {
+            if (!entry.line || !searchBounds.intersects(entry.bounds)) {
+                return Infinity;
+            }
+
+            return pointToLineDistance(clickPoint, entry.line, {units: "meters"});
         });
+
+        const closestDistance = Math.min(...distances);
+        if (closestDistance > radius) {
+            return;
+        }
+
+        const maxDistance = closestDistance + HeatmapDrawer.BAND_IN_METERS;
+        const nearby = this.routePolylines.filter((entry, index) => distances[index] <= maxDistance);
+
+        this.routePolylines
+            .filter((entry, index) => distances[index] > maxDistance)
+            .forEach(entry => entry.polyline.setStyle(this.inactivePolylineStyle));
 
         const html = `
             <div class="m-4 text-sm max-h-50 overflow-y-auto no-dark">
-                <div class="font-medium">${nearby.length} nearby route(s):</div>
+                <div class="font-medium">${this.popupLabels.nearbyRoutes.replace('{numberOfRoutes}', nearby.length)}</div>
                  <ul class="divide-default divide-y divide-gray-200">
                     ${nearby.map(entry => `
                      <li class="py-2">
-                      <a href="${entry.route.activityUrl}" title="${entry.route.name}" class="block truncate font-medium text-blue-600 hover:underline" 
-                        data-router-link>
+                      <a href="${entry.route.activityUrl}" title="${entry.route.name}" class="block truncate font-medium text-blue-600 hover:underline">
                         ${entry.route.name}
                       </a>
                       <div class="flex items-center justify-between text-xs text-gray-500">
@@ -155,7 +177,8 @@ export default class HeatmapDrawer {
             this.routePolylines.push({
                 route: route,
                 polyline: polyline,
-                coordinates: route.coordinates
+                bounds: polyline.getBounds(),
+                line: route.coordinates.length >= 2 ? lineString(route.coordinates.map(ll => [ll[1], ll[0]])) : null
             });
 
             // A route can pass through multiple countries, it needs to be included in each of them.
@@ -178,7 +201,9 @@ export default class HeatmapDrawer {
             });
         });
         this.countriesLayer?.setActiveCountryCodes([...countryBounds.keys()]);
-        this.mainFeatureGroup.addTo(this.map);
+        if (this.routesVisible) {
+            this.mainFeatureGroup.addTo(this.map);
+        }
 
         this.placesControl = createFlyToPlacesControl({places});
         this.map.addControl(this.placesControl);
@@ -186,11 +211,26 @@ export default class HeatmapDrawer {
         if (!this.mapToolsControl) {
             this.mapToolsControl = createMapToolsControl({
                 showReset: false,
-                toggles: this.countriesLayer ? [{
-                    icon: HeatmapCountriesLayer.ICON,
-                    title: this.countriesLabel,
-                    onToggle: (active) => this.countriesLayer.setEnabled(active),
-                }] : [],
+                toggles: [
+                    this.countriesLayer ? {
+                        icon: HeatmapCountriesLayer.ICON,
+                        title: this.countriesLabel,
+                        onToggle: (active) => this.countriesLayer.setEnabled(active),
+                    } : null,
+                    this.tilesLayer ? {
+                        icon: HeatmapTilesLayer.ICON,
+                        title: this.tilesLabel,
+                        onToggle: (active) => {
+                            this._setRoutesVisible(!active);
+                            this._setFiltersDisabled(active);
+                            return this.tilesLayer.setEnabled(active).catch(error => {
+                                this._setRoutesVisible(true);
+                                this._setFiltersDisabled(false);
+                                throw error;
+                            });
+                        },
+                    } : null,
+                ].filter(Boolean),
             });
             this.map.addControl(this.mapToolsControl);
         }

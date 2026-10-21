@@ -7,6 +7,7 @@ namespace App\Domain\Segment;
 use App\Domain\Activity\LeafletMap;
 use App\Domain\Activity\RealWorldMap;
 use App\Domain\Activity\SportType\SportType;
+use App\Domain\Import\ImportMode;
 use App\Domain\Integration\AI\SupportsAITooling;
 use App\Domain\Segment\SegmentEffort\SegmentEffort;
 use App\Domain\Zwift\CouldNotDetermineZwiftMap;
@@ -22,6 +23,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
 #[ORM\Index(name: 'Segment_detailsHaveBeenImported', columns: ['detailsHaveBeenImported'])]
+#[ORM\Index(name: 'Segment_type', columns: ['type'])]
 final class Segment implements SupportsAITooling
 {
     use RecordsEvents;
@@ -42,7 +44,7 @@ final class Segment implements SupportsAITooling
         #[ORM\Column(type: 'float')]
         private readonly float $maxGradient,
         #[ORM\Column(type: 'boolean')]
-        private bool $isFavourite,
+        private readonly bool $isFavourite,
         #[ORM\Column(type: 'integer', nullable: true)]
         private readonly ?int $climbCategory,
         #[ORM\Column(type: 'string', nullable: true)]
@@ -57,6 +59,8 @@ final class Segment implements SupportsAITooling
         private readonly ?Coordinate $startingCoordinate,
         #[ORM\Column(type: 'float', nullable: true)]
         private readonly ?float $averageGradient,
+        #[ORM\Column(type: 'string', enumType: SegmentType::class, options: ['default' => SegmentType::IMPORTED->value])]
+        private readonly SegmentType $type,
     ) {
     }
 
@@ -71,6 +75,7 @@ final class Segment implements SupportsAITooling
         ?string $deviceName,
         ?string $countryCode,
         ?float $averageGradient,
+        SegmentType $type,
     ): self {
         $segment = new self(
             segmentId: $segmentId,
@@ -86,6 +91,39 @@ final class Segment implements SupportsAITooling
             polyline: null,
             startingCoordinate: null,
             averageGradient: $averageGradient,
+            type: $type,
+        );
+        $segment->recordThat(new SegmentWasAdded());
+
+        return $segment;
+    }
+
+    public static function createCustom(
+        SegmentId $segmentId,
+        Name $name,
+        SportType $sportType,
+        Kilometer $distance,
+        float $maxGradient,
+        ?float $averageGradient,
+        bool $isFavourite,
+        ?string $countryCode,
+        EncodedPolyline $polyline,
+    ): self {
+        $segment = new self(
+            segmentId: $segmentId,
+            name: $name,
+            sportType: $sportType,
+            distance: $distance,
+            maxGradient: $maxGradient,
+            isFavourite: $isFavourite,
+            climbCategory: null,
+            deviceName: null,
+            countryCode: $countryCode,
+            detailsHaveBeenImported: true,
+            polyline: $polyline,
+            startingCoordinate: $polyline->getStartingCoordinate(),
+            averageGradient: $averageGradient,
+            type: SegmentType::CUSTOM,
         );
         $segment->recordThat(new SegmentWasAdded());
 
@@ -106,6 +144,7 @@ final class Segment implements SupportsAITooling
         ?EncodedPolyline $polyline,
         ?Coordinate $startingCoordinate,
         ?float $averageGradient,
+        SegmentType $type,
     ): self {
         return new self(
             segmentId: $segmentId,
@@ -121,6 +160,7 @@ final class Segment implements SupportsAITooling
             polyline: $polyline,
             startingCoordinate: $startingCoordinate,
             averageGradient: $averageGradient,
+            type: $type,
         );
     }
 
@@ -146,6 +186,11 @@ final class Segment implements SupportsAITooling
         $parts[] = $this->name;
 
         return Name::fromString(implode(' ', $parts));
+    }
+
+    public function getType(): SegmentType
+    {
+        return $this->type;
     }
 
     public function getDeviceName(): ?string
@@ -229,11 +274,42 @@ final class Segment implements SupportsAITooling
         return $this->isFavourite;
     }
 
-    public function updateIsFavourite(bool $isFavourite): self
+    public function withIsFavourite(bool $isFavourite): self
     {
-        $this->isFavourite = $isFavourite;
+        if ($isFavourite === $this->isFavourite) {
+            return $this;
+        }
 
-        return $this;
+        $segment = clone ($this, [
+            'isFavourite' => $isFavourite,
+        ]);
+        $segment->recordOnlyOnce(new SegmentWasUpdated($this->segmentId));
+
+        return $segment;
+    }
+
+    public function withName(Name $name): self
+    {
+        if ((string) $name === (string) $this->name) {
+            return $this;
+        }
+
+        $segment = clone ($this, [
+            'name' => $name,
+        ]);
+        $segment->recordOnlyOnce(new SegmentWasUpdated($this->segmentId));
+
+        return $segment;
+    }
+
+    public function isDeletableIn(ImportMode $importMode): bool
+    {
+        return $this->type->isCustom() || $importMode->isFiles();
+    }
+
+    public function delete(): void
+    {
+        $this->recordThat(new SegmentWasDeleted($this->segmentId));
     }
 
     public function detailsHaveBeenImported(): bool
@@ -270,9 +346,32 @@ final class Segment implements SupportsAITooling
         return $this->countryCode;
     }
 
-    public function getUrl(): string
+    public function getStravaUrl(): ?string
     {
+        if ($this->type->isCustom()) {
+            return null;
+        }
+
         return 'https://www.strava.com/segments/'.$this->getId()->toUnprefixedString();
+    }
+
+    public function getWindAheadUrl(): ?string
+    {
+        if (!($polyline = $this->getPolyline()) instanceof EncodedPolyline) {
+            return null;
+        }
+        if ($this->isZwiftSegment() || $this->isRouvySegment() || $this->isMyWhooshSegment()) {
+            return null;
+        }
+
+        return 'https://windahead.app/#'.http_build_query(
+            data: [
+                'polyline' => (string) $polyline,
+                'name' => (string) $this->getOriginalName(),
+            ],
+            arg_separator: '&',
+            encoding_type: PHP_QUERY_RFC3986,
+        );
     }
 
     public function getLeafletMap(): ?LeafletMap
@@ -354,6 +453,7 @@ final class Segment implements SupportsAITooling
             'distanceInKilometer' => $this->getDistance(),
             'isFavourite' => $this->isFavourite(),
             'climbCategory' => $this->getClimbCategory(),
+            'stravaUrl' => $this->getStravaUrl(),
         ];
     }
 
@@ -418,7 +518,7 @@ final class Segment implements SupportsAITooling
             19631565,
         ];
 
-        if (in_array((int) $this->getId()->toUnprefixedString(), $komSegmentIds)) {
+        if ($this->type->isImported() && in_array((int) $this->getId()->toUnprefixedString(), $komSegmentIds)) {
             return true;
         }
 

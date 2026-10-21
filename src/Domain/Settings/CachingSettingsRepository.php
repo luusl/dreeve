@@ -20,21 +20,34 @@ final class CachingSettingsRepository implements SettingsRepository, ResetInterf
     private ?IntegrationsSettings $integrationsSettings = null;
     private ?DaemonSettings $daemonSettings = null;
     private ?SecuritySettings $securitySettings = null;
+    private ?AthleteWeightSettings $athleteWeightSettings = null;
 
     public function __construct(
-        #[Autowire(service: KeyValueBasedSettingsRepository::class)]
+        #[Autowire(service: DbalSettingsRepository::class)]
         private readonly SettingsRepository $settingsRepository,
     ) {
     }
 
-    public function find(SettingsGroup $group): array
+    public function find(SettingsName $name): mixed
     {
-        return $this->findCache[$group->value] ??= $this->settingsRepository->find($group);
+        return $this->findGroup($name->group())[$name->value] ?? null;
     }
 
-    public function save(SettingsGroup $group, array $data): void
+    public function findGroup(SettingsGroup $group): array
     {
-        $this->settingsRepository->save($group, $data);
+        return $this->findCache[$group->value] ??= $this->settingsRepository->findGroup($group);
+    }
+
+    public function save(SettingsName $name, mixed $value): void
+    {
+        $this->settingsRepository->save($name, $value);
+
+        $this->reset();
+    }
+
+    public function saveGroup(SettingsGroup $group, array $data): void
+    {
+        $this->settingsRepository->saveGroup($group, $data);
 
         $this->reset();
     }
@@ -51,6 +64,7 @@ final class CachingSettingsRepository implements SettingsRepository, ResetInterf
         $this->integrationsSettings = null;
         $this->daemonSettings = null;
         $this->securitySettings = null;
+        $this->athleteWeightSettings = null;
     }
 
     public function general(): GeneralSettings
@@ -96,5 +110,10 @@ final class CachingSettingsRepository implements SettingsRepository, ResetInterf
     public function security(): SecuritySettings
     {
         return $this->securitySettings ??= $this->settingsRepository->security();
+    }
+
+    public function athleteWeight(): AthleteWeightSettings
+    {
+        return $this->athleteWeightSettings ??= $this->settingsRepository->athleteWeight();
     }
 }

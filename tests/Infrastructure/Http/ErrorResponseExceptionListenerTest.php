@@ -5,7 +5,12 @@ namespace App\Tests\Infrastructure\Http;
 use App\Infrastructure\Config\PlatformEnvironment;
 use App\Infrastructure\Http\ErrorResponseExceptionListener;
 use App\Infrastructure\Http\HttpStatusCode;
+use App\Infrastructure\Http\ServerErrorLogger;
 use App\Tests\ContainerTestCase;
+use App\Tests\Infrastructure\ValueObject\Identifier\FakeUuidFactory;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -15,8 +20,9 @@ use Twig\Environment;
 class ErrorResponseExceptionListenerTest extends ContainerTestCase
 {
     private ErrorResponseExceptionListener $errorResponseExceptionListener;
+    private ServerErrorLogger $serverErrorLogger;
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('provideExceptions')]
+    #[DataProvider('provideExceptions')]
     public function testItRendersAnHtmlPageForTheMatchingStatusCode(\Throwable $exception, HttpStatusCode $expectedStatusCode): void
     {
         $event = $this->exceptionEvent($exception);
@@ -55,17 +61,70 @@ class ErrorResponseExceptionListenerTest extends ContainerTestCase
         self::assertStringNotContainsString('bogus', (string) $event->getResponse()->getContent());
     }
 
+    public function testItRendersAndLogsAReferenceForAServerError(): void
+    {
+        $exception = new \RuntimeException('Something exploded');
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger
+            ->expects($this->once())
+            ->method('error')
+            ->with($this->anything(), ['exception' => $exception]);
+
+        $listener = new ErrorResponseExceptionListener(
+            PlatformEnvironment::PROD,
+            $this->getContainer()->get(Environment::class),
+            new ServerErrorLogger($logger, new FakeUuidFactory()),
+        );
+        $event = $this->exceptionEvent($exception);
+
+        $listener->onKernelException($event);
+
+        self::assertStringContainsString('0025176c', (string) $event->getResponse()->getContent());
+    }
+
+    public function testItDoesNotRenderAReferenceForA404(): void
+    {
+        $event = $this->exceptionEvent(new NotFoundHttpException('Not found'));
+
+        $this->errorResponseExceptionListener->onKernelException($event);
+
+        self::assertStringNotContainsString('Reference:', (string) $event->getResponse()->getContent());
+    }
+
     public function testItStepsAsideInDevSoSymfonyRendersItsOwnErrorPage(): void
     {
         $listener = new ErrorResponseExceptionListener(
             PlatformEnvironment::DEV,
             $this->getContainer()->get(Environment::class),
+            $this->serverErrorLogger,
         );
         $event = $this->exceptionEvent(new \RuntimeException('A message'));
 
         $listener->onKernelException($event);
 
         self::assertNull($event->getResponse());
+    }
+
+    #[DataProvider('providePathsAnsweredWithAnEmptyBody')]
+    public function testItAnswersAsyncAndBadgeRequestsWithAnEmptyBody(string $path): void
+    {
+        $event = new ExceptionEvent(
+            $this->createStub(HttpKernelInterface::class),
+            Request::create($path),
+            HttpKernelInterface::MAIN_REQUEST,
+            new NotFoundHttpException('Not found'),
+        );
+
+        $this->errorResponseExceptionListener->onKernelException($event);
+
+        self::assertEquals(404, $event->getResponse()->getStatusCode());
+        self::assertEquals('', $event->getResponse()->getContent());
+    }
+
+    public static function providePathsAnsweredWithAnEmptyBody(): iterable
+    {
+        yield 'the internal api' => ['/api/internal/activities/activity-1/polylines'];
+        yield 'a badge' => ['/badge/zwift.svg'];
     }
 
     private function exceptionEvent(\Throwable $exception): ExceptionEvent
@@ -83,9 +142,15 @@ class ErrorResponseExceptionListenerTest extends ContainerTestCase
     {
         parent::setUp();
 
+        $this->serverErrorLogger = new ServerErrorLogger(
+            new NullLogger(),
+            new FakeUuidFactory(),
+        );
+
         $this->errorResponseExceptionListener = new ErrorResponseExceptionListener(
             PlatformEnvironment::PROD,
             $this->getContainer()->get(Environment::class),
+            $this->serverErrorLogger,
         );
     }
 }

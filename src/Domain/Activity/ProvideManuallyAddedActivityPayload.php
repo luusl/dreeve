@@ -157,9 +157,51 @@ trait ProvideManuallyAddedActivityPayload
 
     /**
      * @param array<string, mixed> $payload
+     *
+     * @return array{?int, ?int}
+     */
+    private static function parseHeartRates(array $payload): array
+    {
+        $averageHeartRate = self::parseOptionalHeartRate($payload, 'averageHeartRate');
+        $maxHeartRate = self::parseOptionalHeartRate($payload, 'maxHeartRate');
+
+        if (null !== $averageHeartRate && null !== $maxHeartRate && $maxHeartRate < $averageHeartRate) {
+            throw CouldNotDeserializeCommand::invalidPayload('The "maxHeartRate" cannot be lower than the "averageHeartRate".');
+        }
+
+        return [$averageHeartRate, $maxHeartRate];
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function parseOptionalHeartRate(array $payload, string $key): ?int
+    {
+        $heartRate = isset($payload[$key]) ? trim((string) $payload[$key]) : '';
+        if ('' === $heartRate) {
+            return null;
+        }
+
+        if (!is_numeric($heartRate) || (float) $heartRate <= 0) {
+            throw CouldNotDeserializeCommand::invalidPayload(sprintf('The "%s" must be a number greater than zero.', $key));
+        }
+
+        return (int) round((float) $heartRate);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
      */
     private static function parseIsCommute(array $payload): bool
     {
         return filter_var($payload['isCommute'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * @param array<string, mixed> $payload
+     */
+    private static function parseIsGroupActivity(array $payload): bool
+    {
+        return filter_var($payload['isGroupActivity'] ?? false, FILTER_VALIDATE_BOOLEAN);
     }
 }

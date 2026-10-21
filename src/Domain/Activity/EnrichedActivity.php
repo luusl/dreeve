@@ -110,12 +110,15 @@ final readonly class EnrichedActivity implements SupportsAITooling
             'movingTimeInSeconds' => $this->activity->getMovingTimeInSeconds(),
             'recordedOnDevice' => $this->activity->getDeviceName(),
             'totalImageCount' => $this->activity->getTotalImageCount(),
-            'routeGeography' => $this->activity->getRouteGeography()->jsonSerialize(),
+            'startingPointCountryCode' => $this->activity->getRouteGeography()->getStartingPointCountryCode(),
+            'startingPointState' => $this->activity->getRouteGeography()->getStartingPointState(),
             'weather' => $this->activity->getWeather(),
             'gearId' => $this->activity->getGearId()?->toUnprefixedString(),
             'gearName' => $this->gearName,
             'isCommute' => $this->activity->isCommute(),
+            'isGroupActivity' => $this->activity->isGroupActivity(),
             'workoutType' => $this->activity->getWorkoutType()?->value,
+            'stravaUrl' => ImportSource::STRAVA_API === $this->activity->getImportSource() ? $this->activity->getUrl() : null,
         ];
     }
 }

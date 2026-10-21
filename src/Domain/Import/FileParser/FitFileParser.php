@@ -16,7 +16,9 @@ use App\Domain\Activity\WorldType;
 use App\Domain\Gear\Sensor\ConnectedSensor;
 use App\Domain\Gear\Sensor\ConnectedSensors;
 use App\Domain\Import\FileParser\Fit\FitDeviceType;
+use App\Domain\Import\FileParser\Fit\FitDrivetrainUsageExtractor;
 use App\Domain\Import\FileParser\Fit\FitManufacturer;
+use App\Domain\Import\FileParser\Fit\FitNikeSessionFix;
 use App\Domain\Import\FileParser\Fit\FitProduct;
 use App\Domain\Import\FileParser\Fit\FitSportType;
 use App\Domain\Import\FileParser\Fit\FitStrapHeartRate;
@@ -77,6 +79,8 @@ final readonly class FitFileParser implements ActivityFileParser
         $hrMessages = [];
         /** @var list<array<string, mixed>> $deviceInfoMessages */
         $deviceInfoMessages = [];
+        /** @var list<array<string, mixed>> $eventMessages */
+        $eventMessages = [];
         /** @var list<array<string, mixed>> $sessionMessages */
         $sessionMessages = [];
         /** @var array<string, mixed>|null $workout */
@@ -107,6 +111,9 @@ final readonly class FitFileParser implements ActivityFileParser
                 case 'device_info':
                     $deviceInfoMessages[] = $fields;
                     break;
+                case 'event':
+                    $eventMessages[] = $fields;
+                    break;
                 case 'session':
                     $sessionMessages[] = $fields;
                     break;
@@ -129,11 +136,12 @@ final readonly class FitFileParser implements ActivityFileParser
 
         $deviceName = match (true) {
             null === $manufacturerId => $productName,
+            FitManufacturer::hasUnreliableProductName($manufacturerId) => FitManufacturer::name($manufacturerId),
             null !== $productId && FitProduct::supports($manufacturerId) => FitProduct::name($manufacturerId, $productId) ?? $productName ?? FitManufacturer::name($manufacturerId),
             default => $productName ?? FitManufacturer::name($manufacturerId),
         };
 
-        if ([] === $records) {
+        if ([] === $records && [] === $sessionMessages) {
             throw new CouldNotParseActivityFile(message: sprintf('No FIT "record" messages found in "%s"', $file->getPath()->getFilename()), activityFile: $file);
         }
 
@@ -150,7 +158,10 @@ final readonly class FitFileParser implements ActivityFileParser
             throw new CouldNotParseActivityFile(message: sprintf('Multi-sport FIT file "%s" import not supported, each leg needs to be imported as a separate file', $file->getPath()->getFilename()), activityFile: $file);
         }
 
-        $session = $sessionMessages[0] ?? [];
+        $session = FitNikeSessionFix::apply(
+            session: $sessionMessages[0] ?? [],
+            manufacturerId: $manufacturerId
+        );
 
         $startTimestamp = (is_numeric($session['start_time'] ?? null) ? (int) round((float) $session['start_time']) : null)
             ?? (is_numeric($records[0]['timestamp'] ?? null) ? (int) round((float) $records[0]['timestamp']) : null);
@@ -196,7 +207,7 @@ final readonly class FitFileParser implements ActivityFileParser
             name: $activityName,
             description: '' !== $workoutDescription ? $workoutDescription : null,
             distance: Kilometer::from(round((is_numeric($session['total_distance'] ?? null) ? (float) $session['total_distance'] : 0.0) / 1000, 3)),
-            elevation: Meter::from(round(is_numeric($session['total_ascent'] ?? null) ? (float) $session['total_ascent'] : StreamMath::elevationGain($streamMap[StreamType::ALTITUDE->value]))),
+            elevation: Meter::from(round(is_numeric($session['total_ascent'] ?? null) && (float) $session['total_ascent'] > 0 ? (float) $session['total_ascent'] : StreamMath::elevationGain($streamMap[StreamType::ALTITUDE->value]))),
             startingCoordinate: $this->resolveStartingCoordinate($session, $streamMap),
             calories: is_numeric($session['total_calories'] ?? null) ? (int) round((float) $session['total_calories']) : null,
             kilojoules: null !== $work ? (int) round($work / 1000) : null,
@@ -210,10 +221,10 @@ final readonly class FitFileParser implements ActivityFileParser
                 velocityStream: $streamMap[StreamType::VELOCITY->value]
             )->toKmPerHour(),
             maxSpeed: MetersPerSecond::fromOptional(is_numeric($session['enhanced_max_speed'] ?? $session['max_speed'] ?? null) ? (float) ($session['enhanced_max_speed'] ?? $session['max_speed'] ?? null) : Math::maxFloat($streamMap[StreamType::VELOCITY->value]))->toKmPerHour(),
-            averageHeartRate: is_numeric($session['avg_heart_rate'] ?? null) ? (int) round((float) $session['avg_heart_rate']) : Math::average($streamMap[StreamType::HEART_RATE->value]),
-            maxHeartRate: is_numeric($session['max_heart_rate'] ?? null) ? (int) round((float) $session['max_heart_rate']) : Math::max($streamMap[StreamType::HEART_RATE->value]),
+            averageHeartRate: is_numeric($session['avg_heart_rate'] ?? null) && (float) $session['avg_heart_rate'] > 0 ? (int) round((float) $session['avg_heart_rate']) : Math::average($streamMap[StreamType::HEART_RATE->value]),
+            maxHeartRate: is_numeric($session['max_heart_rate'] ?? null) && (float) $session['max_heart_rate'] > 0 ? (int) round((float) $session['max_heart_rate']) : Math::max($streamMap[StreamType::HEART_RATE->value]),
             averageCadence: is_numeric($session['avg_cadence'] ?? null) ? (int) round((float) $session['avg_cadence']) : Math::average($streamMap[StreamType::CADENCE->value]),
-            movingTimeInSeconds: is_numeric($session['total_timer_time'] ?? null) ? (int) round((float) $session['total_timer_time']) : 0,
+            movingTimeInSeconds: (int) round($this->resolveMovingTime($session) ?? 0.0),
             elapsedTimeInSeconds: is_numeric($session['total_elapsed_time'] ?? null) ? (int) round((float) $session['total_elapsed_time']) : 0,
             deviceName: $deviceName,
             connectedSensors: $this->resolveConnectedSensors($deviceInfoMessages),
@@ -224,6 +235,7 @@ final readonly class FitFileParser implements ActivityFileParser
             weather: null,
             gearId: null,
             isCommute: false,
+            isGroupActivity: false,
             workoutType: null,
         );
 
@@ -231,6 +243,12 @@ final readonly class FitFileParser implements ActivityFileParser
             activity: $activity,
             streams: $this->activityStreamsMapper->fromStreamMap($streamMap, $activityId),
             laps: $this->activityLapsMapper->map($this->buildParsedLaps($lapMessages), $activityId),
+            drivetrainUsages: FitDrivetrainUsageExtractor::extract(
+                eventMessages: $eventMessages,
+                startTimestamp: $startTimestamp,
+                timeStream: $streamMap[StreamType::TIME->value],
+                activityId: $activityId,
+            ),
         );
     }
 
@@ -249,7 +267,7 @@ final readonly class FitFileParser implements ActivityFileParser
                     lapNumber: $index + 1,
                     name: sprintf('Lap %d', $index + 1),
                     elapsedTimeInSeconds: is_numeric($lap['total_elapsed_time'] ?? null) ? (int) round((float) $lap['total_elapsed_time']) : 0,
-                    movingTimeInSeconds: is_numeric($lap['total_timer_time'] ?? null) ? (int) round((float) $lap['total_timer_time']) : 0,
+                    movingTimeInSeconds: (int) round($this->resolveMovingTime($lap) ?? 0.0),
                     distance: Meter::from(is_numeric($lap['total_distance'] ?? null) ? (float) $lap['total_distance'] : 0.0),
                     averageSpeed: MetersPerSecond::from($this->resolveLapAverageSpeed($lap)),
                     maxSpeed: MetersPerSecond::from(is_numeric($lap['enhanced_max_speed'] ?? $lap['max_speed'] ?? null) ? (float) ($lap['enhanced_max_speed'] ?? $lap['max_speed'] ?? null) : 0.0),
@@ -267,6 +285,10 @@ final readonly class FitFileParser implements ActivityFileParser
      */
     private function resolveLapAverageSpeed(array $lap): float
     {
+        if (null !== $speed = $this->averageSpeedFromMovingTime($lap)) {
+            return $speed;
+        }
+
         if (is_numeric($lap['enhanced_avg_speed'] ?? $lap['avg_speed'] ?? null)) {
             return (float) ($lap['enhanced_avg_speed'] ?? $lap['avg_speed']);
         }
@@ -434,6 +456,10 @@ final readonly class FitFileParser implements ActivityFileParser
      */
     private function resolveAverageSpeed(array $session, array $velocityStream): MetersPerSecond
     {
+        if (null !== $speed = $this->averageSpeedFromMovingTime($session)) {
+            return MetersPerSecond::from($speed);
+        }
+
         if (is_numeric($session['enhanced_avg_speed'] ?? $session['avg_speed'] ?? null)) {
             return MetersPerSecond::from((float) ($session['enhanced_avg_speed'] ?? $session['avg_speed']));
         }
@@ -467,6 +493,32 @@ final readonly class FitFileParser implements ActivityFileParser
         }
 
         return $sessionAverage;
+    }
+
+    /**
+     * @param array<string, mixed> $message
+     */
+    private function resolveMovingTime(array $message): ?float
+    {
+        if (is_numeric($message['total_moving_time'] ?? null)) {
+            return (float) $message['total_moving_time'];
+        }
+
+        return is_numeric($message['total_timer_time'] ?? null) ? (float) $message['total_timer_time'] : null;
+    }
+
+    /**
+     * @param array<string, mixed> $message
+     */
+    private function averageSpeedFromMovingTime(array $message): ?float
+    {
+        $totalDistance = is_numeric($message['total_distance'] ?? null) ? (float) $message['total_distance'] : null;
+        $totalMovingTime = is_numeric($message['total_moving_time'] ?? null) ? (float) $message['total_moving_time'] : null;
+        if (null === $totalDistance || null === $totalMovingTime || $totalMovingTime <= 0.0) {
+            return null;
+        }
+
+        return $totalDistance / $totalMovingTime;
     }
 
     /**

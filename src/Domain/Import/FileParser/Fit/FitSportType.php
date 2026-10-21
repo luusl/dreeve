@@ -35,14 +35,17 @@ final class FitSportType
     private const int SPORT_SNOWSHOEING = 35;
     private const int SPORT_STAND_UP_PADDLEBOARDING = 37;
     private const int SPORT_SURFING = 38;
+    private const int SPORT_WAKEBOARDING = 39;
     private const int SPORT_KAYAKING = 41;
     private const int SPORT_WINDSURFING = 43;
     private const int SPORT_KITESURFING = 44;
+    private const int SPORT_BOXING = 47;
     private const int SPORT_FLOOR_CLIMBING = 48;
     private const int SPORT_HIIT = 62;
     private const int SPORT_RACKET = 64;
     private const int SPORT_WHEELCHAIR_PUSH_WALK = 65;
     private const int SPORT_WHEELCHAIR_PUSH_RUN = 66;
+    private const int SPORT_DISC_GOLF = 69;
     private const int SPORT_CRICKET = 71;
     private const int SPORT_VOLLEYBALL = 75;
     private const int SPORT_DANCE = 83;
@@ -132,6 +135,7 @@ final class FitSportType
             self::SPORT_PADDLING, self::SPORT_CANOEING => SportType::CANOEING,
             self::SPORT_E_BIKING => SportType::E_BIKE_RIDE,
             self::SPORT_GOLF => SportType::GOLF,
+            self::SPORT_DISC_GOLF => SportType::WORKOUT,
             self::SPORT_INLINE_SKATING => SportType::INLINE_SKATE,
             self::SPORT_ROCK_CLIMBING => SportType::ROCK_CLIMBING,
             self::SPORT_SAILING => SportType::SAIL,
@@ -139,9 +143,11 @@ final class FitSportType
             self::SPORT_SNOWSHOEING => SportType::SNOWSHOE,
             self::SPORT_STAND_UP_PADDLEBOARDING => SportType::STAND_UP_PADDLING,
             self::SPORT_SURFING => SportType::SURFING,
+            self::SPORT_WAKEBOARDING => SportType::WAKEBOARDING,
             self::SPORT_KAYAKING => SportType::KAYAKING,
             self::SPORT_WINDSURFING => SportType::WIND_SURF,
             self::SPORT_KITESURFING => SportType::KITE_SURF,
+            self::SPORT_BOXING => SportType::BOXING,
             // Garmin "floor climbing" tracks flights of stairs climbed.
             self::SPORT_FLOOR_CLIMBING => SportType::STAIR_STEPPER,
             self::SPORT_HIIT => SportType::HIIT,

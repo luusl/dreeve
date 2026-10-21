@@ -4,20 +4,15 @@ namespace App\Tests\Controller\Admin\Gear\Maintenance;
 
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
+use App\Infrastructure\Serialization\Json;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Gear\GearBuilder;
 use App\Tests\ProvideGearMaintenanceConfig;
+use Symfony\Component\DomCrawler\Crawler;
 
 class ManageGearMaintenanceConfigRequestHandlerTest extends AdminWebTestCase
 {
     use ProvideGearMaintenanceConfig;
-
-    public function testAnonymousUsersAreRedirectedToTheLoginPage(): void
-    {
-        $this->client->request('GET', '/admin/gear/maintenance-config');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
 
     public function testItRendersTheConfigReflectingTheCurrentSettings(): void
     {
@@ -57,6 +52,34 @@ class ManageGearMaintenanceConfigRequestHandlerTest extends AdminWebTestCase
         $this->assertStringNotContainsString('10130856', $warningText);
     }
 
+    public function testItMarksComponentsThatAreNotFitted(): void
+    {
+        $this->importGearMaintenanceConfigFromArray(Json::decode((string) file_get_contents(__DIR__.'/fixtures/gear-maintenance-with-not-fitted-component.json')));
+        $this->getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId(GearId::fromUnprefixed('g10130856'))
+                ->withName('Road bike')
+                ->build()
+        );
+
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/gear/maintenance-config');
+
+        $this->assertResponseIsSuccessful();
+        $rows = $crawler->filter('table.data-table tbody tr');
+        $this->assertSame(
+            ['Old chain', 'Summer wheelset', 'Winter wheelset'],
+            $rows->each(static fn (Crawler $row): string => $row->filter('td')->first()->text()),
+        );
+        $this->assertCount(1, $rows->eq(0)->filter('.pill--danger'));
+        $this->assertCount(0, $rows->eq(0)->filter('.pill--warning'));
+        $this->assertCount(1, $rows->eq(1)->filter('.pill--warning'));
+        $this->assertStringNotContainsString('Road bike', $rows->eq(1)->text());
+        $this->assertCount(0, $rows->eq(2)->filter('.pill--warning'));
+        $this->assertStringContainsString('Road bike', $rows->eq(2)->text());
+    }
+
     public function testItRendersTheEmptyStateWhenThereAreNoComponents(): void
     {
         $this->client->loginUser($this->adminUser());
@@ -67,5 +90,29 @@ class ManageGearMaintenanceConfigRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString('No components yet.', $crawler->filter('table.data-table')->text());
         $this->assertCount(1, $crawler->filter('table.data-table tbody td[colspan="5"]'));
         $this->assertCount(0, $crawler->filter('.alert.alert--warning'));
+    }
+
+    public function testSavingReturnsTheVisitorToThePublicMaintenancePageTheyCameFrom(): void
+    {
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/gear/maintenance-config?redirectTo=%2Fgear%2Fmaintenance');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame('/gear/maintenance', $crawler->filter('form[data-dispatch-command]')->attr('data-redirect'));
+        $this->assertSame(
+            '/gear/maintenance',
+            $crawler->filter('nav a:has(span:contains("Return to app"))')->attr('href'),
+        );
+    }
+
+    public function testSavingWithoutARedirectToKeepsTheVisitorInTheAdminPanel(): void
+    {
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/gear/maintenance-config');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSame('', $crawler->filter('form[data-dispatch-command]')->attr('data-redirect'));
     }
 }

@@ -103,10 +103,7 @@ final readonly class KeyValueBasedDashboardLayoutRepository implements Dashboard
             iterator_to_array($this->find()),
         );
 
-        $this->keyValueStore->save(KeyValue::fromState(
-            Key::DASHBOARD,
-            Value::fromString(Json::encode($layout)),
-        ));
+        $this->save($layout);
     }
 
     /**

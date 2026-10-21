@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\UpdateActivity;
 
+use App\Domain\Activity\ActivityExclusion;
+use App\Domain\Activity\ActivityExclusions;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityName;
 use App\Domain\Activity\ProvideCaloriesFromPayload;
 use App\Domain\Activity\SportType\SportType;
+use App\Domain\Activity\WorkoutType;
 use App\Domain\Gear\GearId;
 use App\Domain\Image\NewImage;
 use App\Domain\Image\ProvideLocalImageFromDropZonePayload;
@@ -31,11 +34,14 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
         private ActivityId $activityId,
         private ActivityName $name,
         private SportType $sportType,
+        private ?WorkoutType $workoutType,
         private ?string $description,
         private ?string $deviceName,
         private ?GearId $gearId,
         private ?int $calories,
         private bool $isCommute,
+        private bool $isGroupActivity,
+        private ActivityExclusions $excludedFrom,
         private array $newImages,
         private array $removedImages,
     ) {
@@ -58,6 +64,12 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
             throw CouldNotDeserializeCommand::invalidPayload('A valid "sportType" is required.');
         }
 
+        $workoutType = null;
+        if (isset($payload['workoutType']) && is_string($payload['workoutType']) && '' !== trim($payload['workoutType'])
+            && !$workoutType = WorkoutType::tryFrom(trim($payload['workoutType']))) {
+            throw CouldNotDeserializeCommand::invalidPayload('The "workoutType" is invalid.');
+        }
+
         $description = isset($payload['description']) && is_string($payload['description']) ? trim($payload['description']) : '';
         $deviceName = isset($payload['deviceName']) && is_string($payload['deviceName']) ? trim($payload['deviceName']) : '';
 
@@ -67,15 +79,24 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
 
         [$newImages, $removedImages] = self::parseImages($payload, 'images');
 
+        $excludedFrom = is_array($payload['excludedFrom'] ?? null) ? $payload['excludedFrom'] : [];
+        $exclusions = array_values(array_filter(
+            ActivityExclusion::cases(),
+            static fn (ActivityExclusion $exclusion): bool => filter_var($excludedFrom[$exclusion->value] ?? false, FILTER_VALIDATE_BOOLEAN),
+        ));
+
         return new self(
             activityId: ActivityId::fromString($payload['activityId']),
             name: ActivityName::fromString($name),
             sportType: $sportType,
+            workoutType: $workoutType,
             description: '' !== $description ? $description : null,
             deviceName: '' !== $deviceName ? $deviceName : null,
             gearId: $gearId,
             calories: self::parseCalories($payload),
             isCommute: filter_var($payload['isCommute'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            isGroupActivity: filter_var($payload['isGroupActivity'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            excludedFrom: ActivityExclusions::fromArray($exclusions),
             newImages: $newImages,
             removedImages: $removedImages,
         );
@@ -94,6 +115,11 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
     public function getSportType(): SportType
     {
         return $this->sportType;
+    }
+
+    public function getWorkoutType(): ?WorkoutType
+    {
+        return $this->workoutType;
     }
 
     public function getDescription(): ?string
@@ -119,6 +145,16 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
     public function isCommute(): bool
     {
         return $this->isCommute;
+    }
+
+    public function isGroupActivity(): bool
+    {
+        return $this->isGroupActivity;
+    }
+
+    public function getExcludedFrom(): ActivityExclusions
+    {
+        return $this->excludedFrom;
     }
 
     /**

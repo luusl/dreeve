@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Tests\Domain\Activity\UpdateActivity;
 
+use App\Domain\Activity\ActivityExclusion;
+use App\Domain\Activity\ActivityExclusions;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\UpdateActivity\UpdateActivity;
+use App\Domain\Activity\WorkoutType;
 use App\Domain\Gear\GearId;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\Exception\EntityNotFound;
@@ -37,21 +40,53 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
             'activityId' => 'activity-1',
             'name' => 'Updated activity',
             'sportType' => 'Run',
+            'workoutType' => 'race',
             'description' => 'Updated description',
             'deviceName' => 'Garmin Edge',
             'gearId' => 'gear-1',
             'calories' => '500',
             'isCommute' => 'true',
+            'isGroupActivity' => 'true',
+            'excludedFrom' => ['peakPowerOutputs' => 'true', 'bestEfforts' => 'true'],
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
         $this->assertSame('Updated activity', $activity->getOriginalName());
         $this->assertSame(SportType::RUN, $activity->getSportType());
+        $this->assertSame(WorkoutType::RACE, $activity->getWorkoutType());
         $this->assertSame('Updated description', $activity->getDescription());
         $this->assertSame('Garmin Edge', $activity->getDeviceName());
         $this->assertEquals(GearId::fromUnprefixed('1'), $activity->getGearId());
         $this->assertSame(500, $activity->getCalories());
         $this->assertTrue($activity->isCommute());
+        $this->assertTrue($activity->isGroupActivity());
+        $this->assertEquals(
+            ActivityExclusions::fromArray([ActivityExclusion::PEAK_POWER_OUTPUTS, ActivityExclusion::BEST_EFFORTS]),
+            $activity->getExcludedFrom(),
+        );
+    }
+
+    public function testHandleRemovesTheExclusionFromPeakPowerOutputs(): void
+    {
+        $this->activityRepository->add(ActivityWithRawData::fromState(
+            activity: ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->withExcludedFrom(ActivityExclusion::PEAK_POWER_OUTPUTS, ActivityExclusion::BEST_EFFORTS)
+                ->build(),
+            rawData: [],
+        ));
+
+        $this->commandBus->dispatch(UpdateActivity::fromPayload([
+            'activityId' => 'activity-1',
+            'name' => 'Updated activity',
+            'sportType' => 'Ride',
+            'excludedFrom' => ['peakPowerOutputs' => 'false', 'bestEfforts' => 'true'],
+        ]));
+
+        $this->assertEquals(
+            ActivityExclusions::fromArray([ActivityExclusion::BEST_EFFORTS]),
+            $this->activityRepository->find(ActivityId::fromUnprefixed('1'))->getExcludedFrom(),
+        );
     }
 
     public function testHandleClearsCalories(): void

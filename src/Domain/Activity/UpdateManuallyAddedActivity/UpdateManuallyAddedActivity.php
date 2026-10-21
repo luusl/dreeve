@@ -43,7 +43,10 @@ final readonly class UpdateManuallyAddedActivity extends DomainCommand implement
         private float $elevation,
         private ?GearId $gearId,
         private ?int $calories,
+        private ?int $averageHeartRate,
+        private ?int $maxHeartRate,
         private bool $isCommute,
+        private bool $isGroupActivity,
         private array $newImages,
         private array $removedImages,
     ) {
@@ -56,6 +59,7 @@ final readonly class UpdateManuallyAddedActivity extends DomainCommand implement
         }
 
         [$newImages, $removedImages] = self::parseImages($payload, 'images');
+        [$averageHeartRate, $maxHeartRate] = self::parseHeartRates($payload);
 
         return new self(
             activityId: ActivityId::fromString($payload['activityId']),
@@ -69,7 +73,10 @@ final readonly class UpdateManuallyAddedActivity extends DomainCommand implement
             elevation: self::parsePositiveNumber($payload, 'elevation'),
             gearId: self::parseGearId($payload),
             calories: self::parseCalories($payload),
+            averageHeartRate: $averageHeartRate,
+            maxHeartRate: $maxHeartRate,
             isCommute: self::parseIsCommute($payload),
+            isGroupActivity: self::parseIsGroupActivity($payload),
             newImages: $newImages,
             removedImages: $removedImages,
         );
@@ -130,9 +137,24 @@ final readonly class UpdateManuallyAddedActivity extends DomainCommand implement
         return $this->calories;
     }
 
+    public function getAverageHeartRate(): ?int
+    {
+        return $this->averageHeartRate;
+    }
+
+    public function getMaxHeartRate(): ?int
+    {
+        return $this->maxHeartRate;
+    }
+
     public function isCommute(): bool
     {
         return $this->isCommute;
+    }
+
+    public function isGroupActivity(): bool
+    {
+        return $this->isGroupActivity;
     }
 
     /**

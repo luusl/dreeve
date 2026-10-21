@@ -7,7 +7,6 @@ namespace App\Tests\Domain\Settings;
 use App\Domain\Activity\ActivityType;
 use App\Domain\Settings\AthleteHasNotBeenConfigured;
 use App\Domain\Settings\GeneralSettings;
-use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -19,15 +18,12 @@ class GeneralSettingsTest extends TestCase
         return [
             'appSubTitle' => 'The King',
             'profilePictureUrl' => 'https://example.com/me.png',
-            'athlete' => [
-                'birthday' => '1989-08-14',
-                'firstName' => 'Robin',
-                'lastName' => 'Ingelbrecht',
-                'gender' => 'M',
-                'maxHeartRateFormula' => 'fox',
-                'weightHistory' => [['on' => '2024-01-01', 'weight' => 70]],
-                'ftpHistory' => [['on' => '2023-01-01', 'ftp' => 250]],
-            ],
+            'birthday' => '1989-08-14',
+            'firstName' => 'Robin',
+            'lastName' => 'Ingelbrecht',
+            'gender' => 'M',
+            'maxHeartRateFormula' => 'fox',
+            'ftpHistory' => [['on' => '2023-01-01', 'ftp' => 250]],
         ];
     }
 
@@ -59,23 +55,19 @@ class GeneralSettingsTest extends TestCase
         $this->assertSame('The King', (string) $settings->getAppSubTitle());
         $this->assertSame('https://example.com/me.png', (string) $settings->getProfilePictureUrl());
         $this->assertNotEmpty($settings->getFtpHistory()->findAll(ActivityType::RIDE));
-        $this->assertNotEmpty($settings->getAthleteWeightHistory(UnitSystem::METRIC)->findAll());
     }
 
     public function testItAppliesDefaultsForOptionalSettings(): void
     {
         $settings = GeneralSettings::fromArray([
-            'athlete' => [
-                'birthday' => '1989-08-14',
-                'firstName' => 'Robin',
-                'lastName' => 'Ingelbrecht',
-                'maxHeartRateFormula' => 'fox',
-            ],
+            'birthday' => '1989-08-14',
+            'firstName' => 'Robin',
+            'lastName' => 'Ingelbrecht',
+            'maxHeartRateFormula' => 'fox',
         ]);
 
         $this->assertNull($settings->getAppSubTitle());
         $this->assertNull($settings->getProfilePictureUrl());
-        $this->assertEmpty($settings->getAthleteWeightHistory(UnitSystem::METRIC)->findAll());
         // Resting heart rate defaults to the heuristic age-based formula.
         $this->assertGreaterThan(0, $settings->getAthlete()->getRestingHeartRate(SerializableDateTime::fromString('2024-01-01')));
     }
@@ -86,7 +78,7 @@ class GeneralSettingsTest extends TestCase
         $this->expectExceptionObject(new AthleteHasNotBeenConfigured(sprintf('A "%s" is required for the athlete in the general settings', $key)));
 
         $data = self::validData();
-        $data['athlete'][$key] = $value;
+        $data[$key] = $value;
 
         GeneralSettings::fromArray($data);
     }
@@ -104,35 +96,28 @@ class GeneralSettingsTest extends TestCase
     public function testItTrimsTheName(): void
     {
         $data = self::validData();
-        $data['athlete']['firstName'] = '  Robin  ';
-        $data['athlete']['lastName'] = "\tIngelbrecht\n";
+        $data['firstName'] = '  Robin  ';
+        $data['lastName'] = "\tIngelbrecht\n";
 
         $this->assertSame('Robin Ingelbrecht', (string) GeneralSettings::fromArray($data)->getAthlete()->getName());
-    }
-
-    public function testItIgnoresANonArrayAthlete(): void
-    {
-        $this->expectExceptionObject(new AthleteHasNotBeenConfigured('A "birthday" is required for the athlete in the general settings'));
-
-        GeneralSettings::fromArray(['athlete' => 'Robin']);
     }
 
     public function testItThrowsWhenBirthdayIsMissing(): void
     {
         $this->expectExceptionObject(new AthleteHasNotBeenConfigured('A "birthday" is required for the athlete in the general settings'));
 
-        GeneralSettings::fromArray(['athlete' => ['maxHeartRateFormula' => 'fox']]);
+        GeneralSettings::fromArray(['maxHeartRateFormula' => 'fox']);
     }
 
     public function testItThrowsWhenMaxHeartRateFormulaIsMissing(): void
     {
         $this->expectExceptionObject(new AthleteHasNotBeenConfigured('A "maxHeartRateFormula" is required for the athlete in the general settings'));
 
-        GeneralSettings::fromArray(['athlete' => [
+        GeneralSettings::fromArray([
             'birthday' => '1989-08-14',
             'firstName' => 'Robin',
             'lastName' => 'Ingelbrecht',
-        ]]);
+        ]);
     }
 
     public function testItThrowsWhenNothingIsConfigured(): void

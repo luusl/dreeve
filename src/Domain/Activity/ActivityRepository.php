@@ -13,7 +13,7 @@ interface ActivityRepository
 
     public function findAll(): Activities;
 
-    public function findMostRecent(int $limit, ?SportTypes $restrictToSportTypes = null): Activities;
+    public function findMostRecent(int $limit, ?SportTypes $restrictToSportTypes = null, bool $onlyActivitiesWithARoute = false): Activities;
 
     public function findByIds(ActivityIds $activityIds): Activities;
 
@@ -28,10 +28,6 @@ interface ActivityRepository
     public function update(ActivityWithRawData $activityWithRawData): void;
 
     public function delete(ActivityId $activityId): void;
-
-    public function activityNeedsStreamImport(ActivityId $activityId): bool;
-
-    public function markActivityStreamsAsImported(ActivityId $activityId): void;
 
     public function markActivitiesForDeletion(ActivityIds $activityIds): void;
 }

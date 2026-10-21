@@ -10,6 +10,10 @@ use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\BestEffort\ActivityBestEffortRepository;
 use App\Domain\Activity\Lap\ActivityLapRepository;
+use App\Domain\Activity\Route\ExplorerTile\ActivityExplorerTilesRepository;
+use App\Domain\Activity\Scan\ActivityScan;
+use App\Domain\Activity\Scan\ActivityScanRepository;
+use App\Domain\Activity\Scan\ActivityScanType;
 use App\Domain\Activity\Split\ActivitySplitRepository;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Segment\SegmentEffort\SegmentEffortId;
@@ -23,17 +27,15 @@ use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Activity\BestEffort\ActivityBestEffortBuilder;
 use App\Tests\Domain\Activity\Lap\ActivityLapBuilder;
+use App\Tests\Domain\Activity\Route\ExplorerTile\ActivityExplorerTilesBuilder;
 use App\Tests\Domain\Activity\Split\ActivitySplitBuilder;
 use App\Tests\Domain\Activity\Stream\ActivityStreamBuilder;
 use App\Tests\Domain\Segment\SegmentBuilder;
 use App\Tests\Domain\Segment\SegmentEffort\SegmentEffortBuilder;
 use App\Tests\SpyOutput;
-use Spatie\Snapshots\MatchesSnapshots;
 
 class DeleteActivitiesMarkedForDeletionCommandHandlerTest extends ContainerTestCase
 {
-    use MatchesSnapshots;
-
     private CommandBus $commandBus;
 
     public function testHandle(): void
@@ -103,13 +105,32 @@ class DeleteActivitiesMarkedForDeletionCommandHandlerTest extends ContainerTestC
             ->withActivityId(ActivityId::fromUnprefixed(1001))
             ->build());
 
+        $this->getContainer()->get(ActivityScanRepository::class)->add(
+            ActivityScan::create(activityId: ActivityId::fromUnprefixed(1001), type: ActivityScanType::CUSTOM_SEGMENT, subjectId: 'segment-custom')
+        );
+        $this->getContainer()->get(ActivityScanRepository::class)->add(
+            ActivityScan::create(activityId: ActivityId::fromUnprefixed(4), type: ActivityScanType::CUSTOM_SEGMENT, subjectId: 'segment-custom')
+        );
+
+        $this->getContainer()->get(ActivityExplorerTilesRepository::class)->add(ActivityExplorerTilesBuilder::fromDefaults()
+            ->withActivityId(ActivityId::fromUnprefixed(1001))
+            ->build());
+        $this->getContainer()->get(ActivityExplorerTilesRepository::class)->add(ActivityExplorerTilesBuilder::fromDefaults()
+            ->withActivityId(ActivityId::fromUnprefixed(4))
+            ->build());
+
         $this->getContainer()->get(ActivityRepository::class)->markActivitiesForDeletion(ActivityIds::fromArray([
             ActivityId::fromUnprefixed(1000),
             ActivityId::fromUnprefixed(1001),
         ]));
 
         $this->commandBus->dispatch(new DeleteActivitiesMarkedForDeletion($output));
-        $this->assertMatchesTextSnapshot($output);
+        $this->assertSame(
+            "Deleting activities...\n"
+            ."  => Activity \"Delete this one - 10-10-2023\" deleted\n"
+            .'  => Activity "Delete this one as well - 10-10-2023" deleted',
+            (string) $output,
+        );
 
         $this->assertEquals(
             1,
@@ -144,6 +165,14 @@ class DeleteActivitiesMarkedForDeletionCommandHandlerTest extends ContainerTestC
             0,
             $this->getConnection()->executeQuery('SELECT COUNT(*) FROM ActivityBestEffort WHERE activityId = "activity-1001"')->fetchOne()
         );
+        $this->assertEquals(
+            ['activity-4'],
+            $this->getConnection()->executeQuery('SELECT activityId FROM ActivityScan')->fetchFirstColumn()
+        );
+        $this->assertEquals(
+            ['activity-4'],
+            $this->getConnection()->executeQuery('SELECT activityId FROM ActivityExplorerTiles ORDER BY activityId')->fetchFirstColumn()
+        );
     }
 
     public function testHandleWhenNoActivitiesMarkedForDeletion(): void
@@ -151,7 +180,10 @@ class DeleteActivitiesMarkedForDeletionCommandHandlerTest extends ContainerTestC
         $output = new SpyOutput();
 
         $this->commandBus->dispatch(new DeleteActivitiesMarkedForDeletion($output));
-        $this->assertMatchesTextSnapshot($output);
+        $this->assertSame(
+            'No activities marked for deletion...',
+            (string) $output,
+        );
     }
 
     #[\Override]

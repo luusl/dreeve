@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Domain\Activity\SportType;
 
 use App\Domain\Activity\ActivityType;
-use App\Infrastructure\Measurement\Length\ConvertableToMeter;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\NauticalMile;
 use App\Infrastructure\Measurement\UnitSystem;
@@ -41,6 +40,7 @@ enum SportType: string implements TranslatableInterface
     case ROWING = 'Rowing';
     case STAND_UP_PADDLING = 'StandUpPaddling';
     case SURFING = 'Surfing';
+    case WAKEBOARDING = 'Wakeboarding';
     case POOL_SWIM = 'Swim';
     case OPEN_WATER_SWIM = 'OpenWaterSwim';
     case WIND_SURF = 'Windsurf';
@@ -72,6 +72,7 @@ enum SportType: string implements TranslatableInterface
     case HIIT = 'HighIntensityIntervalTraining';
     case ELLIPTICAL = 'Elliptical';
     case DANCE = 'Dance';
+    case BOXING = 'Boxing';
     // Mind & Body Sports.
     case PILATES = 'Pilates';
     case YOGA = 'Yoga';
@@ -112,15 +113,6 @@ enum SportType: string implements TranslatableInterface
             self::POOL_SWIM, self::OPEN_WATER_SWIM => SecPer100Meter::zero(),
             default => KmPerHour::zero(),
         };
-    }
-
-    public function getDistanceDisplayPreference(): ConvertableToMeter
-    {
-        if ($this->usesNauticalUnits()) {
-            return NauticalMile::zero();
-        }
-
-        return Kilometer::zero();
     }
 
     public function toDisplayDistance(Kilometer $distance): NauticalMile|Kilometer
@@ -193,6 +185,7 @@ enum SportType: string implements TranslatableInterface
             self::ROWING => $translator->trans('Rowing', locale: $locale),
             self::STAND_UP_PADDLING => $translator->trans('Stand Up Paddling', locale: $locale),
             self::SURFING => $translator->trans('Surfing', locale: $locale),
+            self::WAKEBOARDING => $translator->trans('Wakeboarding', locale: $locale),
             self::POOL_SWIM => $translator->trans('Pool Swim', locale: $locale),
             self::OPEN_WATER_SWIM => $translator->trans('Open Water Swim', locale: $locale),
             self::WIND_SURF => $translator->trans('Wind Surf', locale: $locale),
@@ -224,6 +217,7 @@ enum SportType: string implements TranslatableInterface
             self::VOLLEYBALL => $translator->trans('Volleyball', locale: $locale),
             self::CRICKET => $translator->trans('Cricket', locale: $locale),
             self::DANCE => $translator->trans('Dance', locale: $locale),
+            self::BOXING => $translator->trans('Boxing', locale: $locale),
             self::SQUASH => $translator->trans('Squash', locale: $locale),
             self::STAIR_STEPPER => $translator->trans('Stair Stepper', locale: $locale),
             self::TABLE_TENNIS => $translator->trans('Table Tennis', locale: $locale),
@@ -256,6 +250,7 @@ enum SportType: string implements TranslatableInterface
             self::ROWING => $translator->trans('Rowing', locale: $locale),
             self::STAND_UP_PADDLING => $translator->trans('Stand Up Paddling', locale: $locale),
             self::SURFING => $translator->trans('Surfing', locale: $locale),
+            self::WAKEBOARDING => $translator->trans('Wakeboarding', locale: $locale),
             self::POOL_SWIM => $translator->trans('Pool Swim', locale: $locale),
             self::OPEN_WATER_SWIM => $translator->trans('Open Water Swim', locale: $locale),
             self::WIND_SURF => $translator->trans('Wind Surf', locale: $locale),
@@ -287,6 +282,7 @@ enum SportType: string implements TranslatableInterface
             self::VOLLEYBALL => $translator->trans('Volleyball', locale: $locale),
             self::CRICKET => $translator->trans('Cricket', locale: $locale),
             self::DANCE => $translator->trans('Dance', locale: $locale),
+            self::BOXING => $translator->trans('Boxing', locale: $locale),
             self::SQUASH => $translator->trans('Squash', locale: $locale),
             self::STAIR_STEPPER => $translator->trans('Stair Stepper', locale: $locale),
             self::TABLE_TENNIS => $translator->trans('Table Tennis', locale: $locale),
@@ -314,7 +310,7 @@ enum SportType: string implements TranslatableInterface
             SportType::CANOEING, SportType::KAYAKING, SportType::KITE_SURF,
             SportType::ROWING, SportType::STAND_UP_PADDLING,
             SportType::SURFING, SportType::POOL_SWIM, SportType::OPEN_WATER_SWIM,
-            SportType::WIND_SURF => ActivityType::WATER_SPORTS,
+            SportType::WIND_SURF, SportType::WAKEBOARDING => ActivityType::WATER_SPORTS,
             // WINTER.
             SportType::BACK_COUNTRY_SKI, SportType::ALPINE_SKI, SportType::NORDIC_SKI,
             SportType::ICE_SKATE, SportType::SNOWBOARD, SportType::SNOWSHOE => ActivityType::WINTER_SPORTS,
@@ -325,7 +321,7 @@ enum SportType: string implements TranslatableInterface
             SportType::SQUASH, SportType::TABLE_TENNIS, SportType::TENNIS, SportType::PADEL => ActivityType::RACQUET_PADDLE_SPORTS,
             // FITNESS.
             SportType::CROSSFIT, SportType::WEIGHT_TRAINING, SportType::WORKOUT, SportType::STAIR_STEPPER,
-            SportType::VIRTUAL_ROW, SportType::HIIT, SportType::ELLIPTICAL, SportType::DANCE => ActivityType::FITNESS,
+            SportType::VIRTUAL_ROW, SportType::HIIT, SportType::ELLIPTICAL, SportType::DANCE, SportType::BOXING => ActivityType::FITNESS,
             // MIND_BODY_SPORTS.
             SportType::PILATES, SportType::YOGA, SportType::PHYSICAL_THERAPY => ActivityType::MIND_BODY_SPORTS,
             // OUTDOOR_SPORTS.
@@ -348,6 +344,30 @@ enum SportType: string implements TranslatableInterface
             self::RUN,
             self::TRAIL_RUN,
             self::VIRTUAL_RUN,
+        ]);
+    }
+
+    public function supportsSplits(): bool
+    {
+        if (in_array($this->getActivityType(), [ActivityType::RUN, ActivityType::WALK])) {
+            return true;
+        }
+
+        return in_array($this, [
+            self::POOL_SWIM,
+            self::OPEN_WATER_SWIM,
+        ]);
+    }
+
+    public function supportsShiftingStats(): bool
+    {
+        return in_array($this, [
+            self::RIDE,
+            self::MOUNTAIN_BIKE_RIDE,
+            self::GRAVEL_RIDE,
+            self::E_BIKE_RIDE,
+            self::E_MOUNTAIN_BIKE_RIDE,
+            self::VELO_MOBILE,
         ]);
     }
 
@@ -375,6 +395,7 @@ enum SportType: string implements TranslatableInterface
             self::BASKETBALL,
             self::VOLLEYBALL,
             self::DANCE,
+            self::BOXING,
             self::PADEL,
             self::PHYSICAL_THERAPY,
         ]);
@@ -403,6 +424,7 @@ enum SportType: string implements TranslatableInterface
             self::BASKETBALL,
             self::VOLLEYBALL,
             self::DANCE,
+            self::BOXING,
             self::PADEL,
             self::PHYSICAL_THERAPY,
         ]);

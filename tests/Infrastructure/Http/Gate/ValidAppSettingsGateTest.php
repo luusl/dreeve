@@ -25,12 +25,10 @@ class ValidAppSettingsGateTest extends ContainerTestCase
             ->expects($this->once())
             ->method('general')
             ->willReturn(GeneralSettings::fromArray([
-                'athlete' => [
-                    'birthday' => '1989-08-14',
-                    'firstName' => 'Robin',
-                    'lastName' => 'Ingelbrecht',
-                    'maxHeartRateFormula' => 'fox',
-                ],
+                'birthday' => '1989-08-14',
+                'firstName' => 'Robin',
+                'lastName' => 'Ingelbrecht',
+                'maxHeartRateFormula' => 'fox',
             ]));
 
         $this->assertFalse(new ValidAppSettingsGate($this->urlGenerator, $this->settingsRepository)->handle(Request::create('/dashboard'))->hasBeenApplied());
@@ -69,7 +67,7 @@ class ValidAppSettingsGateTest extends ContainerTestCase
         yield 'the redirect target itself' => ['/admin/settings/athlete'];
         yield 'the login page' => ['/admin/login'];
         yield 'the logout endpoint' => ['/admin/logout'];
-        yield 'the command endpoint the athlete form posts to' => ['/admin/dispatchCommand'];
+        yield 'the command endpoint the athlete form posts to' => ['/admin/dispatch-command'];
     }
 
     #[DataProvider('provideGuardedAdminPaths')]

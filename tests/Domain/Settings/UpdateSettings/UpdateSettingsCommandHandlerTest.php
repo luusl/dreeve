@@ -14,7 +14,7 @@ use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Tests\ContainerTestCase;
-use App\Tests\Infrastructure\Cache\CacheableStub;
+use App\Tests\Infrastructure\Cache\RenderStub;
 
 class UpdateSettingsCommandHandlerTest extends ContainerTestCase
 {
@@ -27,13 +27,11 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         $data = [
             'profilePictureUrl' => null,
             'appSubTitle' => 'A brand new subtitle',
-            'athlete' => [
-                'birthday' => '1990-01-01',
-                'firstName' => 'Jane',
-                'lastName' => 'Doe',
-                'maxHeartRateFormula' => 'fox',
-                'restingHeartRateFormula' => 'heuristicAgeBased',
-            ],
+            'birthday' => '1990-01-01',
+            'firstName' => 'Jane',
+            'lastName' => 'Doe',
+            'maxHeartRateFormula' => 'fox',
+            'restingHeartRateFormula' => 'heuristicAgeBased',
         ];
 
         $this->commandBus->dispatch(UpdateSettings::fromPayload([
@@ -41,7 +39,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'data' => $data,
         ]));
 
-        $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::GENERAL));
+        $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::GENERAL));
     }
 
     public function testItUpdatesAppearanceSettings(): void
@@ -64,7 +62,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'data' => $data,
         ]));
 
-        $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::APPEARANCE));
+        $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::APPEARANCE));
     }
 
     public function testItUpdatesImportSettings(): void
@@ -76,6 +74,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'skipActivitiesRecordedBefore' => '2023-09-01',
             'activitiesToSkipDuringImport' => ['123'],
             'optInToSegmentDetailImport' => false,
+            'skipImageDownloadDuringImport' => true,
             'webhooks' => [
                 'enabled' => true,
                 'verifyToken' => 'el-token',
@@ -87,13 +86,12 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'data' => $data,
         ]));
 
-        $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::IMPORT));
+        $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::IMPORT));
     }
 
     public function testItUpdatesMetricsSettings(): void
     {
         $data = [
-            'excludeActivitiesFromPeakPowerOutputs' => ['123456'],
             'eddington' => [
                 [
                     'label' => 'Ride',
@@ -108,7 +106,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'data' => $data,
         ]));
 
-        $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::METRICS));
+        $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::METRICS));
     }
 
     public function testItUpdatesIntegrationsSettings(): void
@@ -138,29 +136,30 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'data' => $data,
         ]));
 
-        $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::INTEGRATIONS));
+        $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::INTEGRATIONS));
     }
 
     public function testItOnlyInvalidatesRendersOfTheGroupThatWasSaved(): void
     {
-        $cacheable = CacheableStub::for(Cacheability::for('stub', CacheTags::empty()));
-        $this->cacheableRenderer->render($cacheable);
+        $cacheability = Cacheability::for('stub', CacheTags::empty());
+        $render = new RenderStub();
+        $this->cacheableRenderer->render($cacheability, $render(...));
 
         $this->commandBus->dispatch(UpdateSettings::fromPayload([
             'group' => SettingsGroup::ZWIFT->value,
             'data' => ['level' => 100, 'racingScore' => 511],
         ]));
 
-        $this->cacheableRenderer->render($cacheable);
-        $this->assertEquals(1, $cacheable->renderCount);
+        $this->cacheableRenderer->render($cacheability, $render(...));
+        $this->assertEquals(1, $render->renderCount);
 
         $this->commandBus->dispatch(UpdateSettings::fromPayload([
             'group' => SettingsGroup::APPEARANCE->value,
             'data' => ['unitSystem' => 'imperial', 'locale' => 'nl_BE'],
         ]));
 
-        $this->cacheableRenderer->render($cacheable);
-        $this->assertEquals(2, $cacheable->renderCount);
+        $this->cacheableRenderer->render($cacheability, $render(...));
+        $this->assertEquals(2, $render->renderCount);
     }
 
     public function testItRejectsInvalidIntegrationsSettings(): void
@@ -193,7 +192,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'data' => $data,
         ]));
 
-        $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::ZWIFT));
+        $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::ZWIFT));
     }
 
     public function testItUpdatesDaemonSettings(): void
@@ -211,7 +210,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'data' => $data,
         ]));
 
-        $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::DAEMON));
+        $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::DAEMON));
     }
 
     public function testItUpdatesSecuritySettings(): void
@@ -223,7 +222,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
             'data' => $data,
         ]));
 
-        $this->assertSame($data, $this->settingsRepository->find(SettingsGroup::SECURITY));
+        $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::SECURITY));
     }
 
     public function testItRejectsInvalidDaemonSettings(): void

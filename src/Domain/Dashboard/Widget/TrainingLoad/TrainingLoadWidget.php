@@ -11,13 +11,13 @@ use App\Domain\Dashboard\Widget\DependsOnCurrentDay;
 use App\Domain\Dashboard\Widget\TrainingLoad\FindNumberOfRestDays\FindNumberOfRestDays;
 use App\Domain\Dashboard\Widget\Widget;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
+use App\Domain\Dashboard\Widget\WidgetRenderer;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
 use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 final readonly class TrainingLoadWidget implements Widget, DependsOnCurrentDay
 {
@@ -25,7 +25,7 @@ final readonly class TrainingLoadWidget implements Widget, DependsOnCurrentDay
         private ActivityHeartRateRepository $activityHeartRateRepository,
         private DailyTrainingLoad $dailyTrainingLoad,
         private QueryBus $queryBus,
-        private Environment $twig,
+        private WidgetRenderer $widgetRenderer,
         private TranslatorInterface $translator,
     ) {
     }
@@ -39,6 +39,11 @@ final readonly class TrainingLoadWidget implements Widget, DependsOnCurrentDay
         return $this->translator->trans('Training Load Analysis');
     }
 
+    public function getAdminLabel(): string
+    {
+        return $this->getLabel();
+    }
+
     public function getTemplateName(): string
     {
         return 'widget--training-load';
@@ -46,7 +51,7 @@ final readonly class TrainingLoadWidget implements Widget, DependsOnCurrentDay
 
     public function getCacheTags(): CacheTags
     {
-        return CacheTags::of(RootCacheTag::ACTIVITIES);
+        return CacheTags::of(RootCacheTag::ACTIVITIES, RootCacheTag::SETTINGS_GENERAL);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -61,7 +66,7 @@ final readonly class TrainingLoadWidget implements Widget, DependsOnCurrentDay
         );
 
         $intensities = $this->dailyTrainingLoad->calculateForDateRange(DateRange::fromDates(
-            from: $now->modify('- '.(TrainingLoadChart::NUMBER_OF_DAYS_TO_DISPLAY + 210).' days'),
+            from: $now->modify('- '.(TrainingLoadChart::NUMBER_OF_DAYS_TO_DISPLAY + TrainingLoadChart::EMA_WARMUP_DAYS).' days'),
             till: $now,
         ));
 
@@ -72,7 +77,7 @@ final readonly class TrainingLoadWidget implements Widget, DependsOnCurrentDay
             till: $now,
         )))->getNumberOfRestDays();
 
-        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+        return $this->widgetRenderer->render($this, $configuration, [
             'polarisedTraining' => $polarisedTraining,
             'trainingMetrics' => $trainingMetrics,
             'restDaysInLast7Days' => $numberOfRestDays,

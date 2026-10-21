@@ -72,6 +72,38 @@ class CollectionTest extends TestCase
         );
     }
 
+    public function testWithout(): void
+    {
+        $collection = ATestCollection::fromArray([
+            Name::fromString(10),
+            Name::fromString(20),
+        ]);
+
+        $this->assertEquals(
+            ATestCollection::fromArray([Name::fromString(20)]),
+            $collection->without(Name::fromString(10))
+        );
+        $this->assertEquals(
+            $collection,
+            $collection->without(Name::fromString(30))
+        );
+        $this->assertCount(2, $collection);
+    }
+
+    public function testSumItShouldCountNullAsZero(): void
+    {
+        $collection = ATestCollection::fromArray([
+            Name::fromString(10),
+            Name::fromString(20),
+            Name::fromString(30),
+        ]);
+
+        $this->assertEquals(
+            40,
+            $collection->sum(fn (Name $name): ?int => '20' === (string) $name ? null : (int) (string) $name)
+        );
+    }
+
     public function testReplaceItShouldThrow(): void
     {
         $this->expectExceptionObject(new \InvalidArgumentException('Could not replace item, item not found in collection'));

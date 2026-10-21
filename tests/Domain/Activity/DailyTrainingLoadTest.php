@@ -49,13 +49,11 @@ class DailyTrainingLoadTest extends ContainerTestCase
     public function testCalculateWhenFtpNotFound(): void
     {
         // Remove the FTP history so the power-based calculation falls back to heart rate.
-        $this->getContainer()->get(SettingsRepository::class)->save(SettingsGroup::GENERAL, [
-            'athlete' => [
-                'birthday' => '1989-08-14',
-                'firstName' => 'Robin',
-                'lastName' => 'Ingelbrecht',
-                'maxHeartRateFormula' => 'fox',
-            ],
+        $this->getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::GENERAL, [
+            'birthday' => '1989-08-14',
+            'firstName' => 'Robin',
+            'lastName' => 'Ingelbrecht',
+            'maxHeartRateFormula' => 'fox',
         ]);
 
         $activity = ActivityBuilder::fromDefaults()

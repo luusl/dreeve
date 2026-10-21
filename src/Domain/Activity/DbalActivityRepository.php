@@ -49,13 +49,17 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
         return Activities::fromArray(array_map(ActivityHydrator::hydrate(...), $results));
     }
 
-    public function findMostRecent(int $limit, ?SportTypes $restrictToSportTypes = null): Activities
+    public function findMostRecent(int $limit, ?SportTypes $restrictToSportTypes = null, bool $onlyActivitiesWithARoute = false): Activities
     {
         $queryBuilder = $this->connection->createQueryBuilder();
         $queryBuilder->select(ActivityHydrator::columns())
             ->from('Activity')
             ->orderBy('startDateTime', 'DESC')
             ->setMaxResults($limit);
+
+        if ($onlyActivitiesWithARoute) {
+            $queryBuilder->andWhere("polyline IS NOT NULL AND polyline != ''");
+        }
 
         if ($restrictToSportTypes instanceof SportTypes && !$restrictToSportTypes->isEmpty()) {
             $queryBuilder->andWhere('sportType IN (:sportTypes)')
@@ -136,13 +140,13 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             elevation, startingCoordinateLatitude, startingCoordinateLongitude, calories, kilojoules,
             averagePower, maxPower, averageSpeed, maxSpeed, averageHeartRate, maxHeartRate,
             averageCadence,movingTimeInSeconds, elapsedTimeInSeconds, deviceName, connectedSensors, totalImageCount, localImagePaths,
-            polyline, routeGeography, weather, gearId, data, isCommute, streamsAreImported, workoutType
+            polyline, routeGeography, weather, gearId, data, isCommute, isGroupActivity, workoutType, excludedFrom
         ) VALUES(
             :activityId, :startDateTime, :sportType, :activityType, :worldType, :importSource, :externalReferenceId, :name, :description, :distance,
             :elevation, :startingCoordinateLatitude, :startingCoordinateLongitude, :calories, :kilojoules,
             :averagePower, :maxPower, :averageSpeed, :maxSpeed, :averageHeartRate, :maxHeartRate,
             :averageCadence, :movingTimeInSeconds, :elapsedTimeInSeconds, :deviceName, :connectedSensors, :totalImageCount, :localImagePaths,
-            :polyline, :routeGeography, :weather, :gearId, :data, :isCommute, :streamsAreImported, :workoutType
+            :polyline, :routeGeography, :weather, :gearId, :data, :isCommute, :isGroupActivity, :workoutType, :excludedFrom
         )';
 
         $activity = $activityWithRawData->getActivity();
@@ -181,8 +185,9 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'gearId' => $activity->getGearId(),
             'data' => Json::encode($this->cleanData($activityWithRawData->getRawData())),
             'isCommute' => (int) $activity->isCommute(),
-            'streamsAreImported' => 0,
+            'isGroupActivity' => (int) $activity->isGroupActivity(),
             'workoutType' => $activity->getWorkoutType()?->value,
+            'excludedFrom' => $activity->getExcludedFrom()->isEmpty() ? null : Json::encode($activity->getExcludedFrom()),
         ]);
 
         $this->eventBus->publishEvents($activity->getRecordedEvents());
@@ -201,20 +206,26 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
                     distance = :distance,
                     averageSpeed = :averageSpeed,
                     maxSpeed = :maxSpeed,
+                    averageHeartRate = :averageHeartRate,
+                    maxHeartRate = :maxHeartRate,
                     movingTimeInSeconds = :movingTimeInSeconds,
                     elapsedTimeInSeconds = :elapsedTimeInSeconds,
                     elevation = :elevation,
                     calories = :calories,
+                    kilojoules = :kilojoules,
                     polyline = :polyline,
                     startingCoordinateLatitude = :startingCoordinateLatitude,
                     startingCoordinateLongitude = :startingCoordinateLongitude,
                     routeGeography = :routeGeography,
-                    gearId = :gearId, 
+                    weather = :weather,
+                    gearId = :gearId,
                     totalImageCount = :totalImageCount,
                     localImagePaths = :localImagePaths,
                     data = :data,
                     isCommute = :isCommute,
-                    workoutType = :workoutType    
+                    isGroupActivity = :isGroupActivity,
+                    workoutType = :workoutType,
+                    excludedFrom = :excludedFrom
                     WHERE activityId = :activityId';
 
         $activity = $activityWithRawData->getActivity();
@@ -230,19 +241,25 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'distance' => $activity->getDistance()->toMeter()->toInt(),
             'elevation' => $activity->getElevation()->toInt(),
             'calories' => $activity->getCalories(),
+            'kilojoules' => $activity->getKilojoules(),
             'averageSpeed' => $activity->getAverageSpeed()->toFloat(),
             'maxSpeed' => $activity->getMaxSpeed()->toFloat(),
+            'averageHeartRate' => $activity->getAverageHeartRate(),
+            'maxHeartRate' => $activity->getMaxHeartRate(),
             'movingTimeInSeconds' => $activity->getMovingTimeInSeconds(),
             'elapsedTimeInSeconds' => $activity->getElapsedTimeInSeconds(),
             'polyline' => $activity->getEncodedPolyline(),
             'startingCoordinateLatitude' => $activity->getStartingCoordinate()?->getLatitude()->toFloat(),
             'startingCoordinateLongitude' => $activity->getStartingCoordinate()?->getLongitude()->toFloat(),
             'routeGeography' => Json::encode($activity->getRouteGeography()),
+            'weather' => $activity->getWeather() instanceof Weather ? Json::encode($activity->getWeather()) : null,
             'gearId' => $activity->getGearId(),
             'totalImageCount' => $activity->getTotalImageCount(),
             'localImagePaths' => implode(',', $activity->getLocalImagePaths()),
             'isCommute' => (int) $activity->isCommute(),
+            'isGroupActivity' => (int) $activity->isGroupActivity(),
             'workoutType' => $activity->getWorkoutType()?->value,
+            'excludedFrom' => $activity->getExcludedFrom()->isEmpty() ? null : Json::encode($activity->getExcludedFrom()),
             'data' => Json::encode($this->cleanData($activityWithRawData->getRawData())),
         ]);
 
@@ -273,27 +290,6 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
                 activityId: $activityId,
                 startDate: SerializableDateTime::fromString((string) $startDateTime)
             ),
-        ]);
-    }
-
-    public function activityNeedsStreamImport(ActivityId $activityId): bool
-    {
-        $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('activityId')
-            ->from('Activity')
-            ->andWhere('streamsAreImported = 0 OR streamsAreImported IS NULL')
-            ->andWhere('activityId = :activityId')
-            ->setParameter('activityId', $activityId);
-
-        return !empty($queryBuilder->fetchOne());
-    }
-
-    public function markActivityStreamsAsImported(ActivityId $activityId): void
-    {
-        $sql = 'UPDATE Activity SET streamsAreImported = 1 WHERE activityId = :activityId';
-
-        $this->connection->executeStatement($sql, [
-            'activityId' => $activityId,
         ]);
     }
 

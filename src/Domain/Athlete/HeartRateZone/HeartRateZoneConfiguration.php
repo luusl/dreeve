@@ -21,9 +21,9 @@ final class HeartRateZoneConfiguration
     ) {
     }
 
-    public function getDefaultHearRateZones(?SportType $sportType): HeartRateZones
+    public function getDefaultHeartRateZones(?SportType $sportType): HeartRateZones
     {
-        if ($sportType && array_key_exists($sportType->value, $this->hearRateZones)) {
+        if ($sportType instanceof SportType && array_key_exists($sportType->value, $this->hearRateZones)) {
             return $this->hearRateZones[$sportType->value][self::DEFAULT_KEY];
         }
 
@@ -78,7 +78,7 @@ final class HeartRateZoneConfiguration
         if ($on instanceof SerializableDateTime) {
             $on = SerializableDateTime::fromString($on->format('Y-m-d'));
         }
-        if ($sportType && $on) {
+        if ($sportType instanceof SportType && $on instanceof SerializableDateTime) {
             $this->hearRateZones[$sportType->value][self::DATE_RANGES_KEY][$on->getTimestamp()] = $heartRateZones;
             // Make sure dates are sorted from new => old
             krsort($this->hearRateZones[$sportType->value][self::DATE_RANGES_KEY]);
@@ -336,10 +336,7 @@ final class HeartRateZoneConfiguration
                 throw new InvalidHeartZoneConfiguration(sprintf('%s "to" value cannot be higher than 99, got %s', $key, $zoneTo));
             }
 
-            // First zone sets the baseline
-            if (null === $expectedFrom) {
-                $expectedFrom = $zoneFrom;
-            }
+            $expectedFrom ??= $zoneFrom;
 
             // Validate the 'from' matches expected
             if ($zoneFrom !== $expectedFrom) {

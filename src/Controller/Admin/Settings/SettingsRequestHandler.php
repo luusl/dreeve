@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Controller\Admin\Settings;
 
 use App\Application\AppUrl;
-use App\Domain\Api\Token;
 use App\Domain\Athlete\HeartRateZone\HeartRateZoneConfiguration;
 use App\Domain\Import\ImportMode;
 use App\Domain\Integration\AI\AIApiKey;
-use App\Domain\Settings\KeyValueBasedSettingsRepository;
+use App\Domain\Settings\DbalSettingsRepository;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
 use App\Domain\Settings\UpdateAthleteSettings\UpdateAthleteSettings;
@@ -21,6 +20,7 @@ use App\Infrastructure\Config\AdminAllowedIpAddresses;
 use App\Infrastructure\Http\ClientIpResolver;
 use App\Infrastructure\Http\HtmlResponse;
 use App\Infrastructure\Security\AdminUserName;
+use App\Infrastructure\Security\Api\Token;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,7 +35,7 @@ final readonly class SettingsRequestHandler
 {
     public function __construct(
         private Environment $twig,
-        #[Autowire(service: KeyValueBasedSettingsRepository::class)]
+        #[Autowire(service: DbalSettingsRepository::class)]
         private SettingsRepository $settingsRepository,
         private AppUrl $appUrl,
         #[\SensitiveParameter]
@@ -68,7 +68,7 @@ final readonly class SettingsRequestHandler
             'html/admin/page/settings/athlete.html.twig',
             [
                 'dispatchCommand' => UpdateAthleteSettings::getCommandName(),
-                'settings' => $this->settingsRepository->find(SettingsGroup::GENERAL),
+                'settings' => $this->settingsRepository->findGroup(SettingsGroup::GENERAL),
             ],
         ));
     }
@@ -76,7 +76,7 @@ final readonly class SettingsRequestHandler
     #[Route(path: '/admin/settings/{group}', name: 'admin_settings', methods: ['GET'], priority: 5)]
     public function handle(string $group, Request $request): HtmlResponse
     {
-        $settingsGroup = SettingsGroup::tryFrom($group)
+        $settingsGroup = SettingsGroup::fromSlug($group)
             ?? throw new NotFoundHttpException(sprintf('Unknown settings group "%s"', $group));
 
         if (SettingsGroup::IMPORT === $settingsGroup && !$this->importMode->isStravaApi()) {
@@ -84,11 +84,11 @@ final readonly class SettingsRequestHandler
         }
 
         return new HtmlResponse($this->twig->render(
-            sprintf('html/admin/page/settings/%s.html.twig', $settingsGroup->value),
+            sprintf('html/admin/page/settings/%s.html.twig', $settingsGroup->getSlug()),
             [
                 'dispatchCommand' => UpdateSettings::getCommandName(),
                 'group' => $settingsGroup,
-                'settings' => $this->settingsRepository->find($settingsGroup),
+                'settings' => $this->settingsRepository->findGroup($settingsGroup),
                 'appUrl' => $this->appUrl,
                 'stravaClientId' => $this->stravaClientId,
                 'stravaClientSecret' => $this->stravaClientSecret,

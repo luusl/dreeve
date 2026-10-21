@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Domain\Activity;
 
 use App\Domain\Activity\Activity;
+use App\Domain\Activity\ActivityExclusion;
+use App\Domain\Activity\ActivityExclusions;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityName;
 use App\Domain\Activity\ImportSource;
@@ -30,11 +32,12 @@ final class ActivityBuilder
     private ImportSource $importSource = ImportSource::STRAVA_API;
     private ExternalReferenceId $externalReferenceId;
     private ActivityName $name;
-    private readonly string $description;
+    private string $description;
     private Kilometer $distance;
     private Meter $elevation;
     private ?Coordinate $startingCoordinate = null;
     private ?int $calories;
+    private ?int $kilojoules = null;
     private ?int $averagePower = null;
     private ?int $maxPower;
     private KmPerHour $averageSpeed;
@@ -54,7 +57,9 @@ final class ActivityBuilder
     private readonly ?string $weather;
     private ?GearId $gearId = null;
     private bool $isCommute;
+    private bool $isGroupActivity;
     private ?WorkoutType $workoutType;
+    private ActivityExclusions $excludedFrom;
 
     private function __construct()
     {
@@ -73,7 +78,9 @@ final class ActivityBuilder
         $this->weather = null;
         $this->routeGeography = RouteGeography::create([]);
         $this->isCommute = false;
+        $this->isGroupActivity = false;
         $this->workoutType = null;
+        $this->excludedFrom = ActivityExclusions::empty();
         $this->externalReferenceId = ExternalReferenceId::fromString('1234567');
     }
 
@@ -97,7 +104,7 @@ final class ActivityBuilder
             elevation: $this->elevation,
             startingCoordinate: $this->startingCoordinate,
             calories: $this->calories,
-            kilojoules: null,
+            kilojoules: $this->kilojoules,
             averagePower: $this->averagePower,
             maxPower: $this->maxPower,
             averageSpeed: $this->averageSpeed,
@@ -116,6 +123,7 @@ final class ActivityBuilder
             weather: $this->weather,
             gearId: $this->gearId,
             isCommute: $this->isCommute,
+            isGroupActivity: $this->isGroupActivity,
             workoutType: $this->workoutType,
         );
     }
@@ -135,7 +143,7 @@ final class ActivityBuilder
             elevation: $this->elevation,
             startingCoordinate: $this->startingCoordinate,
             calories: $this->calories,
-            kilojoules: null,
+            kilojoules: $this->kilojoules,
             averagePower: $this->averagePower,
             maxPower: $this->maxPower,
             averageSpeed: $this->averageSpeed,
@@ -154,7 +162,9 @@ final class ActivityBuilder
             weather: $this->weather,
             gearId: $this->gearId,
             isCommute: $this->isCommute,
+            isGroupActivity: $this->isGroupActivity,
             workoutType: $this->workoutType,
+            excludedFrom: $this->excludedFrom,
         );
     }
 
@@ -172,6 +182,13 @@ final class ActivityBuilder
         return $this;
     }
 
+    public function withDescription(string $description): self
+    {
+        $this->description = $description;
+
+        return $this;
+    }
+
     public function withStartDateTime(SerializableDateTime $startDateTime): self
     {
         $this->startDateTime = $startDateTime;
@@ -182,6 +199,13 @@ final class ActivityBuilder
     public function withAveragePower(int $averagePower): self
     {
         $this->averagePower = $averagePower;
+
+        return $this;
+    }
+
+    public function withKilojoules(?int $kilojoules): self
+    {
+        $this->kilojoules = $kilojoules;
 
         return $this;
     }
@@ -273,6 +297,13 @@ final class ActivityBuilder
     public function withIsCommute(bool $isCommute): self
     {
         $this->isCommute = $isCommute;
+
+        return $this;
+    }
+
+    public function withIsGroupActivity(bool $isGroupActivity): self
+    {
+        $this->isGroupActivity = $isGroupActivity;
 
         return $this;
     }
@@ -378,6 +409,13 @@ final class ActivityBuilder
     public function withWorkoutType(WorkoutType $workoutType): self
     {
         $this->workoutType = $workoutType;
+
+        return $this;
+    }
+
+    public function withExcludedFrom(ActivityExclusion ...$exclusions): self
+    {
+        $this->excludedFrom = ActivityExclusions::fromArray($exclusions);
 
         return $this;
     }
