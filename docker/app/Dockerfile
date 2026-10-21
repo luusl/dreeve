@@ -69,9 +69,9 @@ ARG SHOUTRRR_VERSION="0.20.0"
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
       curl -fL -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_arm64v8_${SHOUTRRR_VERSION}.tar.gz"; \
     elif [ "${TARGETARCH}" = "amd64" ]; then \
-      curl -L -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_amd64_${SHOUTRRR_VERSION}.tar.gz"; \
+      curl -fL -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_amd64_${SHOUTRRR_VERSION}.tar.gz"; \
     elif [ "${TARGETARCH}" = "arm" ]; then \
-      curl -L -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_armhf_${SHOUTRRR_VERSION}.tar.gz"; \
+      curl -fL -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_armhf_${SHOUTRRR_VERSION}.tar.gz"; \
     else \
       echo "Error: Unsupported TARGETARCH '${TARGETARCH}'" >&2 && exit 1; \
     fi
