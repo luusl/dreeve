@@ -4,31 +4,51 @@ declare(strict_types=1);
 
 namespace App\Domain\Dashboard\Widget;
 
+use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityType;
-use App\Domain\Activity\EnrichedActivities;
+use App\Domain\Activity\ActivityTypeRepository;
+use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\InvalidDashboardLayout;
 use App\Domain\Dashboard\StatsContext;
 use App\Domain\Dashboard\Widget\YearlyStats\FindYearlyStats\FindYearlyStats;
 use App\Domain\Dashboard\Widget\YearlyStats\FindYearlyStatsPerDay\FindYearlyStatsPerDay;
 use App\Domain\Dashboard\Widget\YearlyStats\YearlyStatistics;
 use App\Domain\Dashboard\Widget\YearlyStats\YearlyStatisticsChart;
+use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
 use App\Infrastructure\Serialization\Json;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Infrastructure\ValueObject\Time\Years;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
-final readonly class YearlyStatsWidget implements Widget
+final readonly class YearlyStatsWidget implements Widget, DependsOnCurrentDay
 {
     public function __construct(
-        private EnrichedActivities $enrichedActivities,
+        private ActivityRepository $activityRepository,
+        private ActivityTypeRepository $activityTypeRepository,
         private QueryBus $queryBus,
-        private UnitSystem $unitSystem,
+        private SettingsRepository $settingsRepository,
         private Environment $twig,
         private TranslatorInterface $translator,
     ) {
+    }
+
+    public function getLabel(): string
+    {
+        return $this->translator->trans('Yearly stats');
+    }
+
+    public function getTemplateName(): string
+    {
+        return 'widget--yearly-stats';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -52,7 +72,7 @@ final readonly class YearlyStatsWidget implements Widget
         if (!is_array($configuration->get('metricsDisplayOrder'))) {
             throw new InvalidDashboardLayout('Configuration item "metricsDisplayOrder" must be an array.');
         }
-        if (3 !== count($configuration->get('metricsDisplayOrder'))) {
+        if (3 !== count(array_unique($configuration->get('metricsDisplayOrder')))) {
             throw new InvalidDashboardLayout('Configuration item "metricsDisplayOrder" must contain all 3 metrics.');
         }
         foreach ($configuration->get('metricsDisplayOrder') as $metricDisplayOrder) {
@@ -62,12 +82,12 @@ final readonly class YearlyStatsWidget implements Widget
         }
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): string
     {
         $yearlyStatChartsPerContext = [];
         $yearlyStatistics = [];
-        $allActivities = $this->enrichedActivities->findAll();
-        $activitiesPerActivityType = $this->enrichedActivities->findGroupedByActivityType();
+        $allActivities = $this->activityRepository->findAll();
+        $activitiesPerActivityType = $allActivities->groupByActivityType($this->activityTypeRepository->findAll());
 
         $allYears = Years::create(
             startDate: $allActivities->getFirstActivityStartDate(),
@@ -97,7 +117,7 @@ final readonly class YearlyStatsWidget implements Widget
                         uniqueYears: $activitiesPerActivityType[$activityType->value]->getUniqueYears(),
                         activityType: $activityType,
                         context: $yearlyStatsContext,
-                        unitSystem: $this->unitSystem,
+                        unitSystem: $this->settingsRepository->appearance()->getUnitSystem(),
                         translator: $this->translator,
                         now: $now,
                         enableLastXYearsByDefault: $enableLastXYearsByDefault
@@ -114,7 +134,8 @@ final readonly class YearlyStatsWidget implements Widget
         /** @var string[] $metricsDisplayOrder */
         $metricsDisplayOrder = $configuration->get('metricsDisplayOrder');
 
-        return $this->twig->load('html/dashboard/widget/widget--yearly-stats.html.twig')->render([
+        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+            'uniqueId' => $dashboardWidgetId->toHtmlIdSuffix(),
             'yearlyStatsChartsPerContext' => $yearlyStatChartsPerContext,
             'yearlyStatistics' => $yearlyStatistics,
             'metricsDisplayOrder' => array_map(

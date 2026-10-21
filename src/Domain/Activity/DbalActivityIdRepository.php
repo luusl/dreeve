@@ -39,6 +39,33 @@ final readonly class DbalActivityIdRepository implements ActivityIdRepository
         ));
     }
 
+    public function findAllImportedFromStravaApi(): ActivityIds
+    {
+        $queryBuilder = $this->connection->createQueryBuilder();
+        $queryBuilder->select('activityId')
+            ->from('Activity')
+            ->andWhere('importSource = :importSource')
+            ->setParameter('importSource', ImportSource::STRAVA_API->value)
+            ->orderBy('startDateTime', 'DESC');
+
+        return ActivityIds::fromArray(array_map(
+            ActivityId::fromString(...),
+            $queryBuilder->executeQuery()->fetchFirstColumn()
+        ));
+    }
+
+    public function hasImportedFromStravaApi(): bool
+    {
+        $queryBuilder = $this->connection->createQueryBuilder();
+        $queryBuilder->select('1')
+            ->from('Activity')
+            ->andWhere('importSource = :importSource')
+            ->setParameter('importSource', ImportSource::STRAVA_API->value)
+            ->setMaxResults(1);
+
+        return (bool) $queryBuilder->executeQuery()->fetchOne();
+    }
+
     public function findAllWithoutStravaGear(): ActivityIds
     {
         $queryBuilder = $this->connection->createQueryBuilder();
@@ -74,7 +101,9 @@ final readonly class DbalActivityIdRepository implements ActivityIdRepository
         $queryBuilder = $this->connection->createQueryBuilder();
         $queryBuilder->select('activityId')
             ->from('Activity')
-            ->where('markedForDeletion = 1');
+            ->where('markedForDeletion = 1')
+            ->orderBy('startDateTime', 'DESC')
+            ->addOrderBy('activityId', 'ASC');
 
         return ActivityIds::fromArray(array_map(
             ActivityId::fromString(...),

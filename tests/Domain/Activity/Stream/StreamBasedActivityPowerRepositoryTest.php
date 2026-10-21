@@ -4,70 +4,174 @@ namespace App\Tests\Domain\Activity\Stream;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
+use App\Domain\Activity\ActivityType;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\SportType\SportTypes;
+use App\Domain\Activity\Stream\ActivityPowerRepository;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetric;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricRepository;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricType;
-use App\Domain\Activity\Stream\StreamBasedActivityPowerRepository;
+use App\Domain\Activity\Stream\PowerOutput;
 use App\Domain\Activity\Stream\StreamType;
-use App\Infrastructure\Exception\EntityNotFound;
-use App\Infrastructure\Serialization\Json;
+use App\Domain\Settings\DbalSettingsRepository;
+use App\Domain\Settings\SettingsGroup;
+use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 
 class StreamBasedActivityPowerRepositoryTest extends ContainerTestCase
 {
-    private StreamBasedActivityPowerRepository $streamBasedActivityPowerRepository;
-    private ActivityRepository $activityRepository;
+    private ActivityPowerRepository $activityPowerRepository;
 
-    public function testFindBestWhenAthleteWeightNotFound(): void
+    public function testFindBestForSportTypesForAnActivityPredatingTheAthleteWeightHistory(): void
     {
-        $activityOne = ActivityBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1))
-            ->withStartDateTime(SerializableDateTime::fromString('2015-10-10 14:00:34'))
-            ->build();
-        $this->activityRepository->add(ActivityWithRawData::fromState(
-            $activityOne,
-            ['raw' => 'data']
-        ));
+        $this->addRideWithBestAverages(
+            activityId: ActivityId::fromUnprefixed('1'),
+            startDate: SerializableDateTime::fromString('2019-01-01 10:00:00'),
+            bestAverages: [5 => 900, 60 => 500, 3600 => 250],
+        );
 
-        $this->getContainer()->get(ActivityStreamMetricRepository::class)->add(ActivityStreamMetric::create(
-            activityId: $activityOne->getId(),
-            streamType: StreamType::WATTS,
-            metricType: ActivityStreamMetricType::BEST_AVERAGES,
-            data: Json::decode('{"1":540,"5":493,"10":460,"15":442,"30":412,"45":373,"60":352,"120":293,"180":273,"240":282,"300":273,"390":262,"480":256,"720":246,"960":239,"1200":239,"1800":225,"2400":222,"3000":222,"3600":218}'),
-        ));
+        $powerOutputs = $this->activityPowerRepository->findBestForSportTypes(
+            SportTypes::thatSupportPeakPowerOutputs(ActivityType::RIDE)
+        );
 
-        $this->expectException(EntityNotFound::class);
-        $this->streamBasedActivityPowerRepository->findBest($activityOne->getId());
+        $this->assertEquals(
+            [5, 60, 3600],
+            $powerOutputs->map(fn (PowerOutput $powerOutput): int => $powerOutput->getTimeIntervalInSeconds()),
+        );
+        $this->assertEquals(
+            [900, 500, 250],
+            $powerOutputs->map(fn (PowerOutput $powerOutput): int => $powerOutput->getPower()),
+        );
+        $this->assertEquals(
+            [null, null, null],
+            $powerOutputs->map(fn (PowerOutput $powerOutput): ?float => $powerOutput->getRelativePower()),
+        );
     }
 
-    public function testFindBestForSportTypesWhenAthleteWeightNotFound(): void
+    public function testFindBestForSportTypesMixesActivitiesWithAndWithoutAKnownWeight(): void
     {
-        $activityOne = ActivityBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1))
-            ->withStartDateTime(SerializableDateTime::fromString('2015-10-10 14:00:34'))
-            ->withSportType(SportType::RIDE)
-            ->build();
-        $this->activityRepository->add(ActivityWithRawData::fromState(
-            $activityOne,
-            ['raw' => 'data']
-        ));
+        $this->addRideWithBestAverages(
+            activityId: ActivityId::fromUnprefixed('1'),
+            startDate: SerializableDateTime::fromString('2019-01-01 10:00:00'),
+            bestAverages: [5 => 900, 60 => 500, 3600 => 100],
+        );
+        $this->addRideWithBestAverages(
+            activityId: ActivityId::fromUnprefixed('2'),
+            startDate: SerializableDateTime::fromString('2020-06-01 10:00:00'),
+            bestAverages: [5 => 400, 60 => 300, 3600 => 272],
+        );
 
+        $powerOutputs = $this->activityPowerRepository->findBestForSportTypes(
+            SportTypes::thatSupportPeakPowerOutputs(ActivityType::RIDE)
+        );
+
+        $this->assertEquals(
+            [5, 60, 3600],
+            $powerOutputs->map(fn (PowerOutput $powerOutput): int => $powerOutput->getTimeIntervalInSeconds()),
+        );
+        $this->assertEquals(
+            [900, 500, 272],
+            $powerOutputs->map(fn (PowerOutput $powerOutput): int => $powerOutput->getPower()),
+        );
+        $this->assertEquals(
+            [null, null, 4.0],
+            $powerOutputs->map(fn (PowerOutput $powerOutput): ?float => $powerOutput->getRelativePower()),
+        );
+    }
+
+    public function testFindBestForSportTypesIgnoresOtherActivityTypes(): void
+    {
+        $this->addRideWithBestAverages(
+            activityId: ActivityId::fromUnprefixed('1'),
+            startDate: SerializableDateTime::fromString('2020-06-01 10:00:00'),
+            bestAverages: [5 => 400],
+            sportType: SportType::RUN,
+        );
+
+        $this->assertTrue($this->activityPowerRepository->findBestForSportTypes(
+            SportTypes::thatSupportPeakPowerOutputs(ActivityType::RIDE)
+        )->isEmpty());
+    }
+
+    public function testFindBestForSportTypesInDateRange(): void
+    {
+        $this->addRideWithBestAverages(
+            activityId: ActivityId::fromUnprefixed('1'),
+            startDate: SerializableDateTime::fromString('2020-06-01 10:00:00'),
+            bestAverages: [5 => 900],
+        );
+        $this->addRideWithBestAverages(
+            activityId: ActivityId::fromUnprefixed('2'),
+            startDate: SerializableDateTime::fromString('2021-06-01 10:00:00'),
+            bestAverages: [5 => 400],
+        );
+
+        $powerOutputs = $this->activityPowerRepository->findBestForSportTypesInDateRange(
+            sportTypes: SportTypes::thatSupportPeakPowerOutputs(ActivityType::RIDE),
+            dateRange: DateRange::fromDates(
+                from: SerializableDateTime::fromString('2021-01-01 00:00:00'),
+                till: SerializableDateTime::fromString('2021-12-31 00:00:00'),
+            ),
+        );
+
+        $this->assertEquals(
+            [400],
+            $powerOutputs->map(fn (PowerOutput $powerOutput): int => $powerOutput->getPower()),
+        );
+    }
+
+    public function testFindBestForSportTypesSkipsExcludedActivities(): void
+    {
+        $this->addRideWithBestAverages(
+            activityId: ActivityId::fromUnprefixed('1'),
+            startDate: SerializableDateTime::fromString('2020-06-01 10:00:00'),
+            bestAverages: [5 => 900],
+        );
+        $this->addRideWithBestAverages(
+            activityId: ActivityId::fromUnprefixed('2'),
+            startDate: SerializableDateTime::fromString('2020-06-02 10:00:00'),
+            bestAverages: [5 => 400],
+        );
+        $this->getContainer()->get(DbalSettingsRepository::class)->saveGroup(SettingsGroup::METRICS, [
+            'excludeActivitiesFromPeakPowerOutputs' => ['1'],
+        ]);
+
+        $powerOutputs = $this->activityPowerRepository->findBestForSportTypes(
+            SportTypes::thatSupportPeakPowerOutputs(ActivityType::RIDE)
+        );
+
+        $this->assertEquals(
+            [400],
+            $powerOutputs->map(fn (PowerOutput $powerOutput): int => $powerOutput->getPower()),
+        );
+    }
+
+    /**
+     * @param array<int, int> $bestAverages
+     */
+    private function addRideWithBestAverages(
+        ActivityId $activityId,
+        SerializableDateTime $startDate,
+        array $bestAverages,
+        SportType $sportType = SportType::RIDE,
+    ): void {
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withSportType($sportType)
+                ->withStartDateTime($startDate)
+                ->build(),
+            [],
+        ));
         $this->getContainer()->get(ActivityStreamMetricRepository::class)->add(ActivityStreamMetric::create(
-            activityId: $activityOne->getId(),
+            activityId: $activityId,
             streamType: StreamType::WATTS,
             metricType: ActivityStreamMetricType::BEST_AVERAGES,
-            data: Json::decode('{"1":540,"5":493,"10":460,"15":442,"30":412,"45":373,"60":352,"120":293,"180":273,"240":282,"300":273,"390":262,"480":256,"720":246,"960":239,"1200":239,"1800":225,"2400":222,"3000":222,"3600":218}'),
+            data: $bestAverages,
         ));
-
-        $this->expectException(EntityNotFound::class);
-        $this->streamBasedActivityPowerRepository->findBestForSportTypes(
-            SportTypes::fromArray([SportType::RIDE]),
-        );
     }
 
     #[\Override]
@@ -75,7 +179,6 @@ class StreamBasedActivityPowerRepositoryTest extends ContainerTestCase
     {
         parent::setUp();
 
-        $this->streamBasedActivityPowerRepository = $this->getContainer()->get(StreamBasedActivityPowerRepository::class);
-        $this->activityRepository = $this->getContainer()->get(ActivityRepository::class);
+        $this->activityPowerRepository = $this->getContainer()->get(ActivityPowerRepository::class);
     }
 }

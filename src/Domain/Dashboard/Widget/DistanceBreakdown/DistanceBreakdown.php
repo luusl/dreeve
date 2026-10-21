@@ -6,10 +6,10 @@ namespace App\Domain\Dashboard\Widget\DistanceBreakdown;
 
 use App\Domain\Activity\Activities;
 use App\Domain\Activity\Activity;
+use App\Infrastructure\Measurement\Length\Kilometer;
+use App\Infrastructure\Measurement\Time\Seconds;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
-use App\Infrastructure\ValueObject\Measurement\Length\Kilometer;
-use App\Infrastructure\ValueObject\Measurement\Time\Seconds;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
 
 final readonly class DistanceBreakdown
 {
@@ -66,8 +66,8 @@ final readonly class DistanceBreakdown
             $min = $breakdownLimit - $breakdownOnDistance;
             $statistics[$breakdownLimit] = [
                 'label' => sprintf('%d - %d %s', $min, $breakdownLimit, $longestDistanceForActivity->getSymbol()),
-                'min' => $min * 10,
-                'max' => $breakdownLimit * 10,
+                'min' => $min,
+                'max' => $breakdownLimit,
                 'numberOfWorkouts' => 0,
                 'totalDistance' => 0,
                 'totalElevation' => 0,

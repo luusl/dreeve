@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\Stream\CombinedStream;
 
+use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\StreamType;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\UnitSystem;
 use Symfony\Contracts\Translation\TranslatableInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -22,6 +23,7 @@ enum CombinedStreamType: string implements TranslatableInterface
     case LAT_LNG = 'latlng';
     case TIME = 'time';
     case GRADE = 'grade';
+    case TEMP = 'temp';
 
     public function getStreamType(): StreamType
     {
@@ -44,11 +46,12 @@ enum CombinedStreamType: string implements TranslatableInterface
             CombinedStreamType::WATTS => $translator->trans('Power'),
             CombinedStreamType::PACE => $translator->trans('Pace'),
             CombinedStreamType::VELOCITY => $translator->trans('Speed'),
+            CombinedStreamType::TEMP => $translator->trans('Temperature'),
             default => throw new \RuntimeException(sprintf('Cannot translate CombinedStreamType "%s"', $this->value)),
         };
     }
 
-    public function getSuffix(UnitSystem $unitSystem): string
+    public function getSuffix(UnitSystem $unitSystem, SportType $sportType): string
     {
         return match ($this) {
             CombinedStreamType::HEART_RATE => 'bpm',
@@ -57,7 +60,8 @@ enum CombinedStreamType: string implements TranslatableInterface
             CombinedStreamType::WATTS => 'watt',
             CombinedStreamType::PACE => $unitSystem->paceSymbol(),
             CombinedStreamType::ALTITUDE => $unitSystem->elevationSymbol(),
-            CombinedStreamType::VELOCITY => $unitSystem->speedSymbol(),
+            CombinedStreamType::VELOCITY => $sportType->speedSymbol($unitSystem),
+            CombinedStreamType::TEMP => $unitSystem->temperatureSymbol(),
             default => throw new \RuntimeException('Suffix not supported for '.$this->value),
         };
     }
@@ -72,6 +76,7 @@ enum CombinedStreamType: string implements TranslatableInterface
             CombinedStreamType::WATTS => '#73c0de',
             CombinedStreamType::PACE,
             CombinedStreamType::VELOCITY => '#fac858',
+            CombinedStreamType::TEMP => '#fc8452',
             default => '#cccccc',
         };
     }
@@ -79,7 +84,7 @@ enum CombinedStreamType: string implements TranslatableInterface
     public function isChartable(): bool
     {
         return match ($this) {
-            self::DISTANCE, self::LAT_LNG, self::TIME, self::GRADE => false,
+            self::DISTANCE, self::LAT_LNG, self::TIME, self::GRADE, self::TEMP => false,
             default => true,
         };
     }

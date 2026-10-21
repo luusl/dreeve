@@ -5,18 +5,37 @@ declare(strict_types=1);
 namespace App\Domain\Dashboard\Widget;
 
 use App\Domain\Activity\ActivityTotals;
-use App\Domain\Activity\EnrichedActivities;
+use App\Domain\Activity\FindActivityTotals\FindActivityTotals;
+use App\Domain\Dashboard\DashboardWidgetId;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
+use App\Infrastructure\CQRS\Query\Bus\QueryBus;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
-final readonly class IntroTextWidget implements Widget
+final readonly class IntroTextWidget implements Widget, DependsOnCurrentDay
 {
     public function __construct(
-        private EnrichedActivities $enrichedActivities,
+        private QueryBus $queryBus,
         private Environment $twig,
         private TranslatorInterface $translator,
     ) {
+    }
+
+    public function getLabel(): string
+    {
+        return $this->translator->trans('Intro text', domain: 'admin');
+    }
+
+    public function getTemplateName(): string
+    {
+        return 'widget--intro-text';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -28,16 +47,15 @@ final readonly class IntroTextWidget implements Widget
     {
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): string
     {
-        $allActivities = $this->enrichedActivities->findAll();
-        $activityTotals = ActivityTotals::getInstance(
-            activities: $allActivities,
+        $activityTotals = ActivityTotals::create(
+            totals: $this->queryBus->ask(new FindActivityTotals()),
             now: $now,
             translator: $this->translator,
         );
 
-        return $this->twig->load('html/dashboard/widget/widget--intro-text.html.twig')->render([
+        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
             'intro' => $activityTotals,
         ]);
     }

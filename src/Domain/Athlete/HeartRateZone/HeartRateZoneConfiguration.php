@@ -6,6 +6,8 @@ namespace App\Domain\Athlete\HeartRateZone;
 
 use App\Domain\Activity\SportType\SportType;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Yaml;
 
 final class HeartRateZoneConfiguration
 {
@@ -21,7 +23,7 @@ final class HeartRateZoneConfiguration
 
     public function getDefaultHearRateZones(?SportType $sportType): HeartRateZones
     {
-        if ($sportType && array_key_exists($sportType->value, $this->hearRateZones)) {
+        if ($sportType instanceof SportType && array_key_exists($sportType->value, $this->hearRateZones)) {
             return $this->hearRateZones[$sportType->value][self::DEFAULT_KEY];
         }
 
@@ -76,7 +78,7 @@ final class HeartRateZoneConfiguration
         if ($on instanceof SerializableDateTime) {
             $on = SerializableDateTime::fromString($on->format('Y-m-d'));
         }
-        if ($sportType && $on) {
+        if ($sportType instanceof SportType && $on instanceof SerializableDateTime) {
             $this->hearRateZones[$sportType->value][self::DATE_RANGES_KEY][$on->getTimestamp()] = $heartRateZones;
             // Make sure dates are sorted from new => old
             krsort($this->hearRateZones[$sportType->value][self::DATE_RANGES_KEY]);
@@ -97,6 +99,14 @@ final class HeartRateZoneConfiguration
         }
 
         $this->hearRateZones['defaults'][self::DEFAULT_KEY] = $heartRateZones;
+    }
+
+    /**
+     * @return list<array{from: int, to: int|null}>
+     */
+    public static function getDefaultZones(): array
+    {
+        return array_values(self::getDefaultConfig()['default']);
     }
 
     /**
@@ -136,25 +146,43 @@ final class HeartRateZoneConfiguration
      */
     public static function fromArray(array $config): self
     {
-        if ([] === $config) {
-            // Make sure this new feature is backwards compatible.
-            // Use the old default configuration.
-            $config = self::getDefaultConfig();
+        $modeValue = $config['mode'] ?? 'relative';
+        $zones = is_array($config['zones'] ?? null) ? array_values($config['zones']) : [];
+        $advanced = $config['advanced'] ?? null;
+
+        if ([] === $zones) {
+            $default = self::getDefaultConfig()['default'];
+        } else {
+            $default = [];
+            foreach (['zone1', 'zone2', 'zone3', 'zone4', 'zone5'] as $index => $name) {
+                $zone = is_array($zones[$index] ?? null) ? $zones[$index] : [];
+                $from = $zone['from'] ?? null;
+                $to = $zone['to'] ?? null;
+                $default[$name] = [
+                    'from' => is_numeric($from) ? (int) $from : ('' === $from ? null : $from),
+                    'to' => is_numeric($to) ? (int) $to : ('' === $to ? null : $to),
+                ];
+            }
         }
 
-        foreach (['mode', 'default'] as $requiredKey) {
-            if (array_key_exists($requiredKey, $config)) {
-                continue;
+        $config = ['mode' => $modeValue, 'default' => $default];
+
+        if (is_string($advanced) && '' !== trim($advanced)) {
+            try {
+                $parsed = Yaml::parse($advanced);
+            } catch (ParseException $e) {
+                throw new InvalidHeartZoneConfiguration(sprintf('Invalid YAML in advanced heart rate zone configuration: %s', $e->getMessage()));
             }
-            throw new InvalidHeartZoneConfiguration(sprintf('"%s" property is required', $requiredKey));
+
+            foreach (['dateRanges', 'sportTypes'] as $key) {
+                if (is_array($parsed) && array_key_exists($key, $parsed)) {
+                    $config[$key] = $parsed[$key];
+                }
+            }
         }
 
         if (!$mode = HeartRateZoneMode::tryFrom($config['mode'])) {
             throw new InvalidHeartZoneConfiguration(sprintf('"%s" is not a valid mode', $config['mode']));
-        }
-
-        if (!is_array($config['default'])) {
-            throw new InvalidHeartZoneConfiguration('"default" property must be an array');
         }
 
         if (array_key_exists('dateRanges', $config) && !is_array($config['dateRanges'])) {
@@ -308,10 +336,7 @@ final class HeartRateZoneConfiguration
                 throw new InvalidHeartZoneConfiguration(sprintf('%s "to" value cannot be higher than 99, got %s', $key, $zoneTo));
             }
 
-            // First zone sets the baseline
-            if (null === $expectedFrom) {
-                $expectedFrom = $zoneFrom;
-            }
+            $expectedFrom ??= $zoneFrom;
 
             // Validate the 'from' matches expected
             if ($zoneFrom !== $expectedFrom) {

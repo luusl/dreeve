@@ -1,0 +1,45 @@
+{
+    "App\\Domain\\Activity\\ActivityInvalidateCacheTagsListener": [
+        "reactToActivityWasAdded",
+        "reactToActivityWasUpdated",
+        "reactToActivityImagesHaveBeenUpdated",
+        "reactToActivityRouteWasUpdated",
+        "reactToActivityWasDeleted"
+    ],
+    "App\\Domain\\Theme\\RecalculateChartColorsListener": [
+        "reactToActivityWasAdded",
+        "reactToActivityWasUpdated",
+        "reactToActivityWasDeleted",
+        "reactToGearWasAdded",
+        "reactToGearWasUpdated",
+        "reactToSettingsWereUpdated",
+        "recalculateChartColors",
+        "recalculateChartColors"
+    ],
+    "App\\Domain\\Challenge\\ChallengeInvalidateCacheTagsListener": [
+        "reactToChallengeWasImported"
+    ],
+    "App\\Domain\\Dashboard\\DashboardInvalidateCacheTagsListener": [
+        "reactToDashboardLayoutWasUpdated"
+    ],
+    "App\\Domain\\Gear\\GearInvalidateCacheTagsListener": [
+        "reactToGearWasAdded",
+        "reactToGearWasUpdated"
+    ],
+    "App\\Domain\\Gear\\Maintenance\\GearMaintenanceInvalidateCacheTagsListener": [
+        "reactToGearMaintenanceConfigWasUpdated",
+        "reactToGearMaintenanceLogWasUpdated"
+    ],
+    "App\\Domain\\Gear\\RecordingDevice\\RecordingDeviceInvalidateCacheTagsListener": [
+        "reactToRecordingDeviceWasUpdated"
+    ],
+    "App\\Domain\\Segment\\SegmentInvalidateCacheTagsListener": [
+        "reactToSegmentWasAdded",
+        "reactToSegmentsWereDeleted",
+        "reactToSegmentEffortWasAdded",
+        "reactToSegmentEffortsWereDeleted"
+    ],
+    "App\\Domain\\Settings\\SettingsInvalidateCacheTagsListener": [
+        "reactToSettingsWereUpdated"
+    ]
+}

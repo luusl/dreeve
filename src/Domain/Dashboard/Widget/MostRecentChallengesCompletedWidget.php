@@ -5,16 +5,36 @@ declare(strict_types=1);
 namespace App\Domain\Dashboard\Widget;
 
 use App\Domain\Challenge\ChallengeRepository;
+use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\InvalidDashboardLayout;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final readonly class MostRecentChallengesCompletedWidget implements Widget
 {
     public function __construct(
+        private TranslatorInterface $translator,
         private ChallengeRepository $challengeRepository,
         private Environment $twig,
     ) {
+    }
+
+    public function getLabel(): string
+    {
+        return $this->translator->trans('Most recent challenges');
+    }
+
+    public function getTemplateName(): string
+    {
+        return 'widget--most-recent-challenges';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::CHALLENGES);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -36,7 +56,7 @@ final readonly class MostRecentChallengesCompletedWidget implements Widget
         }
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): ?string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): ?string
     {
         $challenges = $this->challengeRepository->findAll();
         if ($challenges->isEmpty()) {
@@ -45,7 +65,7 @@ final readonly class MostRecentChallengesCompletedWidget implements Widget
 
         $numberOfChallengesToDisplay = (int) $configuration->get('numberOfChallengesToDisplay');
 
-        return $this->twig->load('html/dashboard/widget/widget--most-recent-challenges.html.twig')->render([
+        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
             'challenges' => $challenges->slice(0, $numberOfChallengesToDisplay),
         ]);
     }

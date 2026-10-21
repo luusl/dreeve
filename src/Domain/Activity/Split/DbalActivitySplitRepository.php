@@ -6,13 +6,14 @@ namespace App\Domain\Activity\Split;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIds;
+use App\Domain\Activity\ImportSource;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\StreamType;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
+use App\Infrastructure\Measurement\Velocity\SecPerKm;
 use App\Infrastructure\Repository\DbalRepository;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\Measurement\Velocity\MetersPerSecond;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPerKm;
 use Doctrine\DBAL\ArrayParameterType;
 
 final readonly class DbalActivitySplitRepository extends DbalRepository implements ActivitySplitRepository
@@ -47,10 +48,10 @@ final readonly class DbalActivitySplitRepository extends DbalRepository implemen
     {
         $sql = 'INSERT INTO ActivitySplit (
             activityId, unitSystem, splitNumber, distance, elapsedTimeInSeconds, movingTimeInSeconds,
-            elevationDifference, averageSpeed, minAverageSpeed, maxAverageSpeed, paceZone, gapPaceInSecondsPerKm, averageHeartRate
+            elevationDifference, averageSpeed, minAverageSpeed, maxAverageSpeed, paceZone, gapPaceInSecondsPerKm
         ) VALUES(
             :activityId, :unitSystem, :splitNumber, :distance, :elapsedTimeInSeconds, :movingTimeInSeconds,
-            :elevationDifference, :averageSpeed, :minAverageSpeed, :maxAverageSpeed, :paceZone, :gapPaceInSecondsPerKm, :averageHeartRate
+            :elevationDifference, :averageSpeed, :minAverageSpeed, :maxAverageSpeed, :paceZone, :gapPaceInSecondsPerKm
         )';
 
         $this->connection->executeStatement($sql, [
@@ -66,13 +67,12 @@ final readonly class DbalActivitySplitRepository extends DbalRepository implemen
             'maxAverageSpeed' => $activitySplit->getMaxAverageSpeed()->toFloat(),
             'paceZone' => $activitySplit->getPaceZone(),
             'gapPaceInSecondsPerKm' => $activitySplit->getGapPaceInSecondsPerKm()?->toFloat(),
-            'averageHeartRate' => $activitySplit->getAverageHeartRate(),
         ]);
     }
 
     public function update(ActivitySplit $activitySplit): void
     {
-        $sql = 'UPDATE ActivitySplit SET gapPaceInSecondsPerKm = :gapPaceInSecondsPerKm, averageHeartRate = :averageHeartRate
+        $sql = 'UPDATE ActivitySplit SET gapPaceInSecondsPerKm = :gapPaceInSecondsPerKm
             WHERE activityId = :activityId AND unitSystem = :unitSystem AND splitNumber = :splitNumber';
 
         $this->connection->executeStatement($sql, [
@@ -80,7 +80,6 @@ final readonly class DbalActivitySplitRepository extends DbalRepository implemen
             'unitSystem' => $activitySplit->getUnitSystem()->value,
             'splitNumber' => $activitySplit->getSplitNumber(),
             'gapPaceInSecondsPerKm' => $activitySplit->getGapPaceInSecondsPerKm()?->toFloat(),
-            'averageHeartRate' => $activitySplit->getAverageHeartRate(),
         ]);
     }
 
@@ -111,18 +110,46 @@ final readonly class DbalActivitySplitRepository extends DbalRepository implemen
         ));
     }
 
-    public function findActivityIdsWithoutAverageHeartRate(): ActivityIds
+    public function findActivityIdsThatNeedSplitCalculation(): ActivityIds
     {
-        $sql = 'SELECT s.activityId FROM ActivitySplit s
-                INNER JOIN ActivityStream ast ON ast.activityId = s.activityId AND ast.streamType = :streamType
-                GROUP BY s.activityId
-                HAVING MAX(s.averageHeartRate) IS NULL
-                ORDER BY s.activityId';
+        $supportedSportTypes = array_map(
+            fn (SportType $sportType) => $sportType->value,
+            array_filter(
+                SportType::cases(),
+                fn (SportType $sportType): bool => $sportType->supportsSplits(),
+            ),
+        );
+        $supportedImportSources = array_map(
+            fn (ImportSource $importSource) => $importSource->value,
+            ImportSource::fileBasedSources(),
+        );
+
+        $sql = 'SELECT Activity.activityId FROM Activity
+                WHERE Activity.sportType IN (:sportTypes)
+                AND Activity.importSource IN (:importSources)
+                AND NOT EXISTS (
+                    SELECT 1 FROM ActivitySplit s WHERE s.activityId = Activity.activityId
+                )
+                AND EXISTS (
+                    SELECT 1 FROM ActivityStream x
+                    WHERE x.activityId = Activity.activityId AND x.streamType = :timeStreamType AND x.dataSize > 0
+                )
+                AND EXISTS (
+                    SELECT 1 FROM ActivityStream y
+                    WHERE y.activityId = Activity.activityId AND y.streamType = :distanceStreamType AND y.dataSize > 0
+                )
+                ORDER BY Activity.activityId';
 
         return ActivityIds::fromArray(array_map(
             ActivityId::fromString(...),
             $this->connection->executeQuery($sql, [
-                'streamType' => StreamType::HEART_RATE->value,
+                'sportTypes' => $supportedSportTypes,
+                'importSources' => $supportedImportSources,
+                'timeStreamType' => StreamType::TIME->value,
+                'distanceStreamType' => StreamType::DISTANCE->value,
+            ], [
+                'sportTypes' => ArrayParameterType::STRING,
+                'importSources' => ArrayParameterType::STRING,
             ])->fetchFirstColumn()
         ));
     }
@@ -154,7 +181,6 @@ final readonly class DbalActivitySplitRepository extends DbalRepository implemen
             maxAverageSpeed: MetersPerSecond::from($result['maxAverageSpeed']),
             paceZone: $result['paceZone'],
             gapPaceInSecondsPerKm: isset($result['gapPaceInSecondsPerKm']) ? SecPerKm::from((float) $result['gapPaceInSecondsPerKm']) : null,
-            averageHeartRate: $result['averageHeartRate'] ?? null,
         );
     }
 }

@@ -8,7 +8,10 @@
 node_modules
 /src/Entity
 /src/Repository
+/src/Domain/Activity/Route/assets/countries/
 .idea
+config/reference.php
+poc/
 
 ###> friendsofphp/php-cs-fixer ###
 /.php-cs-fixer.php
@@ -32,5 +35,11 @@ phpstan.neon
 /cron
 /ollama
 /mercure
-/tests/strava*.db
+/watch
+*.db*
 ###> app-build ###
+
+###> docs ###
+/docs/dist
+/docs/.astro
+###< docs ###

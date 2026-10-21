@@ -1,14 +1,23 @@
 import autoComplete from "../../../libraries/autocomplete";
 import ChatMessageRenderer from "./message-renderer";
+import {eventBus, Events} from "../../core/event-bus";
+import {basePath} from "../../utils";
+
+let activeSource = null;
+
+eventBus.on(Events.PAGE_LOADED, () => {
+    activeSource?.close();
+    activeSource = null;
+});
 
 export default class Chat {
-    constructor(chatModal) {
-        this.chatWrapper = chatModal.querySelector('.chat--wrapper');
-        this.form = chatModal.querySelector('form');
+    constructor(rootNode) {
+        this.chatWrapper = rootNode.querySelector('.chat--wrapper');
+        this.form = rootNode.querySelector('form');
         this.button = this.form.querySelector('button.send-message');
         this.textInput = this.form.querySelector('input.message');
         this.spinner = this.form.querySelector('div.spinner');
-        this.clearButton = chatModal.querySelector('button.clear-chat');
+        this.clearButton = rootNode.querySelector('button.clear-chat');
 
         this.placeholderIdle = this.textInput.getAttribute('data-placeholder-idle');
         this.placeholderProcessing = this.textInput.getAttribute('data-placeholder-processing');
@@ -16,8 +25,7 @@ export default class Chat {
         this.commands = JSON.parse(this.chatWrapper.getAttribute('data-chat-commands') || '{}');
         this.autoCompleteJS = null;
 
-        const raw = window.statisticsForStrava?.appUrl?.basePath || '';
-        this.basePath = raw ? '/' + raw.replace(/^\/+|\/+$/g, '') : '';
+        this.basePath = basePath();
     }
 
     toggleElements(disabled) {
@@ -69,7 +77,14 @@ export default class Chat {
 
     handleSSE(message) {
         const source = new EventSource(`${this.basePath}/chat/sse?message=${encodeURIComponent(message)}`);
+        activeSource = source;
         let renderer = null;
+
+        source.addEventListener('error', () => {
+            source.close();
+            if (activeSource === source) activeSource = null;
+            this.toggleElements(false);
+        });
 
         source.addEventListener('fullMessage', event => {
             this.chatWrapper.insertAdjacentHTML(
@@ -93,6 +108,7 @@ export default class Chat {
 
         source.addEventListener('done', () => {
             source.close();
+            if (activeSource === source) activeSource = null;
             renderer?.renderFinal();
             this.toggleElements(false);
             this.textInput.focus();
@@ -135,7 +151,7 @@ export default class Chat {
     parseExistingMessages() {
         const messages = this.chatWrapper.querySelectorAll('div.message');
         messages.forEach(messageEl => {
-            if (messageEl.dataset.parsed === 'true') return;
+            if (messageEl.dataset.markdownParsed === 'true') return;
 
             const rawText = messageEl.textContent;
             if (!rawText) return;

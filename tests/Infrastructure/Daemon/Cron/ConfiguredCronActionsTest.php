@@ -3,7 +3,10 @@
 namespace App\Tests\Infrastructure\Daemon\Cron;
 
 use App\Infrastructure\Daemon\Cron\ConfiguredCronActions;
+use App\Infrastructure\Daemon\Cron\CronAction;
+use App\Infrastructure\Daemon\Cron\CronActionId;
 use App\Infrastructure\Daemon\Cron\InvalidCronConfig;
+use Cron\CronExpression;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -15,29 +18,23 @@ class ConfiguredCronActionsTest extends TestCase
         $_ENV['DAEMON_DEBUG'] = 1;
     }
 
-    public function testFromConfig(): void
+    public function testItYieldsEnabledActionsAsCronActions(): void
     {
         $this->assertEquals(
             [
-                [
-                    'action' => 'sendNotification',
-                    'expression' => '* * * * *',
-                    'enabled' => true,
-                ],
-                [
-                    'action' => 'importData',
-                    'expression' => '* * * * *',
-                    'enabled' => false,
-                ],
+                CronAction::create(
+                    id: CronActionId::GEAR_MAINTENANCE_NOTIFICATION,
+                    expression: new CronExpression('* * * * *'),
+                ),
             ],
             iterator_to_array(ConfiguredCronActions::fromConfig([
                 [
-                    'action' => 'sendNotification',
+                    'action' => 'gearMaintenanceNotification',
                     'expression' => '* * * * *',
                     'enabled' => true,
                 ],
                 [
-                    'action' => 'importData',
+                    'action' => 'runStravaImportAndBuildApp',
                     'expression' => '* * * * *',
                     'enabled' => false,
                 ],
@@ -52,7 +49,7 @@ class ConfiguredCronActionsTest extends TestCase
         $this->expectExceptionObject(new InvalidCronConfig('The cron expression "* * * * *" is not allowed as it may overload your system.'));
         ConfiguredCronActions::fromConfig([
             [
-                'action' => 'sendNotification',
+                'action' => 'gearMaintenanceNotification',
                 'expression' => '* * * * *',
                 'enabled' => true,
             ],
@@ -83,11 +80,15 @@ class ConfiguredCronActionsTest extends TestCase
         yield 'missing key "enabled"' => [$config, '"enabled" property is required'];
 
         $config = self::getValidConfig();
+        $config[0]['action'] = 'notARealAction';
+        yield 'unsupported cron action' => [$config, '"notARealAction" is not a supported cron action'];
+
+        $config = self::getValidConfig();
         $config[0]['expression'] = 'lol';
         yield 'invalid cron expression' => [$config, '"lol" is not a valid cron expression'];
 
         $config = self::getValidConfig();
-        $config[1]['action'] = 'sendNotification';
+        $config[1]['action'] = 'gearMaintenanceNotification';
         yield 'duplicate cron action' => [$config, 'each cron action can only be configured once'];
 
         $config = self::getValidConfig();
@@ -99,12 +100,12 @@ class ConfiguredCronActionsTest extends TestCase
     {
         return [
             [
-                'action' => 'sendNotification',
+                'action' => 'gearMaintenanceNotification',
                 'expression' => '* * * * *',
                 'enabled' => true,
             ],
             [
-                'action' => 'importData',
+                'action' => 'appUpdateAvailableNotification',
                 'expression' => '* * * * *',
                 'enabled' => false,
             ],

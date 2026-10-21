@@ -6,12 +6,12 @@ namespace App\Domain\Activity\Split;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Integration\AI\SupportsAITooling;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
+use App\Infrastructure\Measurement\Velocity\SecPer100Meter;
+use App\Infrastructure\Measurement\Velocity\SecPerKm;
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\Measurement\Velocity\MetersPerSecond;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPer100Meter;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPerKm;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -45,8 +45,6 @@ final readonly class ActivitySplit implements SupportsAITooling
         private int $paceZone,
         #[ORM\Column(type: 'float', nullable: true)]
         private ?SecPerKm $gapPaceInSecondsPerKm,
-        #[ORM\Column(type: 'integer', nullable: true)]
-        private ?int $averageHeartRate,
     ) {
     }
 
@@ -76,7 +74,6 @@ final readonly class ActivitySplit implements SupportsAITooling
             maxAverageSpeed: $maxAverageSpeed,
             paceZone: $paceZone,
             gapPaceInSecondsPerKm: null,
-            averageHeartRate: null,
         );
     }
 
@@ -93,7 +90,6 @@ final readonly class ActivitySplit implements SupportsAITooling
         MetersPerSecond $maxAverageSpeed,
         int $paceZone,
         ?SecPerKm $gapPaceInSecondsPerKm = null,
-        ?int $averageHeartRate = null,
     ): self {
         return new self(
             activityId: $activityId,
@@ -108,7 +104,6 @@ final readonly class ActivitySplit implements SupportsAITooling
             maxAverageSpeed: $maxAverageSpeed,
             paceZone: $paceZone,
             gapPaceInSecondsPerKm: $gapPaceInSecondsPerKm,
-            averageHeartRate: $averageHeartRate,
         );
     }
 
@@ -200,18 +195,6 @@ final readonly class ActivitySplit implements SupportsAITooling
         return $this->paceZone;
     }
 
-    public function withAverageHeartRate(int $averageHeartRate): self
-    {
-        return clone ($this, [
-            'averageHeartRate' => $averageHeartRate,
-        ]);
-    }
-
-    public function getAverageHeartRate(): ?int
-    {
-        return $this->averageHeartRate;
-    }
-
     public function withGapPace(SecPerKm $gapPace): self
     {
         return clone ($this, [
@@ -235,7 +218,6 @@ final readonly class ActivitySplit implements SupportsAITooling
             'distanceInMeter' => $this->getDistance(),
             'averageSpeedInMetersPerSecond' => $this->getAverageSpeed(),
             'elevationDifferenceInMeter' => $this->getElevationDifference(),
-            'averageHeartRate' => $this->getAverageHeartRate(),
             'paceZone' => $this->getPaceZone(),
         ];
     }

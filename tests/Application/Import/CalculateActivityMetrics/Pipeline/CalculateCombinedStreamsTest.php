@@ -9,10 +9,13 @@ use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Activity\Stream\CombinedStream\CombinedActivityStreamRepository;
+use App\Domain\Activity\Stream\CombinedStream\CombinedStreamType;
 use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Settings\SettingsName;
+use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Mutex\LockName;
 use App\Infrastructure\Mutex\Mutex;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Activity\Stream\ActivityStreamBuilder;
@@ -52,15 +55,18 @@ class CalculateCombinedStreamsTest extends ContainerTestCase
             omitDistanceStream: false,
         );
 
+        $settingsRepository = $this->getContainer()->get(SettingsRepository::class);
+        $settingsRepository->save(SettingsName::UNIT_SYSTEM, UnitSystem::IMPERIAL->value);
+
         new CalculateCombinedStreams(
             activityRepository: $this->getContainer()->get(ActivityRepository::class),
             combinedActivityStreamRepository: $this->getContainer()->get(CombinedActivityStreamRepository::class),
             activityStreamRepository: $this->getContainer()->get(ActivityStreamRepository::class),
-            unitSystem: UnitSystem::IMPERIAL,
+            settingsRepository: $settingsRepository,
             mutex: new Mutex(
                 connection: $this->getConnection(),
                 clock: PausedClock::fromString('2025-12-04'),
-                lockName: LockName::IMPORT_DATA_OR_BUILD_APP,
+                lockName: LockName::IMPORT_DATA,
             )
         )->process($output);
 
@@ -89,6 +95,216 @@ class CalculateCombinedStreamsTest extends ContainerTestCase
         );
         $this->calculateCombinedStreams->process($output);
         $this->assertCompressedDatabaseQueryMatchesSnapshot('SELECT * FROM CombinedActivityStream');
+    }
+
+    public function testProcessForSail(): void
+    {
+        $output = new SpyOutput();
+
+        $this->provideGeneralTestData(
+            sportType: SportType::SAIL,
+            omitDistanceStream: false,
+        );
+        $this->calculateCombinedStreams->process($output);
+        $this->assertCompressedDatabaseQueryMatchesSnapshot('SELECT * FROM CombinedActivityStream');
+    }
+
+    public function testProcessForSailItShouldUseNauticalUnitsEvenWhenImperialIsConfigured(): void
+    {
+        $output = new SpyOutput();
+
+        $this->provideGeneralTestData(
+            sportType: SportType::SAIL,
+            omitDistanceStream: false,
+        );
+
+        $settingsRepository = $this->getContainer()->get(SettingsRepository::class);
+        $settingsRepository->save(SettingsName::UNIT_SYSTEM, UnitSystem::IMPERIAL->value);
+
+        new CalculateCombinedStreams(
+            activityRepository: $this->getContainer()->get(ActivityRepository::class),
+            combinedActivityStreamRepository: $this->getContainer()->get(CombinedActivityStreamRepository::class),
+            activityStreamRepository: $this->getContainer()->get(ActivityStreamRepository::class),
+            settingsRepository: $settingsRepository,
+            mutex: new Mutex(
+                connection: $this->getConnection(),
+                clock: PausedClock::fromString('2025-12-04'),
+                lockName: LockName::IMPORT_DATA,
+            )
+        )->process($output);
+
+        $this->assertCompressedDatabaseQueryMatchesSnapshot('SELECT * FROM CombinedActivityStream');
+    }
+
+    /**
+     * The shared test data only spans 35 meters, which rounds away to 0 on the distance axis.
+     * This uses a kilometer scale stream so the nautical mile conversion is actually visible.
+     */
+    public function testProcessForSailItShouldConvertTheDistanceAxisToNauticalMiles(): void
+    {
+        $output = new SpyOutput();
+
+        $activityRepository = $this->getContainer()->get(ActivityRepository::class);
+        $streamRepository = $this->getContainer()->get(ActivityStreamRepository::class);
+
+        $activityId = ActivityId::fromUnprefixed('one');
+        $activityRepository->add(
+            ActivityWithRawData::fromState(
+                ActivityBuilder::fromDefaults()
+                    ->withSportType(SportType::SAIL)
+                    ->withActivityId($activityId)
+                    ->build(),
+                []
+            )
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::TIME)
+                ->withData([0, 1, 2, 3])
+                ->build()
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::DISTANCE)
+                ->withData([0.0, 1852.0, 3704.0, 9260.0])
+                ->build()
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::VELOCITY)
+                ->withData([0.0, 5.144, 5.144, 5.144])
+                ->build()
+        );
+
+        $this->calculateCombinedStreams->process($output);
+
+        $combinedStream = $this->getContainer()->get(CombinedActivityStreamRepository::class)
+            ->findOneForActivityAndUnitSystem($activityId, UnitSystem::METRIC);
+
+        // 0, 1852, 3704 and 9260 meters are exactly 0, 1, 2 and 5 nautical miles.
+        $this->assertEquals(
+            [0.0, 1.0, 2.0, 5.0],
+            $combinedStream->getDistances()
+        );
+        // 5.144 m/s is 18.52 km/h, which is exactly 10 knots.
+        $this->assertEquals(
+            [0, 10.0, 10.0, 10.0],
+            $combinedStream->getChartStreamData(CombinedStreamType::VELOCITY)
+        );
+    }
+
+    public function testProcessItShouldConvertFreezingTemperaturesInsteadOfTreatingThemAsMissing(): void
+    {
+        $output = new SpyOutput();
+
+        $activityRepository = $this->getContainer()->get(ActivityRepository::class);
+        $streamRepository = $this->getContainer()->get(ActivityStreamRepository::class);
+
+        $activityId = ActivityId::fromUnprefixed('one');
+        $activityRepository->add(
+            ActivityWithRawData::fromState(
+                ActivityBuilder::fromDefaults()
+                    ->withSportType(SportType::RIDE)
+                    ->withActivityId($activityId)
+                    ->build(),
+                []
+            )
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::TIME)
+                ->withData([0, 1, 2, 3])
+                ->build()
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::HEART_RATE)
+                ->withData([120, 125, 130, 135])
+                ->build()
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::TEMP)
+                ->withData([-5, 0, 10, 20])
+                ->build()
+        );
+
+        $settingsRepository = $this->getContainer()->get(SettingsRepository::class);
+        $settingsRepository->save(SettingsName::UNIT_SYSTEM, UnitSystem::IMPERIAL->value);
+
+        new CalculateCombinedStreams(
+            activityRepository: $activityRepository,
+            combinedActivityStreamRepository: $this->getContainer()->get(CombinedActivityStreamRepository::class),
+            activityStreamRepository: $streamRepository,
+            settingsRepository: $settingsRepository,
+            mutex: new Mutex(
+                connection: $this->getConnection(),
+                clock: PausedClock::fromString('2025-12-04'),
+                lockName: LockName::IMPORT_DATA,
+            )
+        )->process($output);
+
+        $combinedStream = $this->getContainer()->get(CombinedActivityStreamRepository::class)
+            ->findOneForActivityAndUnitSystem($activityId, UnitSystem::IMPERIAL);
+
+        // 0 degrees Celsius is a reading, not a gap: it has to come out as 32 Fahrenheit.
+        $this->assertEquals(
+            [23.0, 32.0, 50.0, 68.0],
+            $combinedStream->getTemperatures()
+        );
+    }
+
+    public function testProcessWithoutAMovingStreamFallsBackToElapsedTime(): void
+    {
+        $output = new SpyOutput();
+
+        $activityRepository = $this->getContainer()->get(ActivityRepository::class);
+        $streamRepository = $this->getContainer()->get(ActivityStreamRepository::class);
+
+        $activityId = ActivityId::fromUnprefixed('one');
+        $activityRepository->add(
+            ActivityWithRawData::fromState(
+                ActivityBuilder::fromDefaults()
+                    ->withSportType(SportType::WEIGHT_TRAINING)
+                    ->withActivityId($activityId)
+                    ->build(),
+                []
+            )
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::TIME)
+                ->withData([0, 4, 9, 15, 105, 110])
+                ->build()
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
+                ->withStreamType(StreamType::HEART_RATE)
+                ->withData([91, 95, 125, 129, 128, 117])
+                ->build()
+        );
+
+        $this->calculateCombinedStreams->process($output);
+
+        $combinedStream = $this->getContainer()->get(CombinedActivityStreamRepository::class)
+            ->findOneForActivityAndUnitSystem($activityId, UnitSystem::METRIC);
+
+        $this->assertEquals(
+            ['4s', '9s', '15s', '15s', '20s', '20s'],
+            $combinedStream->getTimes()
+        );
+        $this->assertEquals(
+            [91, 95, 125, 129, 128, 117],
+            $combinedStream->getChartStreamData(CombinedStreamType::HEART_RATE)
+        );
     }
 
     public function testProcessWhenStreamDataIsMissingOrEmpty(): void
@@ -184,6 +400,13 @@ class CalculateCombinedStreamsTest extends ContainerTestCase
         $streamRepository->add(
             ActivityStreamBuilder::fromDefaults()
                 ->withActivityId($activityId)
+                ->withStreamType(StreamType::TEMP)
+                ->withData([14, 14, 15, 15, 16, 16, 17, 17, 18, 18, 19])
+                ->build()
+        );
+        $streamRepository->add(
+            ActivityStreamBuilder::fromDefaults()
+                ->withActivityId($activityId)
                 ->withStreamType(StreamType::CADENCE)
                 ->withData([0, 78, 82, 84, 83, 0, 0, 85, 87, 0, 89])
                 ->build()
@@ -245,7 +468,7 @@ class CalculateCombinedStreamsTest extends ContainerTestCase
         $this->calculateCombinedStreams = $this->getContainer()->get(CalculateCombinedStreams::class);
         $this->getConnection()->executeStatement(
             'INSERT INTO KeyValue (`key`, `value`) VALUES (:key, :value)',
-            ['key' => 'lock.importDataOrBuildApp', 'value' => '{"lockAcquiredBy": "test"}']
+            ['key' => 'lock.importData', 'value' => '{"lockAcquiredBy": "test"}']
         );
     }
 }

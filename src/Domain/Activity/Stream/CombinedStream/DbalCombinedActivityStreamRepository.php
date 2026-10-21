@@ -9,9 +9,9 @@ use App\Domain\Activity\ActivityIds;
 use App\Domain\Activity\ActivityType;
 use App\Domain\Activity\SportType\SportType;
 use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Repository\DbalRepository;
 use App\Infrastructure\Serialization\Json;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
 use Doctrine\DBAL\ArrayParameterType;
 
 final readonly class DbalCombinedActivityStreamRepository extends DbalRepository implements CombinedActivityStreamRepository
@@ -28,6 +28,50 @@ final readonly class DbalCombinedActivityStreamRepository extends DbalRepository
             'data' => Json::encodeAndCompress($combinedActivityStream->getData()),
             'maxYAxisValue' => $combinedActivityStream->getMaxYAxisValue(),
         ]);
+    }
+
+    public function deleteForActivity(ActivityId $activityId): void
+    {
+        $sql = 'DELETE FROM CombinedActivityStream WHERE activityId = :activityId';
+
+        $this->connection->executeStatement($sql, [
+            'activityId' => $activityId,
+        ]);
+    }
+
+    public function countChartableStreamTypesFor(ActivityId $activityId, UnitSystem $unitSystem): int
+    {
+        $sql = 'SELECT streamTypes FROM CombinedActivityStream
+                WHERE activityId = :activityId AND unitSystem = :unitSystem';
+        if (!$streamTypes = $this->connection->executeQuery($sql,
+            [
+                'activityId' => $activityId,
+                'unitSystem' => $unitSystem->value,
+            ],
+        )->fetchOne()) {
+            return 0;
+        }
+
+        return count(array_filter(
+            explode(',', (string) $streamTypes),
+            fn (string $streamType): bool => CombinedStreamType::from($streamType)->isChartable()
+        ));
+    }
+
+    public function hasStreamTypeFor(ActivityId $activityId, UnitSystem $unitSystem, CombinedStreamType $streamType): bool
+    {
+        $sql = 'SELECT streamTypes FROM CombinedActivityStream
+                WHERE activityId = :activityId AND unitSystem = :unitSystem';
+        if (!$streamTypes = $this->connection->executeQuery($sql,
+            [
+                'activityId' => $activityId,
+                'unitSystem' => $unitSystem->value,
+            ],
+        )->fetchOne()) {
+            return false;
+        }
+
+        return in_array($streamType->value, explode(',', (string) $streamTypes), true);
     }
 
     public function findOneForActivityAndUnitSystem(ActivityId $activityId, UnitSystem $unitSystem): CombinedActivityStream

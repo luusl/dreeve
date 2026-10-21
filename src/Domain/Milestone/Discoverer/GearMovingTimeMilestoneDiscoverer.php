@@ -11,7 +11,7 @@ use App\Domain\Milestone\MilestoneCategory;
 use App\Domain\Milestone\MilestoneIdFactory;
 use App\Domain\Milestone\Milestones;
 use App\Domain\Milestone\PreviousMilestone;
-use App\Infrastructure\ValueObject\Measurement\Time\Hour;
+use App\Infrastructure\Measurement\Time\Hour;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Doctrine\DBAL\Connection;
 
@@ -19,7 +19,6 @@ final readonly class GearMovingTimeMilestoneDiscoverer implements MilestoneDisco
 {
     public function __construct(
         private Connection $connection,
-        private MilestoneIdFactory $milestoneIdFactory,
     ) {
     }
 
@@ -28,7 +27,7 @@ final readonly class GearMovingTimeMilestoneDiscoverer implements MilestoneDisco
         1_500, 2_000,
     ];
 
-    public function discover(): Milestones
+    public function discover(MilestoneIdFactory $milestoneIdFactory): Milestones
     {
         $rows = $this->connection->executeQuery(
             'SELECT a.startDateTime, a.gearId, a.movingTimeInSeconds, g.name as gearName
@@ -53,14 +52,12 @@ final readonly class GearMovingTimeMilestoneDiscoverer implements MilestoneDisco
             $gearName = $row['gearName'];
             $achievedOn = SerializableDateTime::fromString($row['startDateTime']);
 
-            if (!isset($gearState[$gearId])) {
-                $gearState[$gearId] = [
-                    'seconds' => 0,
-                    'name' => $gearName,
-                    'idx' => 0,
-                    'prev' => null,
-                ];
-            }
+            $gearState[$gearId] ??= [
+                'seconds' => 0,
+                'name' => $gearName,
+                'idx' => 0,
+                'prev' => null,
+            ];
 
             $state = &$gearState[$gearId];
             $state['seconds'] += $seconds;
@@ -71,7 +68,7 @@ final readonly class GearMovingTimeMilestoneDiscoverer implements MilestoneDisco
                 $thresholdHour = Hour::from($threshold);
 
                 $milestone = Milestone::create(
-                    id: $this->milestoneIdFactory->random(),
+                    id: $milestoneIdFactory->next(),
                     achievedOn: $achievedOn,
                     category: MilestoneCategory::GEAR_MOVING_TIME,
                     context: new GearMovingTimeContext(

@@ -4,36 +4,51 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Twig;
 
+use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Measurement\Imperial;
+use App\Infrastructure\Measurement\Metric;
+use App\Infrastructure\Measurement\ProvideMeasurementFormats;
+use App\Infrastructure\Measurement\Time\Seconds;
+use App\Infrastructure\Measurement\Unit;
+use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Velocity\Pace;
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
-use App\Infrastructure\ValueObject\Measurement\Imperial;
-use App\Infrastructure\ValueObject\Measurement\Metric;
-use App\Infrastructure\ValueObject\Measurement\Time\Seconds;
-use App\Infrastructure\ValueObject\Measurement\Unit;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\Measurement\Velocity\Pace;
 use Twig\Attribute\AsTwigFilter;
 use Twig\Attribute\AsTwigFunction;
 
 final readonly class MeasurementTwigExtension
 {
+    use ProvideMeasurementFormats {
+        formatNumber as private formatNumberFromTrait;
+    }
     use ProvideTimeFormats;
 
     public function __construct(
-        private UnitSystem $unitSystem,
+        private SettingsRepository $settingsRepository,
     ) {
     }
 
     #[AsTwigFilter('convertMeasurement')]
     public function convertMeasurement(Unit $measurement): Unit
     {
-        if (UnitSystem::IMPERIAL === $this->unitSystem && $measurement instanceof Metric) {
+        $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
+        if (UnitSystem::IMPERIAL === $unitSystem && $measurement instanceof Metric) {
             return $measurement->toImperial();
         }
-        if (UnitSystem::METRIC === $this->unitSystem && $measurement instanceof Imperial) {
+        if (UnitSystem::METRIC === $unitSystem && $measurement instanceof Imperial) {
             return $measurement->toMetric();
         }
 
         return $measurement;
+    }
+
+    #[AsTwigFilter('formatMeasurement')]
+    public function formatMeasurement(Unit $measurement, int $precision): string
+    {
+        $convertedMeasurement = $this->convertMeasurement($measurement);
+        $measurementInScalar = $convertedMeasurement->toFloat();
+
+        return $this->formatNumber($measurementInScalar, $precision);
     }
 
     #[AsTwigFilter('renderMeasurement')]
@@ -41,7 +56,7 @@ final readonly class MeasurementTwigExtension
     {
         $convertedMeasurement = $this->convertMeasurement($measurement);
         $measurementInScalar = $convertedMeasurement->toFloat();
-        $formattedNumber = self::formatNumber($measurementInScalar, $measurementInScalar < 100 ? $precision : 0);
+        $formattedNumber = $this->formatNumber($measurementInScalar, $precision);
 
         if (!$symbolSuffix) {
             if ('' === $convertedMeasurement->getSymbol()) {
@@ -49,24 +64,30 @@ final readonly class MeasurementTwigExtension
             }
 
             return sprintf(
-                '%s<span class="text-xs">%s</span>',
+                '%s<span class="text-xxs ml-px whitespace-nowrap">%s</span>',
                 $formattedNumber,
                 $convertedMeasurement->getSymbol()
             );
         }
 
         return sprintf(
-            '%s<span class="text-xs">%s %s</span>',
+            '%s<span class="text-xxs ml-px">%s %s</span>',
             $formattedNumber,
             $convertedMeasurement->getSymbol(),
             $symbolSuffix
         );
     }
 
+    #[AsTwigFilter('measurementSymbol')]
+    public function measurementSymbol(Unit $measurement): string
+    {
+        return $this->convertMeasurement($measurement)->getSymbol();
+    }
+
     #[AsTwigFilter('formatPace')]
     public function formatPace(Pace $pace): string
     {
-        $pace = $pace->toUnitSystem($this->unitSystem);
+        $pace = $pace->toUnitSystem($this->settingsRepository->appearance()->getUnitSystem());
 
         return $this->formatDurationAsClock($pace->toInt());
     }
@@ -74,22 +95,29 @@ final readonly class MeasurementTwigExtension
     #[AsTwigFunction('renderUnitSymbol')]
     public function getUnitSymbol(string $unitName): string
     {
+        $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
+
         return match ($unitName) {
-            'distance' => $this->unitSystem->distanceSymbol(),
-            'elevation' => $this->unitSystem->elevationSymbol(),
-            'pace' => $this->unitSystem->paceSymbol(),
+            'distance' => $unitSystem->distanceSymbol(),
+            'elevation' => $unitSystem->elevationSymbol(),
+            'proximity' => $unitSystem->proximitySymbol(),
+            'pace' => $unitSystem->paceSymbol(),
             default => throw new \RuntimeException(sprintf('Invalid unitName "%s"', $unitName)),
         };
+    }
+
+    #[AsTwigFunction('proximityToMeterFactor')]
+    public function getProximityToMeterFactor(): float
+    {
+        $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
+
+        return $unitSystem->proximity(1)->toMeter()->toFloat();
     }
 
     #[AsTwigFilter('formatNumber')]
     public function formatNumber(?float $number, int $precision): string
     {
-        if (is_null($number)) {
-            return '0';
-        }
-
-        return number_format(round($number, $precision), $precision, '.', ' ');
+        return $this->formatNumberFromTrait($number, $precision);
     }
 
     #[AsTwigFilter('formatSeconds')]

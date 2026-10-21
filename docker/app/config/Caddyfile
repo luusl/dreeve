@@ -2,10 +2,18 @@
 	http_port 8080
 	auto_https off
 
+	servers {
+		trusted_proxies static private_ranges
+		timeouts {
+			read_body 60s
+		}
+	}
+
 	frankenphp {
-		num_threads 3
+		# Let FrankenPHP size the thread pool itself. It scales up under load.
+		max_threads auto
 		worker {
-			num 2
+			num {$FRANKENPHP_NUM_WORKERS:4}
 			file ./public/index.php
 		}
 	}
@@ -17,64 +25,22 @@
 	}
 }
 
+import /etc/frankenphp/snippets/paths.caddyfile
+
 :8080 {
 	root /var/www/public
 	encode zstd br gzip
 
 	# Disable Topics tracking if not enabled explicitly: https://github.com/jkarlin/topics
 	header {
-		Cache-Control "no-cache, no-store, must-revalidate"
 		?Permissions-Policy "browsing-topics=()"
 	}
 
-	# Serve static .html from build/html
-	@staticBuildFiles {
-		path *.html
-	}
-	handle @staticBuildFiles {
-		handle /manifest.json {
-			root /var/www/public
-		}
+	@notAppServedFile not path /files/*
+	header @notAppServedFile Cache-Control "no-cache, no-store, must-revalidate"
 
-		handle {
-			root * /var/www/build/html
-			file_server
-		}
-	}
-
-	# Serve badge SVGs — no cache
-	@badges path /files/*-badge.svg
-	handle @badges {
-		header {
-			Cache-Control "no-cache, no-store, must-revalidate"
-		}
-
-		root * /var/www/storage
-		file_server
-	}
-
-	# Serve other /files/* from storage
-	handle /files/* {
-		header {
-			Cache-Control "public, max-age=31536000, immutable"
-		}
-
-		root * /var/www/storage
-		file_server
-	}
-
-	# Serve /gear-maintenance/* from storage.
-	handle /gear-maintenance/* {
-		root * /var/www/storage
-		file_server
-	}
-
-	# Cache static assets.
-	handle /assets/* {
-		header {
-			Cache-Control "public, max-age=86400"
-		}
-	}
+	# Path-routing rules (/files/*, /assets/*).
+	import paths
 
 	# Serve everything else trough Symfony.
 	handle {
@@ -105,13 +71,8 @@
 		respond "{err.status_code} {err.status_text}"
 	}
 
-	# Hide php and yaml file from filesystem
+	# Hide sensitive files from filesystem
 	file_server {
-		hide *.php *.yaml *.yml
+		hide *.php *.yaml *.yml */log
 	}
-}
-
-# Reverse proxy for custom domain
-{$PROXY_HOST}:{$PROXY_PORT} {
-	reverse_proxy localhost:8080
 }

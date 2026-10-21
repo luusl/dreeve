@@ -43,8 +43,7 @@ class CollectionTest extends TestCase
 
     public function testItShouldGuardCollectionItemType(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Item must be an instance of App\Infrastructure\ValueObject\String\Name');
+        $this->expectExceptionObject(new \InvalidArgumentException('Item must be an instance of App\\Infrastructure\\ValueObject\\String\\Name'));
 
         ATestCollection::empty()->add('wrong');
     }
@@ -70,6 +69,20 @@ class CollectionTest extends TestCase
                 Name::fromString(20),
             ]),
             $collection->replace(Name::fromString(10), Name::fromString(30))
+        );
+    }
+
+    public function testSumItShouldCountNullAsZero(): void
+    {
+        $collection = ATestCollection::fromArray([
+            Name::fromString(10),
+            Name::fromString(20),
+            Name::fromString(30),
+        ]);
+
+        $this->assertEquals(
+            40,
+            $collection->sum(fn (Name $name): ?int => '20' === (string) $name ? null : (int) (string) $name)
         );
     }
 

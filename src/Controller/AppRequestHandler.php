@@ -4,39 +4,40 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Domain\Strava\InsufficientStravaAccessTokenScopes;
-use App\Domain\Strava\InvalidStravaAccessToken;
-use App\Domain\Strava\Strava;
-use League\Flysystem\FilesystemOperator;
-use Symfony\Component\HttpFoundation\RedirectResponse;
+use App\Application\IndexPage;
+use App\Domain\Activity\ActivityIdRepository;
+use App\Infrastructure\Http\Fragment\FragmentRegistry;
+use App\Infrastructure\Http\Fragment\FragmentRenderer;
+use App\Infrastructure\Http\Fragment\FragmentType;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
-use Twig\Environment;
 
 #[AsController]
 final readonly class AppRequestHandler
 {
     public function __construct(
-        private FilesystemOperator $buildStorage,
-        private Strava $strava,
-        private Environment $twig,
+        private ActivityIdRepository $activityIdRepository,
+        private IndexPage $indexPage,
+        private FragmentRegistry $fragmentRegistry,
+        private FragmentRenderer $fragmentRenderer,
     ) {
     }
 
-    #[Route(path: '/{wildcard?}', requirements: ['wildcard' => '.*'], methods: ['GET'], priority: -10)]
-    public function handle(): Response
+    #[Route(path: '/{wildcard?}', name: 'app', requirements: ['wildcard' => '.*'], methods: ['GET'], priority: -10)]
+    public function handle(?string $wildcard = null): Response
     {
-        if ($this->buildStorage->fileExists('index.html')) {
-            return new Response($this->buildStorage->read('index.html'), Response::HTTP_OK);
-        }
-        try {
-            $this->strava->verifyAccessToken();
-        } catch (InvalidStravaAccessToken|InsufficientStravaAccessTokenScopes) {
-            // Refresh token has not been set up properly or does not have the required scopes, initialize authorization flow.
-            return new RedirectResponse('/strava-oauth', Response::HTTP_FOUND);
+        if ($this->activityIdRepository->count() <= 0) {
+            throw new NotFoundHttpException('Not found');
         }
 
-        return new Response($this->twig->render('html/setup.html.twig'), Response::HTTP_OK);
+        $path = trim($wildcard ?? '', '/');
+        $pageExists = '' === $path || $this->fragmentRegistry->findOfType($path, FragmentType::PAGE) instanceof \App\Infrastructure\Http\Fragment\Fragment;
+
+        $response = $this->fragmentRenderer->render($this->indexPage);
+        $response->setStatusCode($pageExists ? Response::HTTP_OK : Response::HTTP_NOT_FOUND);
+
+        return $response;
     }
 }

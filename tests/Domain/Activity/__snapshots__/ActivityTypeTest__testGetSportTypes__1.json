@@ -25,6 +25,7 @@
         "StandUpPaddling",
         "Surfing",
         "Swim",
+        "OpenWaterSwim",
         "Windsurf"
     ],
     [
@@ -61,7 +62,8 @@
     ],
     [
         "Pilates",
-        "Yoga"
+        "Yoga",
+        "PhysicalTherapy"
     ],
     [
         "Golf",

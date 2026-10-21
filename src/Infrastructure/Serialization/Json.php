@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Serialization;
 
+use App\Infrastructure\Exception\CorruptedData;
 use App\Infrastructure\ValueObject\String\CompressedString;
+use JsonMachine\Items;
+use JsonMachine\JsonDecoder\ExtJsonDecoder;
 
 final readonly class Json
 {
@@ -23,9 +26,25 @@ final readonly class Json
         try {
             return json_decode($json ?: '', $assoc, max(1, $depth), JSON_THROW_ON_ERROR);
         } catch (\JsonException) {
-            throw new \JsonException('Invalid JSON detected. This is usually caused by corrupted activity data.
-Please see the troubleshooting guide for steps to resolve the issue: https://statistics-for-strava-docs.robiningelbrecht.be/#/troubleshooting/import-build-fails for more information.');
+            throw new CorruptedData('Invalid JSON detected. This is usually caused by corrupted activity data.
+Please see the troubleshooting guide for steps to resolve the issue: https://docs.dreeve.app/troubleshooting/import-build-fails/ for more information.');
         }
+    }
+
+    public static function decodeLazy(string $json, string $pointer): Items
+    {
+        return Items::fromString($json, [
+            'decoder' => new ExtJsonDecoder(true),
+            'pointer' => $pointer,
+        ]);
+    }
+
+    public static function decodeLazyFromFile(string $filePath, string $pointer): Items
+    {
+        return Items::fromFile($filePath, [
+            'decoder' => new ExtJsonDecoder(true),
+            'pointer' => $pointer,
+        ]);
     }
 
     public static function encodeAndDecode(mixed $value, int $depth = 512): mixed

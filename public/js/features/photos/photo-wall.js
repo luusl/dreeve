@@ -1,6 +1,6 @@
-import {FilterStorage, FilterName} from "../data-table/storage";
 import {FilterManager} from "../data-table/filter-manager";
-import LightGallery from "./light-gallery";
+import {parse, serialize} from "../data-table/filter-url";
+import {router} from "../../core/router";
 
 export default class PhotoWall {
     constructor(wrapper) {
@@ -12,13 +12,15 @@ export default class PhotoWall {
             filterables: JSON.parse(el.getAttribute('data-filterables')),
             active: true
         }));
-        this.lightGallery = new LightGallery(this.wrapper);
     }
 
-    async render() {
-        const redraw = () => {
+    render() {
+        const redraw = (syncUrl = true) => {
             const activeFilters = this.filterManager.getActiveFilters();
             this.filterManager.updateDropdownState(activeFilters);
+            if (syncUrl) {
+                router.replaceQuery(serialize({filters: this.filterManager.toUrlFilters()}));
+            }
 
             const images = this.filterManager.applyFiltersToRows(this.allImages);
             for (const {element, active} of images) {
@@ -27,19 +29,14 @@ export default class PhotoWall {
 
             this.resetBtn.classList.toggle('hidden', !(Object.keys(activeFilters).length > 0));
 
-            const activeImages = images.filter((image) => image.active);
             const resultCount = this.wrapper.querySelector('[data-dataTable-result-count]');
-            if (resultCount) resultCount.innerText = activeImages.length;
-
-            this.lightGallery.refresh(activeImages);
+            if (resultCount) resultCount.innerText = images.filter((image) => image.active).length;
         };
 
-        FilterStorage.set(FilterName.PHOTO_WALL, JSON.parse(this.wrapper.getAttribute('data-default-filters')));
-        this.filterManager.prefillFromStorage(FilterName.PHOTO_WALL);
-        redraw();
+        this.filterManager.prefillFromUrl(parse(new URLSearchParams(location.search)).filters);
+        redraw(false);
 
         this.wrapper.querySelectorAll('[data-dataTable-filter]').forEach(el => el.addEventListener('input', redraw));
-        this.lightGallery.bindEvents();
 
         if (this.resetBtn) {
             this.resetBtn.addEventListener('click', e => {

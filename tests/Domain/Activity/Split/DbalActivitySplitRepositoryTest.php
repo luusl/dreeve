@@ -6,14 +6,15 @@ use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIds;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
+use App\Domain\Activity\ImportSource;
 use App\Domain\Activity\Split\ActivitySplitRepository;
 use App\Domain\Activity\Split\ActivitySplits;
 use App\Domain\Activity\Split\DbalActivitySplitRepository;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Activity\Stream\StreamType;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPerKm;
+use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Velocity\SecPerKm;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Activity\Stream\ActivityStreamBuilder;
@@ -178,6 +179,49 @@ class DbalActivitySplitRepositoryTest extends ContainerTestCase
         );
     }
 
+    public function testFindActivityIdsThatNeedSplitCalculation(): void
+    {
+        $this->addActivity('run-file-import', SportType::RUN, ImportSource::FIT_FILE);
+        $this->addStreams('run-file-import', [0, 1, 2], [0.0, 100.0, 200.0]);
+
+        $this->addActivity('walk-file-import', SportType::WALK, ImportSource::TCX_FILE);
+        $this->addStreams('walk-file-import', [0, 1, 2], [0.0, 100.0, 200.0]);
+
+        $this->addActivity('swim-file-import', SportType::POOL_SWIM, ImportSource::GPX_FILE);
+        $this->addStreams('swim-file-import', [0, 1, 2], [0.0, 100.0, 200.0]);
+
+        $this->addActivity('run-imported-from-strava', SportType::RUN, ImportSource::STRAVA_API);
+        $this->addStreams('run-imported-from-strava', [0, 1, 2], [0.0, 100.0, 200.0]);
+
+        $this->addActivity('ride-file-import', SportType::RIDE, ImportSource::FIT_FILE);
+        $this->addStreams('ride-file-import', [0, 1, 2], [0.0, 100.0, 200.0]);
+
+        $this->addActivity('run-with-splits', SportType::RUN, ImportSource::FIT_FILE);
+        $this->addStreams('run-with-splits', [0, 1, 2], [0.0, 100.0, 200.0]);
+        $this->activitySplitRepository->add(ActivitySplitBuilder::fromDefaults()
+            ->withActivityId(ActivityId::fromUnprefixed('run-with-splits'))
+            ->withSplitNumber(1)
+            ->build());
+
+        $this->addActivity('run-without-time-stream', SportType::RUN, ImportSource::FIT_FILE);
+        $this->addStreams('run-without-time-stream', null, [0.0, 100.0, 200.0]);
+
+        $this->addActivity('run-without-distance-stream', SportType::RUN, ImportSource::FIT_FILE);
+        $this->addStreams('run-without-distance-stream', [0, 1, 2], null);
+
+        $this->addActivity('run-with-empty-distance-stream', SportType::RUN, ImportSource::FIT_FILE);
+        $this->addStreams('run-with-empty-distance-stream', [0, 1, 2], []);
+
+        $this->assertEquals(
+            ActivityIds::fromArray([
+                ActivityId::fromUnprefixed('run-file-import'),
+                ActivityId::fromUnprefixed('swim-file-import'),
+                ActivityId::fromUnprefixed('walk-file-import'),
+            ]),
+            $this->activitySplitRepository->findActivityIdsThatNeedSplitCalculation(),
+        );
+    }
+
     public function testUpdate(): void
     {
         $this->activitySplitRepository->add(ActivitySplitBuilder::fromDefaults()
@@ -187,69 +231,39 @@ class DbalActivitySplitRepositoryTest extends ContainerTestCase
 
         $splits = $this->activitySplitRepository->findBy(ActivityId::fromUnprefixed('test'), UnitSystem::METRIC);
         $this->assertNull($splits->toArray()[0]->getGapPaceInSecondsPerKm());
-        $this->assertNull($splits->toArray()[0]->getAverageHeartRate());
 
         $split = $splits->toArray()[0]
-            ->withGapPace(SecPerKm::from(350.5))
-            ->withAverageHeartRate(145);
+            ->withGapPace(SecPerKm::from(350.5));
         $this->activitySplitRepository->update($split);
 
         $updatedSplits = $this->activitySplitRepository->findBy(ActivityId::fromUnprefixed('test'), UnitSystem::METRIC);
         $this->assertEqualsWithDelta(350.5, $updatedSplits->toArray()[0]->getGapPaceInSecondsPerKm()->toFloat(), 0.01);
-        $this->assertSame(145, $updatedSplits->toArray()[0]->getAverageHeartRate());
     }
 
-    public function testFindActivityIdsWithoutAverageHeartRate(): void
-    {
-        $this->addActivity('with-hr-stream-no-avg', SportType::RUN);
-        $this->addActivity('with-hr-stream-has-avg', SportType::RUN);
-        $this->addActivity('without-hr-stream', SportType::RUN);
-
-        $this->activityStreamRepository->add(ActivityStreamBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed('with-hr-stream-no-avg'))
-            ->withStreamType(StreamType::HEART_RATE)
-            ->withData([140, 150, 160])
-            ->build());
-
-        $this->activityStreamRepository->add(ActivityStreamBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed('with-hr-stream-has-avg'))
-            ->withStreamType(StreamType::HEART_RATE)
-            ->withData([140, 150, 160])
-            ->build());
-
-        $this->activitySplitRepository->add(ActivitySplitBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed('with-hr-stream-no-avg'))
-            ->withSplitNumber(1)
-            ->build());
-
-        $this->activitySplitRepository->add(ActivitySplitBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed('with-hr-stream-has-avg'))
-            ->withSplitNumber(1)
-            ->withAverageHeartRate(150)
-            ->build());
-
-        $this->activitySplitRepository->add(ActivitySplitBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed('without-hr-stream'))
-            ->withSplitNumber(1)
-            ->build());
-
-        $this->assertEquals(
-            ActivityIds::fromArray([
-                ActivityId::fromUnprefixed('with-hr-stream-no-avg'),
-            ]),
-            $this->activitySplitRepository->findActivityIdsWithoutAverageHeartRate(),
-        );
-    }
-
-    private function addActivity(string $id, SportType $sportType): void
+    private function addActivity(string $id, SportType $sportType, ImportSource $importSource = ImportSource::STRAVA_API): void
     {
         $this->activityRepository->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed($id))
                 ->withSportType($sportType)
+                ->withImportSource($importSource)
                 ->build(),
             [],
         ));
+    }
+
+    private function addStreams(string $id, ?array $time, ?array $distance): void
+    {
+        foreach ([StreamType::TIME->value => $time, StreamType::DISTANCE->value => $distance] as $streamType => $data) {
+            if (null === $data) {
+                continue;
+            }
+            $this->activityStreamRepository->add(ActivityStreamBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed($id))
+                ->withStreamType(StreamType::from($streamType))
+                ->withData($data)
+                ->build());
+        }
     }
 
     #[\Override]

@@ -5,8 +5,20 @@
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
     env(APP_DEBUG): 0
+    env(IMPORT_MODE): 'files'
+    env(ADMIN_USERNAME): 'admin'
+    env(ADMIN_PASSWORD_HASH): ''
+    env(ADMIN_ALLOWED_IPS): ''
+    env(DREEVE_API_KEY): ''
+    env(TRUSTED_PROXIES): 'private_ranges'
+    env(STRAVA_CLIENT_ID): 'replace-me'
+    env(STRAVA_CLIENT_SECRET): 'replace-me'
+    env(STRAVA_REFRESH_TOKEN): 'replace-me'
+    env(DEMO_MODE_IS_ENABLED): 0
+    env(DEV_MODE_IS_ENABLED): 0
     env(LOCK_DSN): 'flock'
     env(TZ): ''
+    env(DATABASE_DIRECTORY): '%kernel.project_dir%/storage/database'
 
 services:
     # default configuration for services in *this* file
@@ -28,17 +40,11 @@ services:
         resource: '../src/Controller/'
         tags: ['controller.service_arguments']
 
-    App\Infrastructure\Http\ErrorResponseExceptionListener:
-        tags:
-            - { name: kernel.event_listener, event: kernel.exception }
-
-    App\Infrastructure\Daemon\Cron\ConfiguredCronActions:
-      factory: [ null, 'fromConfig' ]
-      arguments: [ '@=app_config("daemon.cron", [])' ]
-
     App\Infrastructure\KeyValue\KeyValueStore:
       class: App\Infrastructure\KeyValue\DbalKeyValueStore
       public: true
+
+    App\Domain\Settings\SettingsRepository: '@App\Domain\Settings\CachingSettingsRepository'
 
     App\Infrastructure\ValueObject\String\KernelProjectDir:
         public: true
@@ -50,76 +56,33 @@ services:
         autoconfigure: false
         factory: [ null, 'fromServer' ]
 
-    App\Infrastructure\Time\Format\DateAndTimeFormat:
-        factory: [ null, 'create' ]
-        arguments: [
-            '@=app_config("appearance.dateFormat.short", "d-m-y")',
-            '@=app_config("appearance.dateFormat.normal", "d-m-Y")',
-            '@=app_config("appearance.dateFormat", "")',
-            '@=app_config("appearance.timeFormat")',
-        ]
-
     App\Infrastructure\ValueObject\Time\SerializableTimezone:
         factory: [ null, 'fromOptionalString' ]
         arguments: ['%env(string:TZ)%']
 
-    App\Infrastructure\ValueObject\Measurement\UnitSystem:
-        autoconfigure: false
-        factory: [ null, 'from' ]
-        arguments: [ '@=app_config("appearance.unitSystem")' ]
+    App\Infrastructure\Config\AdminAllowedIpAddresses:
+        factory: [ null, 'fromString' ]
+        arguments: ['%env(string:ADMIN_ALLOWED_IPS)%']
 
-    App\Infrastructure\Localisation\Locale:
-        autoconfigure: false
-        factory: [ null, 'from' ]
-        arguments: ['@=app_config("appearance.locale")']
+    App\Infrastructure\Config\DemoMode:
+        factory: [ null, 'fromString' ]
+        arguments: ['%env(string:DEMO_MODE_IS_ENABLED)%']
 
-    App\Application\AppSubTitle:
-        factory: [ null, 'fromOptionalString' ]
-        arguments: [ '@=app_config("general.appSubTitle", "")' ]
+    App\Infrastructure\Config\DevMode:
+        factory: [ null, 'fromString' ]
+        arguments: ['%env(string:DEV_MODE_IS_ENABLED)%']
+
+    App\Infrastructure\Security\AdminUserName:
+        factory: [ null, 'fromString' ]
+        arguments: ['%env(string:ADMIN_USERNAME)%']
+
+    App\Infrastructure\Security\AdminPasswordHash:
+        factory: [ null, 'fromString' ]
+        arguments: ['%env(string:ADMIN_PASSWORD_HASH)%']
 
     App\Application\AppUrl:
         factory: [ null, 'fromString' ]
-        arguments: ['@=app_config("general.appUrl")']
-
-    App\Application\ProfilePictureUrl:
-      factory: [ null, 'fromOptionalString' ]
-      arguments: ['@=app_config("general.profilePictureUrl")']
-
-    App\Application\Build\BuildHeatmapHtml\HeatmapConfig:
-        factory: [ null, 'create' ]
-        arguments: [
-            '@=app_config("appearance.heatmap.polylineColor", "#fc6719")',
-            '@=app_config("appearance.heatmap.tileLayerUrl", "https://tile.openstreetmap.org/{z}/{x}/{y}.png")',
-            '@=app_config("appearance.heatmap.enableGreyScale", true)'
-        ]
-
-    App\Application\Build\BuildPhotosHtml\DefaultEnabledPhotoFilters:
-        factory: [ null, 'from' ]
-        arguments: ['@=app_config("appearance.photos.defaultEnabledFilters", [])']
-
-    App\Application\Build\BuildPhotosHtml\HidePhotosForSportTypes:
-      factory: [ null, 'from' ]
-      arguments: ['@=app_config("appearance.photos.hidePhotosForSportTypes", [])']
-
-    App\Application\Import\ImportActivities\ActivityVisibilitiesToImport:
-      factory: [ null, 'from' ]
-      arguments: ['@=app_config("import.activityVisibilitiesToImport")']
-
-    App\Application\Import\ImportActivities\NumberOfNewActivitiesToProcessPerImport:
-      factory: [ null, 'fromInt' ]
-      arguments: ['@=app_config("import.numberOfNewActivitiesToProcessPerImport")']
-
-    App\Application\Import\ImportActivities\ActivitiesToSkipDuringImport:
-      factory: [ null, 'from' ]
-      arguments: ['@=app_config("import.activitiesToSkipDuringImport")']
-
-    App\Application\Import\ImportActivities\SkipActivitiesRecordedBefore:
-      factory: [ null, 'fromOptionalString' ]
-      arguments: ['@=app_config("import.skipActivitiesRecordedBefore")']
-
-    App\Application\Import\ImportSegments\OptInToSegmentDetailsImport:
-      factory: [ null, 'fromBool' ]
-      arguments: [ '@=app_config("import.optInToSegmentDetailImport", false)' ]
+        arguments: ['%env(string:APP_URL)%']
 
     NeuronAI\Agent\AgentInterface:
         class: App\Domain\Integration\AI\NeuronAIAgent
@@ -129,26 +92,6 @@ services:
 
     NeuronAI\Tools\Toolkits\ToolkitInterface:
         class: App\Domain\Integration\AI\Tool\Toolkit
-
-    App\Domain\Dashboard\DashboardLayout:
-      factory: [ null, 'fromArray' ]
-      arguments: ['@=app_config("appearance.dashboard.layout", [])']
-
-    App\Domain\Integration\AI\Chat\ChatCommands:
-        factory: [ null, 'fromArray' ]
-        arguments: ['@=app_config("integrations.ai.agent.commands", [])']
-
-    App\Domain\Integration\AI\AIProviderFactory:
-        arguments: ['@=app_config("integrations.ai", [])']
-
-    App\Domain\Integration\Notification\Shoutrrr\ConfiguredNotificationServices:
-      factory: [ null, 'fromConfig' ]
-      arguments: [
-        '@=app_config("integrations.notifications.services", [])',
-        '@=app_config("integrations.notifications.ntfyUrl", "")',
-        '@=app_config("integrations.notifications.ntfyUsername", "")',
-        '@=app_config("integrations.notifications.ntfyPassword", "")'
-      ]
 
     App\Domain\Strava\StravaClientId:
         factory: [ null, 'fromString' ]
@@ -162,76 +105,15 @@ services:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:STRAVA_REFRESH_TOKEN)%']
 
-    App\Domain\Athlete\AthleteBirthDate:
+    App\Domain\Api\Token:
         factory: [ null, 'fromString' ]
-        arguments: ['@=app_config("general.athlete.birthday")']
+        arguments: ['%env(string:DREEVE_API_KEY)%']
 
-    App\Domain\Athlete\HeartRateZone\HeartRateZoneConfiguration:
-        factory: [ null, 'fromArray' ]
-        arguments: ['@=app_config("general.athlete.heartRateZones", [])']
-
-    App\Domain\Athlete\MaxHeartRate\MaxHeartRateFormula:
-        factory: [ '@App\Domain\Athlete\MaxHeartRate\MaxHeartRateFormulas', 'determineFormula' ]
-        arguments: ['@=app_config("general.athlete.maxHeartRateFormula")']
-
-    App\Domain\Athlete\RestingHeartRate\RestingHeartRateFormula:
-        factory: [ '@App\Domain\Athlete\RestingHeartRate\RestingHeartRateFormulas', 'determineFormula' ]
-        arguments: ['@=app_config("general.athlete.restingHeartRateFormula", "heuristicAgeBased")']
-
-    App\Domain\Activity\Eddington\Config\EddingtonConfiguration:
-        factory: [ null, 'fromScalarArray' ]
-        arguments: ['@=app_config("metrics.eddington", [])']
-
-    App\Domain\Activity\SportType\SportTypesSortingOrder:
+    App\Domain\Import\ImportMode:
+        public: true
+        autoconfigure: false
         factory: [ null, 'from' ]
-        arguments: ['@=app_config("appearance.sportTypesSortingOrder", [])']
-
-    App\Domain\Activity\SportType\SportTypesToImport:
-        factory: [ null, 'from' ]
-        arguments: ['@=app_config("import.sportTypesToImport")']
-
-    App\Domain\Activity\Stream\ActivitiesExcludedFromPeakPowerOutputs:
-        factory: [ null, 'from' ]
-        arguments: ['@=app_config("metrics.excludeActivitiesFromPeakPowerOutputs", [])']
-
-    App\Domain\Athlete\Weight\AthleteWeightHistory:
-        factory: [ null, 'fromArray' ]
-        arguments: [
-            '@=app_config("general.athlete.weightHistory")',
-            '@App\Infrastructure\ValueObject\Measurement\UnitSystem'
-        ]
-
-    App\Domain\Ftp\FtpHistory:
-        factory: [ null, 'fromArray' ]
-        arguments: ['@=app_config("general.athlete.ftpHistory")']
-
-    App\Domain\Gear\CustomGear\CustomGearConfig:
-        factory: [ null, 'fromArray' ]
-        arguments: ['@=app_config("gear.customGear", [])']
-
-    App\Domain\Gear\ImportedGear\ImportedGearConfig:
-      factory: [ null, 'fromArray' ]
-      arguments: ['@=app_config("gear.stravaGear", [])']
-
-    App\Domain\Gear\Maintenance\GearMaintenanceConfig:
-        factory: [ null, 'fromArray' ]
-        arguments: ['@=app_config("gearMaintenance", [])']
-
-    App\Domain\Gear\RecordingDevice\RecordingDevicesConfig:
-        factory: [ null, 'fromArray' ]
-        arguments: ['@=app_config("gear.recordingDevices", [])']
-
-    App\Domain\Strava\Webhook\WebhookConfig:
-      factory: [ null, 'fromArray' ]
-      arguments: ['@=app_config("import.webhooks", [])']
-
-    App\Domain\Zwift\ZwiftLevel:
-        factory: [ null, 'fromOptionalString' ]
-        arguments: ['@=app_config("zwift.level")']
-
-    App\Domain\Zwift\ZwiftRacingScore:
-        factory: [ null, 'fromOptionalString' ]
-        arguments: ['@=app_config("zwift.racingScore")']
+        arguments: ['%env(string:IMPORT_MODE)%']
 
     # Autowiring of vendor classes
     League\Flysystem\FilesystemOperator: '@default.storage'
@@ -241,6 +123,16 @@ services:
 
     GuzzleHttp\Client:
       class: GuzzleHttp\Client
+      arguments:
+        $config:
+          connect_timeout: 5
+          timeout: 30
 
     Money\MoneyFormatter:
         factory: '@App\Infrastructure\DependencyInjection\MoneyFormatterFactory'
+
+    monolog.formatter.errors:
+        class: Monolog\Formatter\LineFormatter
+        arguments:
+            $format: "[%%datetime%%] %%channel%%.%%level_name%%: %%message%%\n"
+            $allowInlineLineBreaks: true

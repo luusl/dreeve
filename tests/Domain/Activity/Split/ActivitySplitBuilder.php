@@ -6,10 +6,10 @@ namespace App\Tests\Domain\Activity\Split;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\Split\ActivitySplit;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\Measurement\Velocity\MetersPerSecond;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPerKm;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
+use App\Infrastructure\Measurement\Velocity\SecPerKm;
 
 final class ActivitySplitBuilder
 {
@@ -19,7 +19,7 @@ final class ActivitySplitBuilder
     private Meter $distance;
     private readonly int $elapsedTimeInSeconds;
     private int $movingTimeInSeconds;
-    private readonly Meter $elevationDifference;
+    private Meter $elevationDifference;
     private MetersPerSecond $averageSpeed;
     private MetersPerSecond $minAverageSpeed;
     private MetersPerSecond $maxAverageSpeed;
@@ -60,7 +60,6 @@ final class ActivitySplitBuilder
             maxAverageSpeed: $this->maxAverageSpeed,
             paceZone: $this->paceZone,
             gapPaceInSecondsPerKm: $this->gapPaceInSecondsPerKm,
-            averageHeartRate: $this->averageHeartRate,
         );
     }
 
@@ -116,6 +115,13 @@ final class ActivitySplitBuilder
     public function withMovingTimeInSeconds(int $movingTimeInSeconds): self
     {
         $this->movingTimeInSeconds = $movingTimeInSeconds;
+
+        return $this;
+    }
+
+    public function withElevationDifferenceInMeter(float|int $elevationDifference): self
+    {
+        $this->elevationDifference = Meter::from($elevationDifference);
 
         return $this;
     }

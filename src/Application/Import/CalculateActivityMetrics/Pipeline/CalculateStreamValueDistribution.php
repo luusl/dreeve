@@ -10,26 +10,32 @@ use App\Domain\Activity\Stream\Metric\ActivityStreamMetric;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricRepository;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricType;
 use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Console\ProgressIndicator;
 use App\Infrastructure\Exception\EntityNotFound;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\Measurement\Velocity\MetersPerSecond;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPer100Meter;
-use App\Infrastructure\ValueObject\Measurement\Velocity\SecPerKm;
+use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Velocity\Knot;
+use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
+use App\Infrastructure\Measurement\Velocity\SecPer100Meter;
+use App\Infrastructure\Measurement\Velocity\SecPerKm;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\Attribute\AsTaggedItem;
 
+#[AsTaggedItem(priority: 10)]
 final readonly class CalculateStreamValueDistribution implements CalculateActivityMetricsStep
 {
     public function __construct(
         private ActivityStreamRepository $activityStreamRepository,
         private ActivityStreamMetricRepository $activityStreamMetricRepository,
         private ActivityRepository $activityRepository,
-        private UnitSystem $unitSystem,
+        private SettingsRepository $settingsRepository,
     ) {
     }
 
     public function process(OutputInterface $output): void
     {
+        $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
+
         $progressIndicator = new ProgressIndicator($output);
         $progressIndicator->start('=> Calculated value distribution for 0 streams');
 
@@ -64,11 +70,11 @@ final readonly class CalculateStreamValueDistribution implements CalculateActivi
                     ksort($valueDistribution);
                 } elseif (StreamType::HEART_RATE === $streamType) {
                     /** @var array<int, int<1, max>> $valueDistribution */
-                    $valueDistribution = array_count_values($stream->getData());
+                    $valueDistribution = array_count_values(array_filter($stream->getData(), fn (mixed $item): bool => !is_null($item)));
                     ksort($valueDistribution);
                 } elseif (StreamType::CADENCE === $streamType) {
                     /** @var array<int, int<1, max>> $valueDistribution */
-                    $valueDistribution = array_count_values($stream->getData());
+                    $valueDistribution = array_count_values(array_filter($stream->getData(), fn (mixed $item): bool => !is_null($item)));
                     ksort($valueDistribution);
                 } elseif (StreamType::VELOCITY === $streamType) {
                     $velocityUnitPreference = $sportType->getVelocityDisplayPreference();
@@ -80,10 +86,14 @@ final readonly class CalculateStreamValueDistribution implements CalculateActivi
                             $filteredValues
                         ),
                         $velocityUnitPreference instanceof SecPerKm => array_map(
-                            fn (float $item): int => (int) round(MetersPerSecond::from($item)->toSecPerKm()->toUnitSystem($this->unitSystem)->toFloat()),
+                            fn (float $item): int => (int) round(MetersPerSecond::from($item)->toSecPerKm()->toUnitSystem($unitSystem)->toFloat()),
                             $filteredValues
                         ),
-                        UnitSystem::IMPERIAL === $this->unitSystem => array_map(
+                        $velocityUnitPreference instanceof Knot => array_map(
+                            fn (float $item): int => (int) round(MetersPerSecond::from($item)->toKmPerHour()->toKnots()->toFloat()),
+                            $filteredValues
+                        ),
+                        UnitSystem::IMPERIAL === $unitSystem => array_map(
                             fn (float $item): int => (int) round(MetersPerSecond::from($item)->toKmPerHour()->toMph()->toFloat()),
                             $filteredValues
                         ),

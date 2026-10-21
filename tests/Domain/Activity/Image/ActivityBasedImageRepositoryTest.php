@@ -2,15 +2,15 @@
 
 namespace App\Tests\Domain\Activity\Image;
 
-use App\Application\Build\BuildPhotosHtml\HidePhotosForSportTypes;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
-use App\Domain\Activity\EnrichedActivities;
 use App\Domain\Activity\Image\ActivityBasedImageRepository;
 use App\Domain\Activity\Image\ImageRepository;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\SportType\SportTypes;
+use App\Domain\Settings\SettingsGroup;
+use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\ValueObject\String\KernelProjectDir;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
@@ -18,10 +18,12 @@ use App\Infrastructure\ValueObject\Time\Year;
 use App\Infrastructure\ValueObject\Time\Years;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
+use League\Flysystem\FilesystemOperator;
 
 class ActivityBasedImageRepositoryTest extends ContainerTestCase
 {
     private ImageRepository $imageRepository;
+    private FilesystemOperator $fileStorage;
 
     public function testFindRandomFor(): void
     {
@@ -103,14 +105,87 @@ class ActivityBasedImageRepositoryTest extends ContainerTestCase
         );
     }
 
+    public function testCount(): void
+    {
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->withSportType(SportType::RUN)
+                ->withTotalImageCount(3)
+                ->build(),
+            []
+        ));
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
+                ->withSportType(SportType::RIDE)
+                ->withTotalImageCount(4)
+                ->build(),
+            []
+        ));
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('3'))
+                ->withSportType(SportType::WALK)
+                ->withTotalImageCount(5)
+                ->build(),
+            []
+        ));
+
+        $this->assertEquals(12, $this->imageRepository->count());
+
+        $this->getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::APPEARANCE, [
+            'photos' => [
+                'hidePhotosForSportTypes' => [SportType::RIDE->value, SportType::WALK->value],
+            ],
+        ]);
+
+        $this->assertEquals(3, $this->imageRepository->count());
+    }
+
+    public function testDeleteForActivity(): void
+    {
+        $this->fileStorage->write('activities/one.png', 'one');
+        $this->fileStorage->write('activities/two.png', 'two');
+
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->withLocalImagePaths('files/activities/one.png')
+                ->build(),
+            []
+        ));
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
+                ->withLocalImagePaths('files/activities/two.png')
+                ->build(),
+            []
+        ));
+
+        $this->imageRepository->deleteForActivity(ActivityId::fromUnprefixed('1'));
+
+        $this->assertFalse($this->fileStorage->fileExists('activities/one.png'));
+        $this->assertTrue($this->fileStorage->fileExists('activities/two.png'));
+    }
+
+    public function testDeleteForActivityWhenActivityDoesNotExist(): void
+    {
+        $this->expectNotToPerformAssertions();
+
+        $this->imageRepository->deleteForActivity(ActivityId::fromUnprefixed('1'));
+    }
+
     #[\Override]
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->imageRepository = new ActivityBasedImageRepository(
-            $this->getContainer()->get(EnrichedActivities::class),
-            HidePhotosForSportTypes::fromArray([]),
+            $this->getConnection(),
+            $this->getContainer()->get(ActivityRepository::class),
+            $this->fileStorage = $this->getContainer()->get('file.storage'),
+            $this->getContainer()->get(SettingsRepository::class),
             KernelProjectDir::fromString('var/www')
         );
     }

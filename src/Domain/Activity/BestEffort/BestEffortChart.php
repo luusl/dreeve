@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Activity\BestEffort;
 
 use App\Domain\Activity\ActivityType;
-use App\Infrastructure\Theme\Theme;
-use App\Infrastructure\ValueObject\Measurement\Length\ConvertableToMeter;
-use App\Infrastructure\ValueObject\Measurement\Unit;
+use App\Domain\Theme\Theme;
+use App\Infrastructure\Measurement\Length\ConvertableToMeter;
+use App\Infrastructure\Measurement\Unit;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final readonly class BestEffortChart
@@ -15,22 +15,25 @@ final readonly class BestEffortChart
     private function __construct(
         private ActivityType $activityType,
         private BestEffortPeriod $period,
-        private BestEffortsCalculator $bestEffortsCalculator,
+        private BestEfforts $bestEfforts,
         private TranslatorInterface $translator,
+        private Theme $theme,
     ) {
     }
 
     public static function create(
         ActivityType $activityType,
         BestEffortPeriod $period,
-        BestEffortsCalculator $bestEffortsCalculator,
+        BestEfforts $bestEfforts,
         TranslatorInterface $translator,
+        Theme $theme,
     ): self {
         return new self(
             activityType: $activityType,
             period: $period,
-            bestEffortsCalculator: $bestEffortsCalculator,
-            translator: $translator
+            bestEfforts: $bestEfforts,
+            translator: $translator,
+            theme: $theme,
         );
     }
 
@@ -41,7 +44,7 @@ final readonly class BestEffortChart
     {
         $series = [];
 
-        $sportTypes = $this->bestEffortsCalculator->getSportTypesFor(
+        $sportTypes = $this->bestEfforts->getSportTypesFor(
             period: $this->period,
             activityType: $this->activityType
         );
@@ -59,10 +62,10 @@ final readonly class BestEffortChart
                     'show' => false,
                 ],
                 'itemStyle' => [
-                    'color' => Theme::getColorForSportType($sportType),
+                    'color' => $this->theme->getColorForSportType($sportType),
                 ],
                 'data' => array_filter(array_map(
-                    fn (ConvertableToMeter $distance): ?int => $this->bestEffortsCalculator->for(
+                    fn (ConvertableToMeter $distance): ?int => $this->bestEfforts->for(
                         period: $this->period,
                         sportType: $sportType,
                         distance: $distance,

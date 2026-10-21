@@ -5,18 +5,27 @@ declare(strict_types=1);
 namespace App\Domain\Segment;
 
 use App\Domain\Activity\SportType\SportType;
+use App\Infrastructure\Eventing\EventBus;
 use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Repository\DbalRepository;
 use App\Infrastructure\Repository\Pagination;
 use App\Infrastructure\ValueObject\Geography\Coordinate;
 use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
 use App\Infrastructure\ValueObject\Geography\Latitude;
 use App\Infrastructure\ValueObject\Geography\Longitude;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
 use App\Infrastructure\ValueObject\String\Name;
+use Doctrine\DBAL\Connection;
 
 final readonly class DbalSegmentRepository extends DbalRepository implements SegmentRepository
 {
+    public function __construct(
+        Connection $connection,
+        private EventBus $eventBus,
+    ) {
+        parent::__construct($connection);
+    }
+
     public function add(Segment $segment): void
     {
         $sql = 'INSERT INTO Segment (segmentId, name, sportType, distance, maxGradient, isFavourite, 
@@ -42,6 +51,8 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
             'startingCoordinateLongitude' => null,
             'averageGradient' => $segment->getAverageGradient(),
         ]);
+
+        $this->eventBus->publishEvents($segment->getRecordedEvents());
     }
 
     public function update(Segment $segment): void
@@ -84,11 +95,18 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
     public function findAll(Pagination $pagination): Segments
     {
         $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('*', '(SELECT COUNT(*) FROM SegmentEffort WHERE SegmentEffort.segmentId = Segment.segmentId) as countCompleted')
+        $queryBuilder->select('Segment.*', 'COALESCE(efforts.countCompleted, 0) AS countCompleted')
             ->from('Segment')
+            ->leftJoin(
+                'Segment',
+                '(SELECT segmentId, COUNT(*) AS countCompleted FROM SegmentEffort GROUP BY segmentId)',
+                'efforts',
+                'efforts.segmentId = Segment.segmentId'
+            )
             ->setFirstResult($pagination->getOffset())
             ->setMaxResults($pagination->getLimit())
-            ->orderBy('countCompleted', 'DESC');
+            ->orderBy('countCompleted', 'DESC')
+            ->addOrderBy('Segment.segmentId', 'ASC');
 
         return Segments::fromArray(array_map(
             $this->hydrate(...),
@@ -141,8 +159,14 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
 
     public function deleteOrphaned(): void
     {
-        $this->connection->executeStatement('DELETE FROM Segment WHERE NOT EXISTS(
+        $deletedSegments = $this->connection->executeStatement('DELETE FROM Segment WHERE NOT EXISTS(
             SELECT 1 FROM SegmentEffort WHERE SegmentEffort.segmentId = Segment.segmentId
         )');
+
+        if (0 === $deletedSegments) {
+            return;
+        }
+
+        $this->eventBus->publishEvents([new SegmentsWereDeleted()]);
     }
 }

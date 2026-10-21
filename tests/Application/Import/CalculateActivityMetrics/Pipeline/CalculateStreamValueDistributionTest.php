@@ -12,8 +12,10 @@ use App\Domain\Activity\Stream\Metric\ActivityStreamMetric;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricRepository;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricType;
 use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Settings\SettingsName;
+use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Serialization\Json;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
@@ -54,7 +56,7 @@ class CalculateStreamValueDistributionTest extends ContainerTestCase
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed(1))
-                ->withSportType(SportType::SWIM)
+                ->withSportType(SportType::POOL_SWIM)
                 ->withStartDateTime(SerializableDateTime::fromString('2021-03-01'))
                 ->build(),
             []
@@ -123,11 +125,14 @@ class CalculateStreamValueDistributionTest extends ContainerTestCase
             data: [4 => 3, 2 => 3],
         ));
 
+        $settingsRepository = $this->getContainer()->get(SettingsRepository::class);
+        $settingsRepository->save(SettingsName::UNIT_SYSTEM, $unitSystem->value);
+
         new CalculateStreamValueDistribution(
             $this->getContainer()->get(ActivityStreamRepository::class),
             $this->getContainer()->get(ActivityStreamMetricRepository::class),
             $this->getContainer()->get(ActivityRepository::class),
-            $unitSystem,
+            $settingsRepository,
         )->process($output);
 
         $this->assertMatchesTextSnapshot($output);

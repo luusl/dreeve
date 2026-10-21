@@ -7,16 +7,18 @@ namespace App\Domain\Integration\AI\Tool;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\Split\ActivitySplit;
 use App\Domain\Activity\Split\ActivitySplitRepository;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Domain\Settings\SettingsRepository;
 use NeuronAI\Tools\PropertyType;
 use NeuronAI\Tools\Tool;
 use NeuronAI\Tools\ToolProperty;
 
 final class GetActivitySplits extends Tool
 {
+    private const int MAX_RESULTS = 60;
+
     public function __construct(
         private readonly ActivitySplitRepository $activitySplitRepository,
-        private readonly UnitSystem $unitSystem,
+        private readonly SettingsRepository $settingsRepository,
     ) {
         parent::__construct(
             'get_activity_splits',
@@ -25,6 +27,7 @@ final class GetActivitySplits extends Tool
             Use this tool when the user asks about split data within an activity or requests all details for a specific activity. 
             It requires the activity ID as input and provides the split-by-split breakdown needed for summaries, analysis, or comparisons. 
             Example requests include “Show all splits for activity 12345” or “Give me detailed split stats for my last run.”
+            Returns at most 60 splits, from the start of the activity. Compare "totalSplitCount" with the number of returned splits: if it is higher, tell the user you are only seeing part of the activity.
             DESC
         );
     }
@@ -32,7 +35,7 @@ final class GetActivitySplits extends Tool
     #[\Override]
     public function getMaxRuns(): int
     {
-        return 100;
+        return 25;
     }
 
     /**
@@ -61,9 +64,14 @@ final class GetActivitySplits extends Tool
         $activityId = ActivityId::fromUnprefixed($activityId);
         $splits = $this->activitySplitRepository->findBy(
             activityId: $activityId,
-            unitSystem: $this->unitSystem
+            unitSystem: $this->settingsRepository->appearance()->getUnitSystem()
         );
 
-        return $splits->map(static fn (ActivitySplit $split): array => $split->exportForAITooling());
+        return [
+            'splits' => $splits
+                ->slice(0, self::MAX_RESULTS)
+                ->map(static fn (ActivitySplit $split): array => $split->exportForAITooling()),
+            'totalSplitCount' => count($splits),
+        ];
     }
 }

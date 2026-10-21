@@ -4,32 +4,44 @@ declare(strict_types=1);
 
 namespace App\Domain\Dashboard\Widget;
 
+use App\Domain\Activity\ActivityIds;
+use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityType;
 use App\Domain\Activity\ActivityTypeRepository;
-use App\Domain\Activity\EnrichedActivities;
 use App\Domain\Activity\SportType\SportTypes;
 use App\Domain\Activity\Stream\ActivityPowerRepository;
-use App\Domain\Activity\Stream\BestPowerOutputs;
-use App\Domain\Activity\Stream\PowerOutputChart;
 use App\Domain\Activity\Stream\PowerOutputs;
-use App\Infrastructure\Serialization\Json;
-use App\Infrastructure\ValueObject\Time\DateRange;
+use App\Domain\Dashboard\DashboardWidgetId;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
-use App\Infrastructure\ValueObject\Time\Years;
-use League\Flysystem\FilesystemOperator;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
-final readonly class PeakPowerOutputsWidget implements Widget
+final readonly class PeakPowerOutputsWidget implements Widget, DependsOnCurrentDay
 {
     public function __construct(
-        private EnrichedActivities $enrichedActivities,
+        private ActivityRepository $activityRepository,
         private ActivityPowerRepository $activityPowerRepository,
         private ActivityTypeRepository $activityTypeRepository,
         private Environment $twig,
-        private FilesystemOperator $buildStorage,
         private TranslatorInterface $translator,
     ) {
+    }
+
+    public function getLabel(): string
+    {
+        return $this->translator->trans('Peak power outputs');
+    }
+
+    public function getTemplateName(): string
+    {
+        return 'widget--peak-power-outputs';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES, RootCacheTag::SETTINGS_METRICS);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -41,7 +53,7 @@ final readonly class PeakPowerOutputsWidget implements Widget
     {
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): ?string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): ?string
     {
         /** @var array<string, PowerOutputs> $bestAllTimePowerOutputsPerActivityType */
         $bestAllTimePowerOutputsPerActivityType = [];
@@ -65,54 +77,15 @@ final readonly class PeakPowerOutputsWidget implements Widget
             return null;
         }
 
-        $activityType = ActivityType::from(array_key_first($bestAllTimePowerOutputsPerActivityType));
-        $allActivities = $this->enrichedActivities->findAll();
-        $allYears = Years::create(
-            startDate: $allActivities->getFirstActivityStartDate(),
-            endDate: $now
-        );
-
-        $bestPowerOutputs = BestPowerOutputs::empty();
-        $bestPowerOutputs->add(
-            description: $this->translator->trans('All time'),
-            powerOutputs: $bestAllTimePowerOutputsPerActivityType[$activityType->value],
-        );
-        $bestPowerOutputs->add(
-            description: $this->translator->trans('Last {numberOfDays} days', ['{numberOfDays}' => 45]),
-            powerOutputs: $this->activityPowerRepository->findBestForSportTypesInDateRange(
-                sportTypes: SportTypes::thatSupportPeakPowerOutputs($activityType),
-                dateRange: DateRange::lastXDays($now, 45)
-            )
-        );
-        $bestPowerOutputs->add(
-            description: $this->translator->trans('Last {numberOfDays} days', ['{numberOfDays}' => 90]),
-            powerOutputs: $this->activityPowerRepository->findBestForSportTypesInDateRange(
-                sportTypes: SportTypes::thatSupportPeakPowerOutputs($activityType),
-                dateRange: DateRange::lastXDays($now, 90)
-            )
-        );
-        foreach ($allYears->reverse() as $year) {
-            $bestPowerOutputs->add(
-                description: (string) $year,
-                powerOutputs: $this->activityPowerRepository->findBestForSportTypesInDateRange(
-                    sportTypes: SportTypes::thatSupportPeakPowerOutputs($activityType),
-                    dateRange: $year->getRange(),
-                )
-            );
+        $activityIds = ActivityIds::empty();
+        foreach ($bestAllTimePowerOutputsPerActivityType as $powerOutputs) {
+            $activityIds = $activityIds->mergeWith($powerOutputs->getActivityIds());
         }
 
-        $this->buildStorage->write(
-            'power-output.html',
-            $this->twig->load('html/dashboard/power-output.html.twig')->render([
-                'powerOutputChart' => Json::encode(
-                    PowerOutputChart::create($bestPowerOutputs)->build()
-                ),
-                'bestPowerOutputs' => $bestPowerOutputs,
-            ]),
-        );
-
-        return $this->twig->load('html/dashboard/widget/widget--peak-power-outputs.html.twig')->render([
+        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+            'uniqueId' => $dashboardWidgetId->toHtmlIdSuffix(),
             'powerOutputsPerActivityType' => $bestAllTimePowerOutputsPerActivityType,
+            'activitiesPerActivityId' => $this->activityRepository->findByIds($activityIds->unique())->keyByActivityId(),
             'timeIntervals' => ActivityPowerRepository::TIME_INTERVALS_IN_SECONDS_REDACTED,
         ]);
     }

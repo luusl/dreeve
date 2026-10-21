@@ -2,19 +2,28 @@
 
 namespace App\Domain\Activity\Image;
 
-use App\Application\Build\BuildPhotosHtml\HidePhotosForSportTypes;
-use App\Domain\Activity\EnrichedActivities;
+use App\Domain\Activity\ActivityId;
+use App\Domain\Activity\ActivityRepository;
+use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\SportType\SportTypes;
+use App\Domain\Image\ImageOrientation;
+use App\Domain\Image\ImagePath;
+use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\ValueObject\String\KernelProjectDir;
 use App\Infrastructure\ValueObject\Time\Year;
 use App\Infrastructure\ValueObject\Time\Years;
+use Doctrine\DBAL\ArrayParameterType;
+use Doctrine\DBAL\Connection;
+use League\Flysystem\FilesystemOperator;
 
 final readonly class ActivityBasedImageRepository implements ImageRepository
 {
     public function __construct(
-        private EnrichedActivities $enrichedActivities,
-        private HidePhotosForSportTypes $hidePhotosForSportTypes,
+        private Connection $connection,
+        private ActivityRepository $activityRepository,
+        private FilesystemOperator $fileStorage,
+        private SettingsRepository $settingsRepository,
         private KernelProjectDir $kernelProjectDir,
     ) {
     }
@@ -22,13 +31,13 @@ final readonly class ActivityBasedImageRepository implements ImageRepository
     public function findAll(): Images
     {
         $images = Images::empty();
-        $activities = $this->enrichedActivities->findAll();
+        $activities = $this->activityRepository->findAll();
         foreach ($activities as $activity) {
             if (0 === $activity->getTotalImageCount()) {
                 continue;
             }
 
-            if ($this->hidePhotosForSportTypes->has($activity->getSportType())) {
+            if ($this->settingsRepository->appearance()->getHidePhotosForSportTypes()->has($activity->getSportType())) {
                 continue;
             }
 
@@ -54,7 +63,7 @@ final readonly class ActivityBasedImageRepository implements ImageRepository
 
     public function findRandomFor(SportTypes $sportTypes, Years $years): Image
     {
-        $activities = $this->enrichedActivities->findAll()->toArray();
+        $activities = $this->activityRepository->findAll()->toArray();
         shuffle($activities);
 
         foreach ($activities as $activity) {
@@ -92,16 +101,36 @@ final readonly class ActivityBasedImageRepository implements ImageRepository
 
     public function count(): int
     {
-        $activities = $this->enrichedActivities->findAll();
-        $totalImageCount = 0;
+        $queryBuilder = $this->connection->createQueryBuilder();
+        $queryBuilder->select('SUM(totalImageCount)')
+            ->from('Activity');
 
-        foreach ($activities as $activity) {
-            if ($this->hidePhotosForSportTypes->has($activity->getSportType())) {
-                continue;
-            }
-            $totalImageCount += $activity->getTotalImageCount();
+        $hiddenSportTypes = $this->settingsRepository->appearance()->getHidePhotosForSportTypes();
+        if (!$hiddenSportTypes->isEmpty()) {
+            $queryBuilder->andWhere('sportType NOT IN (:hiddenSportTypes)')
+                ->setParameter(
+                    'hiddenSportTypes',
+                    array_map(fn (SportType $sportType): string => $sportType->value, $hiddenSportTypes->toArray()),
+                    ArrayParameterType::STRING
+                );
         }
 
-        return $totalImageCount;
+        return (int) $queryBuilder->executeQuery()->fetchOne();
+    }
+
+    public function deleteForActivity(ActivityId $activityId): void
+    {
+        try {
+            $activity = $this->activityRepository->find($activityId);
+        } catch (EntityNotFound) {
+            return;
+        }
+
+        foreach ($activity->getLocalImagePaths() as $localImagePath) {
+            $fileSystemPath = ImagePath::fromLocalImagePath($localImagePath)->toFileSystemPath();
+            if ($this->fileStorage->fileExists($fileSystemPath)) {
+                $this->fileStorage->delete($fileSystemPath);
+            }
+        }
     }
 }

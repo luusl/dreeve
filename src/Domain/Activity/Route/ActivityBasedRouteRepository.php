@@ -8,9 +8,10 @@ use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Activity\WorldType;
+use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Repository\DbalRepository;
 use App\Infrastructure\Serialization\Json;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
+use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Doctrine\DBAL\ArrayParameterType;
 
@@ -18,13 +19,14 @@ final readonly class ActivityBasedRouteRepository extends DbalRepository impleme
 {
     public function findAll(): Routes
     {
-        $query = 'SELECT activityId, name, distance, polyline, routeGeography, sportType, startDateTime, isCommute, workoutType
+        $query = 'SELECT activityId, name, distance, polyline, routeGeography, sportType, startDateTime, isCommute, isGroupActivity, workoutType
                     FROM Activity
                     WHERE sportType IN (:sportTypes)
                     AND polyline IS NOT NULL AND polyline <> ""
                     AND routeGeography IS NOT NULL AND routeGeography <> ""
                     AND JSON_EXTRACT(routeGeography, "$.country_code") IS NOT NULL
-                    AND worldType = :worldType';
+                    AND worldType = :worldType
+                    ORDER BY startDateTime DESC';
 
         $results = $this->connection->executeQuery(
             sql: $query,
@@ -49,15 +51,59 @@ final readonly class ActivityBasedRouteRepository extends DbalRepository impleme
                 activityId: ActivityId::fromString($result['activityId']),
                 name: $result['name'],
                 distance: Meter::from($result['distance'])->toKilometer(),
-                encodedPolyline: $result['polyline'],
+                coordinates: EncodedPolyline::fromString($result['polyline'])->decodeAndPairLatLng(),
                 routeGeography: RouteGeography::create(Json::decode($result['routeGeography'])),
                 sportType: SportType::from($result['sportType']),
                 isCommute: (bool) $result['isCommute'],
+                isGroupActivity: (bool) $result['isGroupActivity'],
                 workoutType: WorkoutType::tryFrom($result['workoutType'] ?? ''),
                 on: SerializableDateTime::fromString($result['startDateTime']),
             ));
         }
 
         return $routes;
+    }
+
+    public function findSummary(): RouteSummary
+    {
+        $query = 'SELECT sportType, routeGeography
+                    FROM Activity
+                    WHERE sportType IN (:sportTypes)
+                    AND polyline IS NOT NULL AND polyline <> ""
+                    AND routeGeography IS NOT NULL AND routeGeography <> ""
+                    AND JSON_EXTRACT(routeGeography, "$.country_code") IS NOT NULL
+                    AND worldType = :worldType';
+
+        $results = $this->connection->executeQuery(
+            sql: $query,
+            params: [
+                'sportTypes' => array_map(
+                    fn (SportType $sportType) => $sportType->value,
+                    array_filter(
+                        SportType::cases(),
+                        fn (SportType $sportType): bool => $sportType->supportsReverseGeocoding()
+                    )
+                ),
+                'worldType' => WorldType::REAL_WORLD->value,
+            ],
+            types: [
+                'sportTypes' => ArrayParameterType::STRING,
+            ]
+        )->fetchAllAssociative();
+
+        $sportTypes = [];
+        $countries = [];
+        foreach ($results as $result) {
+            $sportTypes[$result['sportType']] ??= SportType::from($result['sportType']);
+            foreach (RouteGeography::create(Json::decode($result['routeGeography']))->getPassedThroughCountries() as $country) {
+                $countries[$country] = true;
+            }
+        }
+
+        return RouteSummary::create(
+            numberOfRoutes: count($results),
+            sportTypes: array_values($sportTypes),
+            countries: array_keys($countries),
+        );
     }
 }

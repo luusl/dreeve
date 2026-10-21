@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Automation\DryRun;
+
+use App\Domain\Automation\Action\ConfiguredAction\ConfiguredActions;
+use App\Domain\Automation\Condition\ConditionEvaluationResult;
+
+final readonly class RuleEvaluationResult
+{
+    /**
+     * @param list<ConditionEvaluationResult> $conditionResults
+     */
+    public function __construct(
+        private string $label,
+        private bool $isEnabled,
+        private array $conditionResults,
+        private ConfiguredActions $configuredActions,
+        private bool $allConditionsMatched,
+        private bool $wasApplied,
+        private bool $stoppedProcessing,
+        private bool $wasEvaluated,
+    ) {
+    }
+
+    public function getLabel(): string
+    {
+        return $this->label;
+    }
+
+    public function isEnabled(): bool
+    {
+        return $this->isEnabled;
+    }
+
+    /**
+     * @return list<ConditionEvaluationResult>
+     */
+    public function getConditionResults(): array
+    {
+        return $this->conditionResults;
+    }
+
+    public function getConfiguredActions(): ConfiguredActions
+    {
+        return $this->configuredActions;
+    }
+
+    public function allConditionsMatched(): bool
+    {
+        return $this->allConditionsMatched;
+    }
+
+    public function wasApplied(): bool
+    {
+        return $this->wasApplied;
+    }
+
+    public function stoppedProcessing(): bool
+    {
+        return $this->stoppedProcessing;
+    }
+
+    public function wasEvaluated(): bool
+    {
+        return $this->wasEvaluated;
+    }
+}

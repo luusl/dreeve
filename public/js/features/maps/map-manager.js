@@ -1,14 +1,34 @@
-import LeafletMap from "./leaflet-map";
+const instances = new Map();
 
-export default class LeafletMapManager {
-    init(rootNode) {
-        rootNode.querySelectorAll('[data-leaflet]').forEach(async mapNode => {
-            const data = JSON.parse(mapNode.getAttribute('data-leaflet'));
-            const leafletMap = new LeafletMap(mapNode, data);
+const destroyDetachedMaps = () => {
+    for (const [mapNode, instance] of instances) {
+        if (mapNode.isConnected) continue;
 
-            await leafletMap.addRoutes();
-            leafletMap.addGpxControl();
-            leafletMap.connectToEChart();
-        });
+        instance.destroy();
+        instances.delete(mapNode);
     }
+};
+
+export default function initLeafletMaps(rootNode) {
+    destroyDetachedMaps();
+
+    rootNode.querySelectorAll('[data-leaflet]').forEach(async mapNode => {
+        if (instances.has(mapNode)) return;
+
+        const {default: LeafletMap} = await import(
+            /* webpackChunkName: "leaflet" */ './leaflet-map'
+            );
+        if (instances.has(mapNode)) return;
+
+        const data = JSON.parse(mapNode.getAttribute('data-leaflet'));
+        const config = window.dreeve.leafletConfig;
+        if (config.enableGreyScale) {
+            mapNode.classList.add('enable-grey-scale');
+        }
+        const leafletMap = new LeafletMap(mapNode, data, config);
+        instances.set(mapNode, leafletMap);
+
+        await leafletMap.addRoutes();
+        leafletMap.connectToEChart();
+    });
 }

@@ -3,26 +3,47 @@
 namespace App\Domain\Dashboard\Widget\AthleteProfile;
 
 use App\Domain\Activity\ActivityIntensity;
+use App\Domain\Activity\EnrichedActivityRepository;
 use App\Domain\Activity\Math;
+use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\Widget\AthleteProfile\FindAthleteProfileMetrics\FindAthleteProfileMetrics;
+use App\Domain\Dashboard\Widget\DependsOnCurrentDay;
 use App\Domain\Dashboard\Widget\Widget;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
+use App\Infrastructure\Measurement\Time\Seconds;
 use App\Infrastructure\Serialization\Json;
-use App\Infrastructure\ValueObject\Measurement\Time\Seconds;
 use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
-final readonly class AthleteProfileWidget implements Widget
+final readonly class AthleteProfileWidget implements Widget, DependsOnCurrentDay
 {
     public function __construct(
         private QueryBus $queryBus,
         private ActivityIntensity $activityIntensity,
+        private EnrichedActivityRepository $enrichedActivityRepository,
         private Environment $twig,
         private TranslatorInterface $translator,
     ) {
+    }
+
+    public function getLabel(): string
+    {
+        return $this->translator->trans('Athlete profile');
+    }
+
+    public function getTemplateName(): string
+    {
+        return 'widget--athlete-profile';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -34,7 +55,7 @@ final readonly class AthleteProfileWidget implements Widget
     {
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): ?string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): ?string
     {
         $chartData = [];
         foreach ([30, 90] as $lastXDays) {
@@ -57,8 +78,8 @@ final readonly class AthleteProfileWidget implements Widget
 
             // INTENSITY: Use IF / TRIMP.
             $intensities = [];
-            foreach ($findAthleteProfileMetricsResponse->getActivityIds() as $activityId) {
-                $intensities[] = $this->activityIntensity->calculate($activityId);
+            foreach ($this->enrichedActivityRepository->findByIds($findAthleteProfileMetricsResponse->getActivityIds()) as $enrichedActivity) {
+                $intensities[] = $this->activityIntensity->calculate($enrichedActivity);
             }
             $intensity = min(100, Math::median($intensities));
 
@@ -89,7 +110,7 @@ final readonly class AthleteProfileWidget implements Widget
             return null;
         }
 
-        return $this->twig->load('html/dashboard/widget/widget--athlete-profile.html.twig')->render([
+        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
             'athleteProfileChart' => Json::encode(
                 AthleteProfileChart::create(
                     chartData: $chartData,

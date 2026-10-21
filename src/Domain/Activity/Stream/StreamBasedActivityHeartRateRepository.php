@@ -4,143 +4,201 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\Stream;
 
-use App\Domain\Activity\ActivityIdRepository;
+use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivitySummaryRepository;
 use App\Domain\Activity\ActivityType;
-use App\Domain\Athlete\AthleteRepository;
+use App\Domain\Activity\SportType\SportType;
+use App\Domain\Activity\Stream\Metric\ActivityStreamMetricRepository;
+use App\Domain\Activity\Stream\Metric\ActivityStreamMetricType;
 use App\Domain\Athlete\HeartRateZone\HeartRateZone;
-use App\Domain\Athlete\HeartRateZone\HeartRateZoneConfiguration;
 use App\Domain\Athlete\HeartRateZone\TimeInHeartRateZones;
+use App\Domain\Athlete\HeartRateZone\TimeInHeartRateZonesForRollingWindow;
+use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\Time\Clock\Clock;
+use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+use Doctrine\DBAL\Connection;
 
-final class StreamBasedActivityHeartRateRepository implements ActivityHeartRateRepository
+final readonly class StreamBasedActivityHeartRateRepository implements ActivityHeartRateRepository
 {
     private const int CALCULATE_HEART_RATE_ZONES_FOR_LAST_X_DAYS = 30;
 
-    /** @var array<string, int> */
-    public static array $cachedHeartRateZones = [];
-    /** @var array<string, array<string, int>> */
-    public static array $cachedHeartRateZonesPerActivityType = [];
-    /** @var array<string, int> */
-    public static array $cachedHeartRateZonesInLastXDays = [];
-
     public function __construct(
-        private readonly ActivitySummaryRepository $activitySummaryRepository,
-        private readonly ActivityIdRepository $activityIdRepository,
-        private readonly ActivityStreamRepository $activityStreamRepository,
-        private readonly AthleteRepository $athleteRepository,
-        private readonly HeartRateZoneConfiguration $heartRateZoneConfiguration,
-        private readonly Clock $clock,
+        private Connection $connection,
+        private ActivitySummaryRepository $activitySummaryRepository,
+        private ActivityStreamMetricRepository $activityStreamMetricRepository,
+        private Clock $clock,
+        private SettingsRepository $settingsRepository,
     ) {
+    }
+
+    public function findTotalTimeInSecondsInHeartRateZonesForActivity(ActivityId $activityId): TimeInHeartRateZones
+    {
+        $activitySummary = $this->activitySummaryRepository->find($activityId);
+
+        $heartRateDistribution = $this->activityStreamMetricRepository
+            ->findByActivityIdAndMetricType($activityId, ActivityStreamMetricType::VALUE_DISTRIBUTION)
+            ->filterOnStreamType(StreamType::HEART_RATE)?->getData() ?? [];
+
+        if ([] === $heartRateDistribution) {
+            throw new EntityNotFound(sprintf('HeartRateZones for "%s" not found', $activityId));
+        }
+
+        return $this->toTimeInHeartRateZones($this->zoneSecondsFor(
+            sportType: $activitySummary->getSportType(),
+            on: $activitySummary->getStartDate(),
+            heartRateDistribution: $heartRateDistribution,
+        ));
     }
 
     public function findTotalTimeInSecondsInHeartRateZones(): TimeInHeartRateZones
     {
-        $this->buildHeartRateZoneCache();
+        return $this->toTimeInHeartRateZones($this->aggregate()->getTotal());
+    }
 
-        return TimeInHeartRateZones::create(
-            timeInZoneOne: StreamBasedActivityHeartRateRepository::$cachedHeartRateZones[HeartRateZone::ONE],
-            timeInZoneTwo: StreamBasedActivityHeartRateRepository::$cachedHeartRateZones[HeartRateZone::TWO],
-            timeInZoneThree: StreamBasedActivityHeartRateRepository::$cachedHeartRateZones[HeartRateZone::THREE],
-            timeInZoneFour: StreamBasedActivityHeartRateRepository::$cachedHeartRateZones[HeartRateZone::FOUR],
-            timeInZoneFive: StreamBasedActivityHeartRateRepository::$cachedHeartRateZones[HeartRateZone::FIVE],
+    /**
+     * @return array<string, TimeInHeartRateZones>
+     */
+    public function findTotalTimeInSecondsInHeartRateZonesPerActivityType(): array
+    {
+        return array_map(
+            $this->toTimeInHeartRateZones(...),
+            $this->aggregate()->getPerActivityType()
         );
     }
 
-    public function findTotalTimeInSecondsInHeartRateZonesForActivityType(ActivityType $activityType): TimeInHeartRateZones
+    public function findTimeInHeartRateZonesForLast30Days(): TimeInHeartRateZonesForRollingWindow
     {
-        $this->buildHeartRateZoneCache();
+        $heartRateZoneTotals = $this->aggregate();
 
-        return TimeInHeartRateZones::create(
-            timeInZoneOne: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivityType[$activityType->value][HeartRateZone::ONE],
-            timeInZoneTwo: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivityType[$activityType->value][HeartRateZone::TWO],
-            timeInZoneThree: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivityType[$activityType->value][HeartRateZone::THREE],
-            timeInZoneFour: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivityType[$activityType->value][HeartRateZone::FOUR],
-            timeInZoneFive: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivityType[$activityType->value][HeartRateZone::FIVE],
+        return TimeInHeartRateZonesForRollingWindow::create(
+            current: $this->toTimeInHeartRateZones($heartRateZoneTotals->getInLastXDays()),
+            asOfPreviousDay: $this->toTimeInHeartRateZones($heartRateZoneTotals->getInLastXDaysAsOfPreviousDay()),
         );
     }
 
-    public function findTotalTimeInSecondsInHeartRateZonesForLast30Days(): TimeInHeartRateZones
+    private function aggregate(): HeartRateZoneTotals
     {
-        $this->buildHeartRateZoneCache();
+        $now = $this->clock->getCurrentDateTimeImmutable();
+        $rollingWindow = \DateInterval::createFromDateString(self::CALCULATE_HEART_RATE_ZONES_FOR_LAST_X_DAYS.' days');
 
-        return TimeInHeartRateZones::create(
-            timeInZoneOne: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesInLastXDays[HeartRateZone::ONE],
-            timeInZoneTwo: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesInLastXDays[HeartRateZone::TWO],
-            timeInZoneThree: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesInLastXDays[HeartRateZone::THREE],
-            timeInZoneFour: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesInLastXDays[HeartRateZone::FOUR],
-            timeInZoneFive: StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesInLastXDays[HeartRateZone::FIVE],
+        $cutOffDate = $now->sub($rollingWindow);
+        $previousDayCutOffDate = $now->sub(\DateInterval::createFromDateString('1 day'));
+        $previousDayWindowStart = $previousDayCutOffDate->sub($rollingWindow);
+
+        $total = $this->emptyZones();
+        $inLastXDays = $this->emptyZones();
+        $inLastXDaysAsOfPreviousDay = $this->emptyZones();
+        $perActivityType = array_combine(
+            array_map(fn (ActivityType $activityType): string => $activityType->value, ActivityType::cases()),
+            array_map(fn (ActivityType $activityType): array => $this->emptyZones(), ActivityType::cases()),
         );
-    }
 
-    private function buildHeartRateZoneCache(): void
-    {
-        if ([] !== StreamBasedActivityHeartRateRepository::$cachedHeartRateZones) {
-            // Cache already built, no need to rebuild.
-            return;
+        $results = $this->connection->executeQuery(
+            'SELECT a.startDateTime, a.sportType, m.data
+             FROM ActivityStreamMetric m
+             INNER JOIN Activity a ON a.activityId = m.activityId
+             WHERE m.streamType = :streamType AND m.metricType = :metricType',
+            [
+                'streamType' => StreamType::HEART_RATE->value,
+                'metricType' => ActivityStreamMetricType::VALUE_DISTRIBUTION->value,
+            ]
+        )->fetchAllAssociative();
+
+        foreach ($results as $result) {
+            $heartRateDistribution = Json::uncompressAndDecode($result['data']);
+            if ([] === $heartRateDistribution) {
+                continue;
+            }
+
+            $sportType = SportType::from($result['sportType']);
+            $startDate = SerializableDateTime::fromString($result['startDateTime']);
+            $zoneSeconds = $this->zoneSecondsFor(
+                sportType: $sportType,
+                on: $startDate,
+                heartRateDistribution: $heartRateDistribution,
+            );
+
+            $activityType = $sportType->getActivityType();
+            $isInCurrentWindow = $startDate->isAfterOrOn($cutOffDate);
+            $isInPreviousDayWindow = $startDate->isAfterOrOn($previousDayWindowStart)
+                && $startDate->isBeforeOrOn($previousDayCutOffDate);
+
+            foreach ($zoneSeconds as $zoneName => $secondsInZone) {
+                $total[$zoneName] += $secondsInZone;
+                $perActivityType[$activityType->value][$zoneName] += $secondsInZone;
+
+                if ($isInCurrentWindow) {
+                    $inLastXDays[$zoneName] += $secondsInZone;
+                }
+                if ($isInPreviousDayWindow) {
+                    $inLastXDaysAsOfPreviousDay[$zoneName] += $secondsInZone;
+                }
+            }
         }
 
-        $interval = \DateInterval::createFromDateString(self::CALCULATE_HEART_RATE_ZONES_FOR_LAST_X_DAYS.' days');
-        $cutOffDate = $this->clock->getCurrentDateTimeImmutable()->sub($interval);
-        $athlete = $this->athleteRepository->find();
-        $activityIds = $this->activityIdRepository->findAll();
+        return HeartRateZoneTotals::fromState(
+            total: $total,
+            perActivityType: $perActivityType,
+            inLastXDays: $inLastXDays,
+            inLastXDaysAsOfPreviousDay: $inLastXDaysAsOfPreviousDay,
+        );
+    }
 
-        StreamBasedActivityHeartRateRepository::$cachedHeartRateZones = [
+    /**
+     * @param array<int|string, int> $heartRateDistribution
+     *
+     * @return array<string, int>
+     */
+    private function zoneSecondsFor(SportType $sportType, SerializableDateTime $on, array $heartRateDistribution): array
+    {
+        $general = $this->settingsRepository->general();
+        $athleteMaxHeartRate = $general->getAthlete()->getMaxHeartRate($on);
+        $athleteHeartRateZones = $general->getHeartRateZoneConfiguration()->getHeartRateZonesFor(
+            sportType: $sportType,
+            on: $on
+        );
+
+        $zoneSeconds = $this->emptyZones();
+        foreach ($athleteHeartRateZones->getZones() as $heartRateZone) {
+            [$minHeartRate, $maxHeartRate] = $heartRateZone->getRangeInBpm($athleteMaxHeartRate);
+
+            foreach ($heartRateDistribution as $heartRate => $numberOfSamples) {
+                if ($heartRate >= $minHeartRate && $heartRate <= $maxHeartRate) {
+                    $zoneSeconds[$heartRateZone->getName()] += $numberOfSamples;
+                }
+            }
+        }
+
+        return $zoneSeconds;
+    }
+
+    /**
+     * @param array<string, int> $zoneSeconds
+     */
+    private function toTimeInHeartRateZones(array $zoneSeconds): TimeInHeartRateZones
+    {
+        return TimeInHeartRateZones::create(
+            timeInZoneOne: $zoneSeconds[HeartRateZone::ONE],
+            timeInZoneTwo: $zoneSeconds[HeartRateZone::TWO],
+            timeInZoneThree: $zoneSeconds[HeartRateZone::THREE],
+            timeInZoneFour: $zoneSeconds[HeartRateZone::FOUR],
+            timeInZoneFive: $zoneSeconds[HeartRateZone::FIVE],
+        );
+    }
+
+    /**
+     * @return array<string, int>
+     */
+    private function emptyZones(): array
+    {
+        return [
             HeartRateZone::ONE => 0,
             HeartRateZone::TWO => 0,
             HeartRateZone::THREE => 0,
             HeartRateZone::FOUR => 0,
             HeartRateZone::FIVE => 0,
         ];
-        foreach (ActivityType::cases() as $activityType) {
-            StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivityType[$activityType->value] = [
-                HeartRateZone::ONE => 0,
-                HeartRateZone::TWO => 0,
-                HeartRateZone::THREE => 0,
-                HeartRateZone::FOUR => 0,
-                HeartRateZone::FIVE => 0,
-            ];
-        }
-        StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesInLastXDays = StreamBasedActivityHeartRateRepository::$cachedHeartRateZones;
-
-        foreach ($activityIds as $activityId) {
-            $activitySummary = $this->activitySummaryRepository->find($activityId);
-            try {
-                $heartRateStreamForActivity = $this->activityStreamRepository->findOneByActivityAndStreamType(
-                    activityId: $activityId,
-                    streamType: StreamType::HEART_RATE
-                );
-            } catch (EntityNotFound) {
-                continue;
-            }
-
-            $activityStartDate = $activitySummary->getStartDate();
-            $athleteMaxHeartRate = $athlete->getMaxHeartRate($activityStartDate);
-            $athleteHeartRateZones = $this->heartRateZoneConfiguration->getHeartRateZonesFor(
-                sportType: $activitySummary->getSportType(),
-                on: $activityStartDate
-            );
-
-            foreach ($athleteHeartRateZones->getZones() as $heartRateZone) {
-                [$minHeartRate, $maxHeartRate] = $heartRateZone->getRangeInBpm($athleteMaxHeartRate);
-                $secondsInZone = 0;
-                foreach ($heartRateStreamForActivity->getData() as $heartRate) {
-                    if ($heartRate >= $minHeartRate && $heartRate <= $maxHeartRate) {
-                        ++$secondsInZone;
-                    }
-                }
-
-                $activityType = $activitySummary->getSportType()->getActivityType();
-
-                StreamBasedActivityHeartRateRepository::$cachedHeartRateZones[$heartRateZone->getName()] += $secondsInZone;
-                StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesPerActivityType[$activityType->value][$heartRateZone->getName()] += $secondsInZone;
-
-                if ($activityStartDate->isAfterOrOn($cutOffDate)) {
-                    // Cache heart rate zones for the last X days
-                    StreamBasedActivityHeartRateRepository::$cachedHeartRateZonesInLastXDays[$heartRateZone->getName()] += $secondsInZone;
-                }
-            }
-        }
     }
 }

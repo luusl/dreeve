@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Domain\Activity\Stream\CombinedStream;
 
 use App\Domain\Activity\ActivityId;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\UnitSystem;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -127,6 +127,14 @@ final class CombinedActivityStream
     }
 
     /**
+     * @return array<int, float>
+     */
+    public function getTemperatures(): array
+    {
+        return $this->getChartStreamData(CombinedStreamType::TEMP);
+    }
+
+    /**
      * @return array<int, array<float, float>>
      */
     public function getCoordinates(): array
@@ -136,7 +144,7 @@ final class CombinedActivityStream
             return [];
         }
 
-        return array_column($this->data, $coordinateIndex);
+        return array_values(array_filter(array_column($this->data, $coordinateIndex)));
     }
 
     public function getStreamTypesForCharts(): CombinedStreamTypes

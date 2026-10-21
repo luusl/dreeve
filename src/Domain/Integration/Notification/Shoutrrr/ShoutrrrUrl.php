@@ -16,7 +16,17 @@ final readonly class ShoutrrrUrl extends NonEmptyStringLiteral
             return $this;
         }
 
-        return self::fromString(sprintf('%s?%s', $this, http_build_query($params)));
+        return self::fromString(sprintf(
+            '%s%s%s',
+            $this,
+            str_contains((string) $this, '?') ? '&' : '?',
+            http_build_query($params)
+        ));
+    }
+
+    public function isNtfyUrl(): bool
+    {
+        return str_starts_with((string) $this, 'ntfy://');
     }
 
     public static function fromDeprecatedNtfyConfig(

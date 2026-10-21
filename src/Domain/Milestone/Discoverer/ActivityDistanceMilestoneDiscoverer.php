@@ -12,7 +12,7 @@ use App\Domain\Milestone\MilestoneCategory;
 use App\Domain\Milestone\MilestoneIdFactory;
 use App\Domain\Milestone\Milestones;
 use App\Domain\Milestone\PreviousMilestone;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Doctrine\DBAL\Connection;
 
@@ -20,11 +20,10 @@ final readonly class ActivityDistanceMilestoneDiscoverer implements MilestoneDis
 {
     public function __construct(
         private Connection $connection,
-        private MilestoneIdFactory $milestoneIdFactory,
     ) {
     }
 
-    public function discover(): Milestones
+    public function discover(MilestoneIdFactory $milestoneIdFactory): Milestones
     {
         $rows = $this->connection->executeQuery(
             'SELECT activityId, startDateTime, sportType, distance
@@ -66,7 +65,7 @@ final readonly class ActivityDistanceMilestoneDiscoverer implements MilestoneDis
 
             $activityId = ActivityId::fromString($row['activityId']);
             $milestone = Milestone::create(
-                id: $this->milestoneIdFactory->random(),
+                id: $milestoneIdFactory->next(),
                 achievedOn: SerializableDateTime::fromString($row['startDateTime']),
                 category: MilestoneCategory::ACTIVITY_DISTANCE,
                 context: new ActivityRecordContext(

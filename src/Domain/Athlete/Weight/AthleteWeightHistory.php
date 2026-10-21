@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Domain\Athlete\Weight;
 
 use App\Infrastructure\Exception\EntityNotFound;
-use App\Infrastructure\ValueObject\Measurement\Mass\Kilogram;
-use App\Infrastructure\ValueObject\Measurement\Mass\Pound;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\Mass\Kilogram;
+use App\Infrastructure\Measurement\Mass\Pound;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 
 final class AthleteWeightHistory
@@ -16,15 +16,18 @@ final class AthleteWeightHistory
     private array $weights = [];
 
     /**
-     * @param array<string, mixed> $weightsFromEnv
+     * @param array<int|string, mixed> $weightsFromEnv
      */
     private function __construct(
         array $weightsFromEnv,
         private readonly UnitSystem $unitSystem,
     ) {
-        foreach ($weightsFromEnv as $on => $configuredWeight) {
+        foreach ($weightsFromEnv as $entry) {
+            $on = is_array($entry) && is_string($entry['on'] ?? null) ? $entry['on'] : '';
+            $configuredWeight = is_array($entry) ? ($entry['weight'] ?? null) : null;
+
             if (!is_numeric($configuredWeight)) {
-                throw new \InvalidArgumentException(sprintf('Invalid weight "%s" set for athlete weightHistory in config.yaml file', $configuredWeight));
+                throw new \InvalidArgumentException(sprintf('Invalid weight "%s" set for athlete weightHistory in config.yaml file', is_scalar($configuredWeight) ? (string) $configuredWeight : ''));
             }
 
             $weight = Kilogram::from(floatval($configuredWeight));
@@ -67,7 +70,7 @@ final class AthleteWeightHistory
     }
 
     /**
-     * @param array<string, float> $values
+     * @param array<int|string, mixed> $values
      */
     public static function fromArray(array $values, UnitSystem $unitSystem): self
     {

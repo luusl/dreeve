@@ -1,14 +1,24 @@
 @import "tailwindcss" source(none);
 @import "../../node_modules/flowbite/src/themes/default.css";
+@import "./components/alert.css";
+@import "./components/autocomplete.css";
 @import "./components/chat.css";
-@import "./components/dark-mode.css";
+@import "./components/checkbox-multiselect.css";
+@import "./components/combobox.css";
+@import "./components/data-table.css";
+@import "./components/drag-sort.css";
 @import "./components/filter-dropdown.css";
-@import "./components/tabs.css";
+@import "./components/form.css";
+@import "./components/loader.css";
+@import "./components/pill.css";
 @import "./components/popover.css";
-@import "./components/modal.css";
-@import "./components/badge.css";
-@import "./components/leaflet.css";
-@import "./components/sidebar.css";
+@import "./components/scroll-to.css";
+@import "./components/tabs.css";
+@import "./components/toast.css";
+@import "./layout/dashboard-layout.css";
+@import "./layout/sidebar.css";
+@import "./theme/dark-mode.css";
+@import "./vendor/leaflet.css";
 
 @source "../../templates/**/*.html.twig";
 @source "../../templates/**/*.svg";
@@ -22,8 +32,10 @@
 @source "../../node_modules/flowbite";
 
 @theme {
+    --font-sans: Inter, ui-sans-serif, system-ui;
     --text-xxs: 0.625rem;
-    --color-strava-orange: #F26722;
+    --color-primary: #F26722;
+    --color-primary-soft: #FFF1E9;
     --color-grey-yo: #cccccc;
 }
 
@@ -32,6 +44,8 @@
 @custom-variant aria-desc (&[aria-sort="descending"]);
 @custom-variant sidebar-collapsed (&:where([data-sidebar-collapsed], [data-sidebar-collapsed] *));
 @custom-variant fullscreen-enabled (&:where([data-fullscreen-enabled], [data-fullscreen-enabled] *));
+@custom-variant drawer-open (&:where(body:has(#drawer-navigation[aria-modal="true"]) *));
+@custom-variant sorted-by-date ([data-sort-scope]:has([data-sort-option="date"]:checked) &);
 
 @layer base {
     *,
@@ -40,6 +54,10 @@
     ::backdrop,
     ::file-selector-button {
         border-color: var(--color-gray-200, currentColor);
+    }
+
+    table tr {
+        border-color: var(--color-gray-100, currentColor);
     }
 }
 
@@ -53,35 +71,12 @@
         opacity: 0.9 !important;
     }
 
-    .overflow-auto, .overflow-x-auto {
-        @apply scrollbar-thin;
+    body .lg-outer:not(.lg-visible) {
+        pointer-events: none;
     }
 
-}
-
-@theme{
-    @keyframes rainbow-bg {
-        0% {
-            background-color: #ff6b6b;
-        }
-        16% {
-            background-color: #ffa36c;
-        }
-        33% {
-            background-color: #fff56d;
-        }
-        50% {
-            background-color: #6bff95;
-        }
-        66% {
-            background-color: #6bdfff;
-        }
-        83% {
-            background-color: #8a6bff;
-        }
-        100% {
-            background-color: #ff6b6b;
-        }
+    .overflow-auto, .overflow-x-auto {
+        @apply scrollbar-thin;
     }
 }
 
@@ -89,23 +84,6 @@
     div[data-datatable-settings] {
         .clusterize-data-empty td {
             @apply text-left p-4;
-        }
-    }
-
-    body:has(.rainbow-bg) {
-        @apply animate-[rainbow-bg_10s_linear_infinite];
-
-        nav {
-            @apply animate-[rainbow-bg_10s_linear_infinite];
-        }
-
-        aside,
-        #toggle-sidebar-collapsed-state {
-            @apply hidden!;
-        }
-
-        main {
-            @apply ml-0!;
         }
     }
 }

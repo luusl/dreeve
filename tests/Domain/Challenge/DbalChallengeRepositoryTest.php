@@ -6,6 +6,7 @@ use App\Domain\Challenge\ChallengeId;
 use App\Domain\Challenge\ChallengeRepository;
 use App\Domain\Challenge\Challenges;
 use App\Domain\Challenge\DbalChallengeRepository;
+use App\Infrastructure\Eventing\EventBus;
 use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
@@ -27,7 +28,7 @@ class DbalChallengeRepositoryTest extends ContainerTestCase
 
     public function testItShouldThrowWhenNotFound(): void
     {
-        $this->expectException(EntityNotFound::class);
+        $this->expectExceptionObject(new EntityNotFound('Challenge "challenge-1" not found'));
         $this->challengeRepository->find(ChallengeId::fromUnprefixed('1'));
     }
 
@@ -43,7 +44,7 @@ class DbalChallengeRepositoryTest extends ContainerTestCase
 
         $this->challengeRepository->updateChallengeId($oldId, $newId);
 
-        $this->expectException(EntityNotFound::class);
+        $this->expectExceptionObject(new EntityNotFound('Challenge "challenge-old-id" not found'));
         $this->challengeRepository->find($oldId);
     }
 
@@ -63,7 +64,7 @@ class DbalChallengeRepositoryTest extends ContainerTestCase
         $this->assertEquals($newId, $updated->getId());
     }
 
-    public function testFindAll(): void
+    public function testFindAllAndCount(): void
     {
         $challengeOne = ChallengeBuilder::fromDefaults()
             ->withChallengeId(ChallengeId::fromUnprefixed('1'))
@@ -80,20 +81,6 @@ class DbalChallengeRepositoryTest extends ContainerTestCase
             Challenges::fromArray([$challengeTwo, $challengeOne]),
             $this->challengeRepository->findAll()
         );
-    }
-
-    public function testCount(): void
-    {
-        $challengeOne = ChallengeBuilder::fromDefaults()
-            ->withChallengeId(ChallengeId::fromUnprefixed('1'))
-            ->withCreatedOn(SerializableDateTime::fromString('2023-10-10 14:00:34'))
-            ->build();
-        $this->challengeRepository->add($challengeOne);
-        $challengeTwo = ChallengeBuilder::fromDefaults()
-            ->withChallengeId(ChallengeId::fromUnprefixed('2'))
-            ->withCreatedOn(SerializableDateTime::fromString('2023-10-10 15:00:34'))
-            ->build();
-        $this->challengeRepository->add($challengeTwo);
 
         $this->assertEquals(
             2,
@@ -128,7 +115,8 @@ class DbalChallengeRepositoryTest extends ContainerTestCase
         parent::setUp();
 
         $this->challengeRepository = new DbalChallengeRepository(
-            $this->getConnection()
+            $this->getConnection(),
+            $this->getContainer()->get(EventBus::class),
         );
     }
 }

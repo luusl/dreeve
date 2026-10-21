@@ -6,7 +6,7 @@ namespace App\Domain\Activity\Split;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIds;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\UnitSystem;
 
 interface ActivitySplitRepository
 {
@@ -18,7 +18,7 @@ interface ActivitySplitRepository
 
     public function findActivityIdsWithoutGap(): ActivityIds;
 
-    public function findActivityIdsWithoutAverageHeartRate(): ActivityIds;
+    public function findActivityIdsThatNeedSplitCalculation(): ActivityIds;
 
     public function isImportedForActivity(ActivityId $activityId): bool;
 

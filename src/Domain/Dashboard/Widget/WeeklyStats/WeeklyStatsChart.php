@@ -8,7 +8,7 @@ use App\Domain\Activity\ActivityType;
 use App\Domain\Calendar\Week;
 use App\Domain\Calendar\Weeks;
 use App\Domain\Dashboard\StatsContext;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -143,7 +143,7 @@ final readonly class WeeklyStatsChart
             ],
             'grid' => [
                 'left' => '10px',
-                'right' => '10px',
+                'right' => '20px',
                 'bottom' => '50px',
                 'containLabel' => true,
             ],

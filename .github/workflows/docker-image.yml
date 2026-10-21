@@ -21,10 +21,46 @@ jobs:
           extensions: zstd
 
       - name: Check out the repo
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-scripts --no-dev
+
+      - name: Build countries geography asset
+        run: |
+          touch .env
+          bin/console app:geography:build-countries-asset
+
+      - name: Verify countries geography asset
+        run: |
+          ASSET_ROOT=src/Domain/Activity/Route/assets
+          ASSET_DIR="$ASSET_ROOT/countries"
+
+          if [[ ! -f "$ASSET_DIR/index.json" ]]; then
+            echo "::error::$ASSET_DIR/index.json is missing, refusing to build an image without country boundaries"
+            exit 1
+          fi
+
+          ENTRIES=$(jq 'length' "$ASSET_DIR/index.json")
+          COUNTRIES=$(find "$ASSET_DIR" -name '*.json' -not -name 'index.json' | wc -l)
+
+          if (( ENTRIES < 4000 )); then
+            echo "::error::index.json holds only $ENTRIES polygons, expected 4000+"
+            exit 1
+          fi
+          if (( COUNTRIES < 200 )); then
+            echo "::error::Only $COUNTRIES country files were generated, expected 200+"
+            exit 1
+          fi
+
+          UNREADABLE=$(find "$ASSET_ROOT" \( -type d ! -perm -o+rx \) -o \( -type f ! -perm -o+r \))
+          if [[ -n "$UNREADABLE" ]]; then
+            echo "::error::These asset paths are not readable, which breaks non-root deployments:"
+            echo "$UNREADABLE"
+            exit 1
+          fi
+
+          echo "$COUNTRIES country files, $ENTRIES polygons indexed"
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
@@ -44,7 +80,7 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: |
-            robiningelbrecht/strava-statistics
+            robiningelbrecht/dreeve
             ghcr.io/${{ github.repository }}
 
       - name: Set up QEMU
@@ -67,7 +103,7 @@ jobs:
       - name: Generate artifact attestation for Docker Hub
         uses: actions/attest-build-provenance@v4
         with:
-          subject-name: index.docker.io/robiningelbrecht/strava-statistics
+          subject-name: index.docker.io/robiningelbrecht/dreeve
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: false
 

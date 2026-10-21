@@ -3,8 +3,8 @@
     'label': 'Best efforts'|trans
 }]} %}
 {% autoescape false %}
-    {% set activityTypes = bestEffortsCalculator.getActivityTypes() %}
-    {% set periods = bestEffortsCalculator.getPeriods() %}
+    {% set activityTypes = bestEfforts.getActivityTypes() %}
+    {% set periods = bestEfforts.getPeriods() %}
     {% if activityTypes|length > 1 %}
         <div class="tabs tabs--default">
             <ul id="bestEffortsActivityTypeTab" data-tabs="#bestEffortsActivityTypeTabContent" role="tablist">
@@ -35,7 +35,7 @@
                 <div id="bestEffortsPeriodTabContent{{ activityType.value }}">
                     {% for period in periods %}
                         {% set bestEffortsChart = bestEffortsCharts[activityType.value][period.value] %}
-                        {% set sportTypes = bestEffortsCalculator.getSportTypesFor(period, activityType) %}
+                        {% set sportTypes = bestEfforts.getSportTypesFor(period, activityType) %}
                         <div id="bestEffortsPeriod{{ activityType.value }}{{ period.value }}" role="tabpanel" aria-labelledby="bestEffortsPeriod{{ activityType.value }}{{ period.value }}-tab">
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
                                 <div class="mb-4 h-80" data-echarts-options='{{ bestEffortsChart }}'></div>
@@ -45,14 +45,14 @@
                                     {{ "Details"|trans }}
                                 </h3>
                                 <div class="relative overflow-x-auto">
-                                    <table class="w-full text-sm text-center text-gray-500">
-                                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                    <table class="data-table">
+                                        <thead>
                                         <tr>
-                                            <th scope="col" class="px-2 py-3 sticky left-0 bg-gray-50">
-                                                {{ "Distance"|trans }}
+                                            <th scope="col" class="sticky left-0 bg-gray-50">
+                                                {{ "Dist."|trans }}
                                             </th>
                                             {% for sportType in sportTypes %}
-                                                <th scope="col" class="px-2 py-3">
+                                                <th scope="col">
                                                     {{ sportType|trans }}
                                                 </th>
                                             {% endfor %}
@@ -60,26 +60,26 @@
                                         </thead>
                                         <tbody>
                                         {% for distance in activityType.getDistancesForBestEffortCalculation() %}
-                                            <tr class="bg-white border-b">
-                                                <th scope="row" class="px-2 py-2 sticky left-0 bg-white font-medium whitespace-nowrap">
+                                            <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
                                                     <div>
-                                                        <a href="#" class="font-medium text-blue-600 hover:underline"
-                                                           data-model-content-url="{{ relativeUrl('best-efforts/' ~ activityType.value  ~ '/'  ~ distance.toInt()  ~ '-' ~ distance.getSymbol() ~ '.html')|lower }}">
+                                                        <a href="{{ relativeUrl('best-efforts/' ~ activityType.value ~ '/' ~ distance.toMeter().toInt()) }}" data-router-link
+                                                           class="font-medium text-blue-600 hover:underline">
                                                             {{ distance.isLowerThanOne() ? distance.toFloat()|round(1) : distance.toInt() }} {{ distance.getSymbol() }}
                                                         </a>
                                                     </div>
                                                 </th>
                                                 {% for sportType in sportTypes %}
-                                                    {% set bestEffort = bestEffortsCalculator.for(period, sportType, distance) %}
+                                                    {% set bestEffort = bestEfforts.for(period, sportType, distance) %}
                                                     {% if bestEffort %}
-                                                        {% set activity = enrichedActivities.find(bestEffort.getActivityId()) %}
-                                                        <td class="px-2 py-2 truncate">
+                                                        {% set activity = activitiesPerActivityId[bestEffort.getActivityId()] %}
+                                                        <td class="truncate">
                                                             <div class="font-semibold text-gray-700">{{ bestEffort.getFormattedTime() }}</div>
                                                             <div class="text-xs">{{ activity.getStartDate()|formatDate() }}</div>
                                                             <div class="text-xs inline-flex">{{ activity|activityLink(ellipses: 50) }}</div>
                                                         </td>
                                                     {% else %}
-                                                        <td class="px-2 py-2 truncate"> - </td>
+                                                        <td class="truncate"> - </td>
                                                     {% endif %}
                                                 {% endfor %}
                                             </tr>

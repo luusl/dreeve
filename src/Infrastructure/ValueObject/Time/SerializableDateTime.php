@@ -16,24 +16,29 @@ class SerializableDateTime extends \DateTimeImmutable implements \JsonSerializab
     /**
      * @throws \DateMalformedStringException
      */
-    public static function fromString(string $string): self
+    public static function fromString(string $string, ?\DateTimeZone $timezone = null): self
     {
-        return new self($string);
+        return new self($string, $timezone);
     }
 
-    public static function fromTimestamp(int $unixTimestamp): self
+    public static function fromTimestamp(int $unixTimestamp, ?\DateTimeZone $timezone = null): self
     {
-        return self::fromString('now')->setTimestamp($unixTimestamp);
+        return self::fromString('now', $timezone)->setTimestamp($unixTimestamp);
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
     public static function createFromFormat(string $format, string $datetime, ?\DateTimeZone $timezone = null): self
     {
-        if (!$datetime = parent::createFromFormat($format, $datetime, $timezone)) {
-            throw new \InvalidArgumentException(sprintf('Invalid date format %s for %s', $format, $datetime)); // @codeCoverageIgnore
+        $parsed = parent::createFromFormat($format, $datetime, $timezone);
+
+        if (!$parsed instanceof \DateTimeImmutable || false !== \DateTimeImmutable::getLastErrors()) {
+            throw new \InvalidArgumentException(sprintf('Invalid date format %s for %s', $format, $datetime));
         }
 
         return self::fromString(
-            $datetime->format('Y-m-d H:i:s'),
+            $parsed->format('Y-m-d H:i:s'),
         );
     }
 
@@ -72,6 +77,11 @@ class SerializableDateTime extends \DateTimeImmutable implements \JsonSerializab
         return $this->setTimezone($timezone);
     }
 
+    public function getSecondsUntilMidnight(): int
+    {
+        return $this->modify('tomorrow midnight')->getTimestamp() - $this->getTimestamp();
+    }
+
     public function getHourWithoutLeadingZero(): int
     {
         return (int) $this->format('G');
@@ -90,6 +100,11 @@ class SerializableDateTime extends \DateTimeImmutable implements \JsonSerializab
     public function getYear(): int
     {
         return (int) $this->format('Y');
+    }
+
+    public function getDayOfTheWeek(): int
+    {
+        return (int) $this->format('N');
     }
 
     public function isAfterOrOn(SerializableDateTime $that): bool

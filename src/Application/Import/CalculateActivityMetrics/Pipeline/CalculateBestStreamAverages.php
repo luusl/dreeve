@@ -12,7 +12,9 @@ use App\Domain\Activity\Stream\Metric\ActivityStreamMetricType;
 use App\Domain\Activity\Stream\StreamType;
 use App\Infrastructure\Console\ProgressIndicator;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\Attribute\AsTaggedItem;
 
+#[AsTaggedItem(priority: 50)]
 final readonly class CalculateBestStreamAverages implements CalculateActivityMetricsStep
 {
     public function __construct(
@@ -24,7 +26,7 @@ final readonly class CalculateBestStreamAverages implements CalculateActivityMet
     public function process(OutputInterface $output): void
     {
         $progressIndicator = new ProgressIndicator($output);
-        $progressIndicator->start('=> Calculated averages for 0 streams');
+        $progressIndicator->start('=> Calculated best averages for 0 streams');
 
         $countCalculatedStreams = 0;
         $activityIdsToProcess = $this->activityStreamMetricRepository->findActivityIdsWithoutBestAverages();

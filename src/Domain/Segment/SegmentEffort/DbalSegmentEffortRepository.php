@@ -6,26 +6,38 @@ namespace App\Domain\Segment\SegmentEffort;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Segment\SegmentId;
+use App\Domain\Segment\SegmentIds;
+use App\Infrastructure\Eventing\EventBus;
 use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Repository\DbalRepository;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 final readonly class DbalSegmentEffortRepository extends DbalRepository implements SegmentEffortRepository
 {
+    private const string RANKED_EFFORTS_FOR_SEGMENT = 'SELECT * FROM (
+                    SELECT SegmentEffort.*, ROW_NUMBER() OVER (
+                        PARTITION BY segmentId
+                        ORDER BY elapsedTimeInSeconds ASC, segmentEffortId ASC
+                    ) rank
+                    FROM SegmentEffort
+                    WHERE segmentId = :segmentId
+                ) ranked';
+
     public function __construct(
         Connection $connection,
-        private SegmentEffortRankingMap $segmentEffortRankingMap,
+        private EventBus $eventBus,
     ) {
         parent::__construct($connection);
     }
 
     public function add(SegmentEffort $segmentEffort): void
     {
-        $sql = 'INSERT INTO SegmentEffort (segmentEffortId, segmentId, activityId, startDateTime, 
+        $sql = 'INSERT INTO SegmentEffort (segmentEffortId, segmentId, activityId, startDateTime,
                            name, elapsedTimeInSeconds, distance, averageWatts, averageHeartRate, maxHeartRate)
-                VALUES (:segmentEffortId, :segmentId, :activityId, :startDateTime, 
+                VALUES (:segmentEffortId, :segmentId, :activityId, :startDateTime,
                         :name, :elapsedTimeInSeconds, :distance, :averageWatts, :averageHeartRate, :maxHeartRate)';
 
         $this->connection->executeStatement($sql, [
@@ -40,11 +52,23 @@ final readonly class DbalSegmentEffortRepository extends DbalRepository implemen
             'averageHeartRate' => $segmentEffort->getAverageHeartRate(),
             'maxHeartRate' => $segmentEffort->getMaxHeartRate(),
         ]);
+
+        $this->eventBus->publishEvents($segmentEffort->getRecordedEvents());
     }
 
     public function deleteForActivity(ActivityId $activityId): void
     {
-        $sql = 'DELETE FROM SegmentEffort 
+        // The segments have to be collected before the delete, afterwards there is no way
+        // left to tell which segment renders went stale.
+        $segmentIds = SegmentIds::fromArray(array_map(
+            SegmentId::fromString(...),
+            $this->connection->executeQuery(
+                'SELECT DISTINCT segmentId FROM SegmentEffort WHERE activityId = :activityId',
+                ['activityId' => $activityId],
+            )->fetchFirstColumn()
+        ));
+
+        $sql = 'DELETE FROM SegmentEffort
         WHERE activityId = :activityId';
 
         $this->connection->executeStatement($sql,
@@ -52,88 +76,86 @@ final readonly class DbalSegmentEffortRepository extends DbalRepository implemen
                 'activityId' => $activityId,
             ]
         );
+
+        if ($segmentIds->isEmpty()) {
+            return;
+        }
+
+        $this->eventBus->publishEvents([new SegmentEffortsWereDeleted($segmentIds)]);
     }
 
     public function find(SegmentEffortId $segmentEffortId): SegmentEffort
     {
-        $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('*')
-            ->from('SegmentEffort')
-            ->andWhere('segmentEffortId = :segmentEffortId')
-            ->setParameter('segmentEffortId', $segmentEffortId);
+        $sql = 'SELECT * FROM (
+                    SELECT SegmentEffort.*, ROW_NUMBER() OVER (
+                        PARTITION BY segmentId
+                        ORDER BY elapsedTimeInSeconds ASC, segmentEffortId ASC
+                    ) rank
+                    FROM SegmentEffort
+                    WHERE segmentId = (SELECT segmentId FROM SegmentEffort WHERE segmentEffortId = :segmentEffortId)
+                ) ranked
+                WHERE segmentEffortId = :segmentEffortId';
 
-        if (!$result = $queryBuilder->executeQuery()->fetchAssociative()) {
+        if (!$result = $this->connection->executeQuery($sql, ['segmentEffortId' => $segmentEffortId])->fetchAssociative()) {
             throw new EntityNotFound(sprintf('segmentEffort "%s" not found', $segmentEffortId));
         }
 
-        return $this->hydrate($result);
+        return $this->hydrate($result, (int) $result['rank']);
     }
 
     public function findTopXBySegmentId(SegmentId $segmentId, int $limit): SegmentEfforts
     {
-        $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('*')
-            ->from('SegmentEffort')
-            ->andWhere('segmentId = :segmentId')
-            ->setParameter('segmentId', $segmentId)
-            ->setMaxResults($limit)
-            ->orderBy('elapsedTimeInSeconds', 'ASC');
+        $sql = self::RANKED_EFFORTS_FOR_SEGMENT.' ORDER BY rank ASC LIMIT :limit';
 
         return SegmentEfforts::fromArray(array_map(
-            $this->hydrate(...),
-            $queryBuilder->executeQuery()->fetchAllAssociative()
+            fn (array $result): SegmentEffort => $this->hydrate($result, (int) $result['rank']),
+            $this->connection->executeQuery(
+                $sql,
+                [
+                    'segmentId' => $segmentId,
+                    'limit' => $limit,
+                ],
+                ['limit' => ParameterType::INTEGER],
+            )->fetchAllAssociative()
         ));
     }
 
     public function findBySegmentId(SegmentId $segmentId): SegmentEfforts
     {
-        $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('*')
-            ->from('SegmentEffort')
-            ->andWhere('segmentId = :segmentId')
-            ->setParameter('segmentId', $segmentId)
-            ->orderBy('startDateTime', 'DESC');
+        $sql = self::RANKED_EFFORTS_FOR_SEGMENT.' ORDER BY startDateTime DESC';
 
         return SegmentEfforts::fromArray(array_map(
-            $this->hydrate(...),
-            $queryBuilder->executeQuery()->fetchAllAssociative()
+            fn (array $result): SegmentEffort => $this->hydrate($result, (int) $result['rank']),
+            $this->connection->executeQuery($sql, ['segmentId' => $segmentId])->fetchAllAssociative()
         ));
-    }
-
-    public function countBySegmentId(SegmentId $segmentId): int
-    {
-        $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('COUNT(*)')
-            ->from('SegmentEffort')
-            ->andWhere('segmentId = :segmentId')
-            ->setParameter('segmentId', $segmentId);
-
-        return (int) $queryBuilder->executeQuery()->fetchOne();
     }
 
     public function findByActivityId(ActivityId $activityId): SegmentEfforts
     {
-        $queryBuilder = $this->connection->createQueryBuilder();
-        $queryBuilder->select('*')
-            ->from('SegmentEffort')
-            ->andWhere('activityId = :activityId')
-            ->setParameter('activityId', $activityId);
+        $sql = 'SELECT * FROM (
+                    SELECT SegmentEffort.*, ROW_NUMBER() OVER (
+                        PARTITION BY segmentId
+                        ORDER BY elapsedTimeInSeconds ASC, segmentEffortId ASC
+                    ) rank
+                    FROM SegmentEffort
+                    WHERE segmentId IN (SELECT segmentId FROM SegmentEffort WHERE activityId = :activityId)
+                ) ranked
+                WHERE activityId = :activityId
+                ORDER BY startDateTime ASC, segmentEffortId ASC';
 
         return SegmentEfforts::fromArray(array_map(
-            $this->hydrate(...),
-            $queryBuilder->executeQuery()->fetchAllAssociative()
+            fn (array $result): SegmentEffort => $this->hydrate($result, (int) $result['rank']),
+            $this->connection->executeQuery($sql, ['activityId' => (string) $activityId])->fetchAllAssociative()
         ));
     }
 
     /**
      * @param array<string, mixed> $result
      */
-    private function hydrate(array $result): SegmentEffort
+    private function hydrate(array $result, ?int $rank): SegmentEffort
     {
-        $segmentEffortId = SegmentEffortId::fromString($result['segmentEffortId']);
-
         return SegmentEffort::fromState(
-            segmentEffortId: $segmentEffortId,
+            segmentEffortId: SegmentEffortId::fromString($result['segmentEffortId']),
             segmentId: SegmentId::fromString($result['segmentId']),
             activityId: ActivityId::fromString($result['activityId']),
             startDateTime: SerializableDateTime::fromString($result['startDateTime']),
@@ -143,7 +165,7 @@ final readonly class DbalSegmentEffortRepository extends DbalRepository implemen
             averageWatts: $result['averageWatts'],
             averageHeartRate: $result['averageHeartRate'],
             maxHeartRate: $result['maxHeartRate'],
-            rank: $this->segmentEffortRankingMap->getRankFor($segmentEffortId)
+            rank: $rank,
         );
     }
 }

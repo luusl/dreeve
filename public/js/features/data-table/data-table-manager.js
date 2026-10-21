@@ -1,71 +1,112 @@
 import {ClusterRenderer} from "./cluster-renderer";
+import {ColumnManager} from "./column-manager";
 import {FilterManager} from "./filter-manager";
 import {Sorter} from "./sorter";
+import {parse, serialize} from "./filter-url";
 import {debounce} from "../../utils";
+import {restoreScrollArea} from "../../core/scroll-memory";
+import {router} from "../../core/router";
 
-export default class DataTableManager {
+const renderers = new Map();
 
-    init(rootNode) {
-        rootNode.querySelectorAll('div[data-dataTable-settings]').forEach((wrapper) => {
-            const table = wrapper.querySelector('table');
-            const tbody = table?.querySelector('tbody');
-            const scrollElem = wrapper.querySelector('.scroll-area');
-            const searchInput = wrapper.querySelector('input[type="search"]');
-            const resetBtn = wrapper.querySelector('[data-dataTable-reset]');
-            const settings = JSON.parse(wrapper.getAttribute('data-dataTable-settings'));
+const destroyDetachedTables = () => {
+    for (const [wrapper, renderer] of renderers) {
+        if (wrapper.isConnected) continue;
 
-            const filterManager = new FilterManager(wrapper);
-            const clusterRenderer = new ClusterRenderer(wrapper, tbody, scrollElem);
-            const sorter = new Sorter(wrapper.querySelectorAll('thead th[data-dataTable-sort]'));
+        renderer.destroy();
+        renderers.delete(wrapper);
+    }
+};
 
-            if (!table || !tbody || !searchInput) return;
+export default function initDataTables(rootNode) {
+    destroyDetachedTables();
 
-            fetch(settings.url, {cache: 'no-store'}).then(async (response) => {
-                const dataRows = await response.json();
+    rootNode.querySelectorAll('div[data-dataTable-settings]').forEach((wrapper) => {
+        if (renderers.has(wrapper)) return;
 
-                // Init cluster.
-                clusterRenderer.init(dataRows);
+        const table = wrapper.querySelector('table');
+        const tbody = table?.querySelector('tbody');
+        const scrollElem = wrapper.querySelector('.scroll-area');
+        const searchInput = wrapper.querySelector('input[type="search"]');
+        const resetBtn = wrapper.querySelector('[data-dataTable-reset]');
+        const settings = JSON.parse(wrapper.getAttribute('data-dataTable-settings'));
 
-                const updateState = (updateStorage = true) => {
-                    const search = searchInput.value.trim();
-                    const activeFilters = filterManager.getActiveFilters();
+        if (!table || !tbody || !searchInput) return;
 
-                    filterManager.updateDropdownState(activeFilters);
-                    if (updateStorage) {
-                        filterManager.updateStorage(settings.name, activeFilters);
-                    }
-                    const rows = filterManager.applyFiltersToRows(dataRows, search);
-                    clusterRenderer.update(rows);
-                    resetBtn.classList.toggle('hidden', !(Object.keys(activeFilters).length > 0 || search.length > 0));
-                };
+        const filterManager = new FilterManager(wrapper);
+        const clusterRenderer = new ClusterRenderer(wrapper, tbody, scrollElem);
+        const sorter = new Sorter(wrapper.querySelectorAll('thead th[data-dataTable-sort]'));
 
-                // Prefill filters.
-                filterManager.prefillFromStorage(settings.name);
-                updateState(false);
+        renderers.set(wrapper, clusterRenderer);
 
-                // Attach events.
-                searchInput.addEventListener('input', debounce(updateState));
-                wrapper.querySelectorAll('[data-dataTable-filter]').forEach(el => el.addEventListener('input', updateState));
-                sorter.attachListeners(dataRows, clusterRenderer.cluster, scrollElem);
+        if (settings.toggleableColumns) {
+            new ColumnManager(wrapper, settings.name).init();
+        }
 
-                if (resetBtn) {
-                    resetBtn.addEventListener('click', e => {
-                        e.preventDefault();
-                        searchInput.value = '';
-                        filterManager.resetAll(settings.name);
-                        updateState();
-                    });
+        const state = parse(new URLSearchParams(location.search));
+        filterManager.prefillFromUrl(state.filters);
+        searchInput.value = state.search;
+        sorter.sortOn = state.sortOn;
+        sorter.sortAsc = state.sortAsc;
+
+        fetch(settings.url, {cache: 'no-store'}).then(async (response) => {
+            const dataRows = sorter.apply(await response.json());
+
+            // Init cluster.
+            clusterRenderer.init(dataRows);
+
+            const updateState = (syncUrl = true, resetScroll = true) => {
+                const search = searchInput.value.trim();
+                const activeFilters = filterManager.getActiveFilters();
+
+                filterManager.updateDropdownState(activeFilters);
+                if (syncUrl) {
+                    router.replaceQuery(serialize({
+                        filters: filterManager.toUrlFilters(),
+                        search: search,
+                        sortOn: sorter.sortOn,
+                        sortAsc: sorter.sortAsc,
+                    }));
                 }
+                const rows = filterManager.applyFiltersToRows(dataRows, search);
+                clusterRenderer.update(rows, resetScroll);
+                resetBtn.classList.toggle('hidden', !(Object.keys(activeFilters).length > 0 || search.length > 0));
+            };
 
-                wrapper.querySelectorAll('[data-datatable-filter-clear]').forEach(btn => {
-                    btn.addEventListener('click', e => {
-                        e.preventDefault();
-                        const name = btn.getAttribute('data-datatable-filter-clear');
-                        filterManager.resetOne(name);
-                        updateState();
-                    });
+            updateState(false, false);
+            restoreScrollArea(scrollElem);
+
+            // Attach events.
+            searchInput.addEventListener('input', debounce(updateState));
+            wrapper.querySelectorAll('[data-dataTable-filter]').forEach(el => el.addEventListener('input', updateState));
+            sorter.attachListeners(dataRows, updateState);
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', e => {
+                    e.preventDefault();
+                    searchInput.value = '';
+                    filterManager.resetAll();
+                    updateState();
+                });
+            }
+
+            wrapper.querySelectorAll('[data-datatable-filter-clear]').forEach(btn => {
+                btn.addEventListener('click', e => {
+                    e.preventDefault();
+                    const name = btn.getAttribute('data-datatable-filter-clear');
+                    filterManager.resetOne(name);
+                    updateState();
                 });
             });
+
+            wrapper.addEventListener('click', (e) => {
+                const preset = e.target.closest('[data-date-preset]');
+                if (!preset) return;
+                e.preventDefault();
+                const filterName = preset.closest('[data-date-preset-filter]').getAttribute('data-date-preset-filter');
+                filterManager.applyDatePreset(preset.getAttribute('data-date-preset'), filterName);
+                updateState();
+            });
         });
-    }
+    });
 }

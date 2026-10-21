@@ -4,48 +4,77 @@ declare(strict_types=1);
 
 namespace App\Domain\Gear\RecordingDevice;
 
+use App\Infrastructure\Eventing\RecordsEvents;
+use App\Infrastructure\Measurement\Length\Kilometer;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Time\Seconds;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
-use App\Infrastructure\ValueObject\Measurement\Length\Kilometer;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\Time\Seconds;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\String\Name;
+use Doctrine\ORM\Mapping as ORM;
 use Money\Money;
 
-final readonly class RecordingDevice
+#[ORM\Entity]
+#[ORM\Table(name: 'RecordingDevice')]
+final class RecordingDevice
 {
     use ProvideTimeFormats;
+    use RecordsEvents;
 
     private function __construct(
-        private string $name,
-        private Seconds $timeTracked,
-        private Kilometer $distanceTracked,
-        private Meter $elevationTracked,
-        private int $numberOfWorkouts,
-        private ?Money $purchasePrice,
+        #[ORM\Id, ORM\Column(type: 'string', unique: true)]
+        private readonly RecordingDeviceId $id,
+        #[ORM\Column(type: 'string')]
+        private readonly string $name,
+        #[ORM\Embedded(class: Money::class)]
+        private readonly ?Money $purchasePrice,
+        private readonly Seconds $timeTracked,
+        private readonly Kilometer $distanceTracked,
+        private readonly Meter $elevationTracked,
+        private readonly int $numberOfWorkouts,
     ) {
     }
 
+    public static function create(
+        string $name,
+        ?Money $purchasePrice,
+    ): self {
+        $recordingDevice = new self(
+            id: RecordingDeviceId::fromName($name),
+            name: $name,
+            purchasePrice: $purchasePrice,
+            timeTracked: Seconds::zero(),
+            distanceTracked: Kilometer::zero(),
+            elevationTracked: Meter::zero(),
+            numberOfWorkouts: 0,
+        );
+        $recordingDevice->recordThat(new RecordingDeviceWasUpdated());
+
+        return $recordingDevice;
+    }
+
     public static function fromState(
+        RecordingDeviceId $id,
         string $name,
         Seconds $timeTracked,
         Kilometer $distanceTracked,
         Meter $elevationTracked,
         int $activityCount,
+        ?Money $purchasePrice,
     ): self {
         return new self(
+            id: $id,
             name: $name,
+            purchasePrice: $purchasePrice,
             timeTracked: $timeTracked,
             distanceTracked: $distanceTracked,
             elevationTracked: $elevationTracked,
             numberOfWorkouts: $activityCount,
-            purchasePrice: null,
         );
     }
 
-    public function getId(): string
+    public function getId(): RecordingDeviceId
     {
-        return Name::fromString($this->getName())->kebabCase();
+        return $this->id;
     }
 
     public function getName(): string
@@ -76,13 +105,6 @@ final readonly class RecordingDevice
     public function getNumberOfWorkouts(): int
     {
         return $this->numberOfWorkouts;
-    }
-
-    public function withPurchasePrice(?Money $purchasePrice): self
-    {
-        return clone ($this, [
-            'purchasePrice' => $purchasePrice,
-        ]);
     }
 
     public function getPurchasePrice(): ?Money

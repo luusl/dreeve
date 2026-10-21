@@ -11,21 +11,33 @@
          failOnNotice="true"
          failOnSkipped="true"
          cacheDirectory=".phpunit.cache"
+         defaultTestSuite="default"
 >
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />
+        <ini name="zend.assertions" value="1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
         <server name="SYMFONY_PHPUNIT_REMOVE" value="" />
         <server name="SYMFONY_PHPUNIT_VERSION" value="13" />
+        <env name="APP_URL" value="http://localhost:8080/" force="true" />
+        <env name="IMPORT_MODE" value="stravaApi" force="true" />
+        <env name="AI_API_KEY" value="the-key" force="true" />
+        <env name="DEV_MODE_IS_ENABLED" value="0" force="true" />
+        <env name="TRUSTED_PROXIES" value="" force="true" />
+        <env name="DREEVE_API_KEY" value="" force="true" />
     </php>
     <extensions>
         <bootstrap class="DAMA\DoctrineTestBundle\PHPUnit\PHPUnitExtension" />
     </extensions>
     <testsuites>
-        <testsuite name="Test Suite">
+        <testsuite name="default">
             <directory>tests</directory>
+            <exclude>tests/Caddy</exclude>
+        </testsuite>
+        <testsuite name="caddy">
+            <directory>tests/Caddy</directory>
         </testsuite>
     </testsuites>
     <source>
@@ -34,6 +46,7 @@
         </include>
         <exclude>
             <file>src/Kernel.php</file>
+            <file>src/Console/BuildCountriesGeographyAssetConsoleCommand.php</file>
             <file>src/Console/ExtractTranslationsConsoleCommand.php</file>
             <file>src/Infrastructure/DependencyInjection/AppExpressionLanguageProvider.php</file>
             <file>src/Infrastructure/Eventing/DomainEvent.php</file>

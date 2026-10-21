@@ -1,35 +1,37 @@
 {% autoescape false %}
-<tr class="odd:bg-white border-b even:border-b even:bg-gray-50">
-    <td class="px-2 py-2 text-left">
+<tr class="group/row">
+    <td class="narrow">
         <div class="flex items-center gap-x-1">
             {{ segment|segmentLink() }}
         </div>
     </td>
-    <td class="px-2 py-2">
+    <td class="narrow whitespace-nowrap">
         {% if segment.getLastEffortDate() %}
             {{ segment.getLastEffortDate()|formatDate() }}
         {% endif %}
     </td>
-    <td class="px-2 py-2">
+    <td>
         <div class="flex justify-center">
             {% set bestEffort = segment.getBestEffort() %}
             <div class="w-52">
-                {{ bestEffort.getElapsedTimeFormatted() }}
-                <span class="font-medium">-</span>
-                {{ segment.getBestEffort().getAverageSpeed()|renderMeasurement(1) }}
-                {% if segment.getBestEffort().getAverageWatts() %}
-                    <span class="font-medium">-</span> {{ segment.getBestEffort().getAverageWatts()|formatNumber(0) }}<span class="text-xs">w</span>
+                {% if bestEffort %}
+                    {{ bestEffort.getElapsedTimeFormatted() }}
+                    <span class="font-medium">-</span>
+                    {{ bestEffort.getAverageSpeed()|renderMeasurement(1) }}
+                    {% if bestEffort.getAverageWatts() %}
+                        <span class="font-medium">-</span> {{ bestEffort.getAverageWatts()|formatNumber(0) }}<span class="text-xxs ml-px">w</span>
+                    {% endif %}
                 {% endif %}
             </div>
         </div>
     </td>
-    <td class="px-2 py-2">
+    <td>
         {{ segment.getDistance()|renderMeasurement(2) }}
     </td>
-    <td class="px-2 py-2">
-        {{ segment.getAverageGradient() }}<span class="text-xs">%</span>
+    <td>
+        {{ segment.getAverageGradient() }}<span class="text-xxs ml-px">%</span>
     </td>
-    <td class="px-2 py-2">
+    <td>
         {{ segment.getNumberOfTimesRidden() }}
     </td>
 </tr>

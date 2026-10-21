@@ -1,4 +1,3 @@
-{% set uniqueId = uniqueNumberForId('monthlyStatsWidget') %}
 <div class="flex items-center justify-between mb-4">
     <h3 class="text-lg font-semibold">
         {{ "Monthly stats"|trans }}
@@ -8,7 +7,7 @@
             <li role="presentation">
                 <a href="#" data-tabs-target="#monthlyStats{{ context.value }}{{ uniqueId }}" role="tab"
                    aria-controls="monthlyStats{{ context.value }}{{ uniqueId }}">
-                    {{ svg(context.getSvgIcon(), 'size-5', '') }}
+                    {{ svg(context.getSvgIcon(), 'size-4', '') }}
                     <span class="hidden md:block">{{ context|trans }}</span>
                 </a>
             </li>
@@ -28,7 +27,7 @@
                             <li role="presentation">
                                 <a href="#" data-tabs-target="#monthlyStats{{ activityType }}{{ context.value }}{{ uniqueId }}" role="tab"
                                    aria-controls="monthlyStats{{ activityType }}{{ context.value }}{{ uniqueId }}">
-                                    {{ enum('App\\Domain\\Activity\\ActivityType').from(activityType)|trans }}
+                                    {{ activityTypeFrom(activityType)|trans }}
                                 </a>
                             </li>
                         {% endfor %}

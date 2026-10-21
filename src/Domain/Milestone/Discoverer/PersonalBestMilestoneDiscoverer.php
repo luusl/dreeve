@@ -13,9 +13,9 @@ use App\Domain\Milestone\MilestoneCategory;
 use App\Domain\Milestone\MilestoneIdFactory;
 use App\Domain\Milestone\Milestones;
 use App\Domain\Milestone\PreviousMilestone;
+use App\Infrastructure\Measurement\Length\ConvertableToMeter;
+use App\Infrastructure\Measurement\Time\Seconds;
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
-use App\Infrastructure\ValueObject\Measurement\Length\ConvertableToMeter;
-use App\Infrastructure\ValueObject\Measurement\Time\Seconds;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Doctrine\DBAL\Connection;
 
@@ -25,11 +25,10 @@ final readonly class PersonalBestMilestoneDiscoverer implements MilestoneDiscove
 
     public function __construct(
         private Connection $connection,
-        private MilestoneIdFactory $milestoneIdFactory,
     ) {
     }
 
-    public function discover(): Milestones
+    public function discover(MilestoneIdFactory $milestoneIdFactory): Milestones
     {
         $rows = $this->connection->executeQuery(
             'SELECT be.activityId, be.sportType, be.distanceInMeter, be.timeInSeconds, a.startDateTime
@@ -74,7 +73,7 @@ final readonly class PersonalBestMilestoneDiscoverer implements MilestoneDiscove
 
             $activityId = ActivityId::fromString($row['activityId']);
             $milestone = Milestone::create(
-                id: $this->milestoneIdFactory->random(),
+                id: $milestoneIdFactory->next(),
                 achievedOn: SerializableDateTime::fromString($row['startDateTime']),
                 category: MilestoneCategory::PERSONAL_BEST,
                 context: new PersonalBestContext(
@@ -103,9 +102,7 @@ final readonly class PersonalBestMilestoneDiscoverer implements MilestoneDiscove
         foreach (ActivityType::cases() as $activityType) {
             foreach ($activityType->getDistancesForBestEffortCalculation() as $distance) {
                 $meter = $distance->toMeter()->toInt();
-                if (!isset($map[$meter])) {
-                    $map[$meter] = $distance;
-                }
+                $map[$meter] ??= $distance;
             }
         }
 

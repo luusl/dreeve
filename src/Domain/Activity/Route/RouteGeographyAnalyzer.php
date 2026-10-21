@@ -4,50 +4,16 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\Route;
 
-use App\Infrastructure\Serialization\Json;
+use App\Infrastructure\ValueObject\Geography\BoundingBox;
 use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
-use Brick\Geo\Engine\GeosOpEngine;
-use Brick\Geo\Exception\InvalidGeometryException;
-use Brick\Geo\Geometry;
-use Brick\Geo\Io\GeoJson\Feature;
-use Brick\Geo\Io\GeoJson\FeatureCollection;
-use Brick\Geo\Io\GeoJsonReader;
+use App\Infrastructure\ValueObject\Geography\Polygon;
+use App\Infrastructure\ValueObject\Geography\Polyline;
 
 final readonly class RouteGeographyAnalyzer
 {
-    private GeosOpEngine $engine;
-    private GeoJsonReader $reader;
-    /** @var array<string, Geometry|Feature|FeatureCollection> */
-    private array $countriesGeometry;
-
-    public function __construct()
-    {
-        $this->engine = new GeosOpEngine('/usr/bin/geosop');
-        $this->reader = new GeoJsonReader();
-        $this->countriesGeometry = $this->buildCountriesGeometry();
-    }
-
-    /**
-     * @return array<string, Geometry|Feature|FeatureCollection>
-     */
-    private function buildCountriesGeometry(): array
-    {
-        $countriesGeometry = [];
-        $rawCountriesGeoJson = Json::decode(file_get_contents(__DIR__.'/assets/countries-geography.json') ?: '{}');
-
-        foreach ($rawCountriesGeoJson['features'] ?? [] as $feature) {
-            if (!isset($feature['properties']['ISO_A2_EH'])) {
-                continue; // @codeCoverageIgnore
-            }
-            $countryCode = $feature['properties']['ISO_A2_EH'];
-
-            $countriesGeometry[$countryCode] = $this->reader->read(Json::encode([
-                'type' => $feature['geometry']['type'],
-                'coordinates' => $feature['geometry']['coordinates'],
-            ]));
-        }
-
-        return $countriesGeometry;
+    public function __construct(
+        private CountryGeographyAssets $assets,
+    ) {
     }
 
     /**
@@ -55,30 +21,50 @@ final readonly class RouteGeographyAnalyzer
      */
     public function analyzeForPolyline(EncodedPolyline $polyline): array
     {
-        $passedCountries = [];
-        try {
-            $routeLineString = $this->reader->read(Json::encode([
-                'type' => 'LineString',
-                'coordinates' => $polyline->decodeAndPairLngLat(),
-            ]));
-        } catch (InvalidGeometryException) {
-            // Given polyline is somehow not a valid LineString.
-            return $passedCountries;
+        $latLngCoordinates = Polyline::fromEncodedPolyline($polyline)
+            ->sanitize()
+            ->densify()
+            ->getLatLngCoordinates();
+
+        if (count($latLngCoordinates) < 2) {
+            return [];
         }
 
-        foreach ($this->countriesGeometry as $countryCode => $countryGeometry) {
-            if (!$countryGeometry instanceof Geometry) {
-                continue; // @codeCoverageIgnore
-            }
-            if (!$routeLineString instanceof Geometry) {
-                continue; // @codeCoverageIgnore
-            }
-            if (!$this->engine->intersects($countryGeometry, $routeLineString)) {
+        // The country assets are GeoJSON, which is [lng, lat].
+        $coordinates = array_map(fn (array $pair): array => [$pair[1], $pair[0]], $latLngCoordinates);
+        $routeBounds = BoundingBox::fromLngLatPairs($coordinates)->widenedWhenSpanningTheAntimeridian();
+
+        /** @var array<string, list<int>> $candidates */
+        $candidates = [];
+        foreach ($this->assets->index() as $entry) {
+            // Bounding box overlap is a necessary condition for intersection.
+            if (!$routeBounds->overlaps($entry['boundingBox'])) {
                 continue;
             }
-            $passedCountries[$countryCode] = $countryCode;
+            $candidates[$entry['countryCode']][] = $entry['polygonIndex'];
         }
 
-        return array_values($passedCountries);
+        $passedCountries = [];
+        foreach ($candidates as $countryCode => $polygonIndexes) {
+            $polygons = $this->assets->polygonsFor($countryCode);
+
+            foreach ($polygonIndexes as $polygonIndex) {
+                if (!$rings = $polygons[$polygonIndex] ?? null) {
+                    continue; // @codeCoverageIgnore
+                }
+                $pruned = Polygon::fromLngLatRings($rings)->pruned($routeBounds);
+                if (!$pruned?->containsAnyOf($coordinates)) {
+                    continue;
+                }
+
+                $passedCountries[] = $countryCode;
+                // No need to test this country's remaining polygons.
+                break;
+            }
+        }
+
+        sort($passedCountries);
+
+        return $passedCountries;
     }
 }

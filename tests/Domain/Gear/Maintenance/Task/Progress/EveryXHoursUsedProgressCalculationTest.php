@@ -7,7 +7,6 @@ use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearIds;
-use App\Domain\Gear\Maintenance\GearMaintenanceConfig;
 use App\Domain\Gear\Maintenance\Task\IntervalUnit;
 use App\Domain\Gear\Maintenance\Task\Progress\EveryXHoursUsedProgressCalculation;
 use App\Domain\Gear\Maintenance\Task\Progress\MaintenanceTaskProgress;
@@ -73,13 +72,14 @@ class EveryXHoursUsedProgressCalculationTest extends ContainerTestCase
 
         $this->assertEquals(
             MaintenanceTaskProgress::from(
-                20,
-                '2 hours',
+                elapsed: 2,
+                interval: 10,
+                elapsedDescription: '2 hours',
+                remainingDescription: '8 hours',
             ),
             $this->calculation->calculate(
                 ProgressCalculationContext::from(
                     gearIds: GearIds::fromArray([GearId::fromUnprefixed('test')]),
-                    lastTaggedOnActivityId: ActivityId::fromUnprefixed('last-tagged'),
                     lastTaggedOn: SerializableDateTime::fromString('01-01-2025'),
                     intervalUnit: IntervalUnit::EVERY_X_HOURS_USED,
                     intervalValue: 10,
@@ -95,7 +95,6 @@ class EveryXHoursUsedProgressCalculationTest extends ContainerTestCase
 
         $this->calculation = new EveryXHoursUsedProgressCalculation(
             $this->getContainer()->get(Connection::class),
-            $this->getContainer()->get(GearMaintenanceConfig::class),
             $this->getContainer()->get(TranslatorInterface::class),
         );
     }

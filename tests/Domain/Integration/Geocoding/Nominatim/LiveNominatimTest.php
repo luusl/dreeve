@@ -24,6 +24,9 @@ class LiveNominatimTest extends TestCase
     use MatchesSnapshots;
 
     private Nominatim $nominatim;
+    /**
+     * @var MockObject&Client
+     */
     private MockObject $client;
 
     public function testReverseGeocode(): void

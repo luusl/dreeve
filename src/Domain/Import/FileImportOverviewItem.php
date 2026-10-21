@@ -1,0 +1,100 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Import;
+
+use App\Domain\Activity\ActivityId;
+use App\Domain\Activity\ImportSource;
+use App\Infrastructure\Repository\Item;
+use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+
+final readonly class FileImportOverviewItem implements Item
+{
+    private function __construct(
+        private FileImportId $fileImportId,
+        private string $originalFilename,
+        private ImportSource $source,
+        private FileImportStatus $status,
+        private SerializableDateTime $importedOn,
+        private ?string $errorMessage,
+        private ?ActivityId $activityId,
+        private ?string $activityName,
+        private bool $hasFileContents,
+    ) {
+    }
+
+    public static function fromState(
+        FileImportId $fileImportId,
+        string $originalFilename,
+        ImportSource $source,
+        FileImportStatus $status,
+        SerializableDateTime $importedOn,
+        ?string $errorMessage,
+        ?ActivityId $activityId,
+        ?string $activityName,
+        bool $hasFileContents,
+    ): self {
+        return new self(
+            fileImportId: $fileImportId,
+            originalFilename: $originalFilename,
+            source: $source,
+            status: $status,
+            importedOn: $importedOn,
+            errorMessage: $errorMessage,
+            activityId: $activityId,
+            activityName: $activityName,
+            hasFileContents: $hasFileContents,
+        );
+    }
+
+    public function getFileImportId(): FileImportId
+    {
+        return $this->fileImportId;
+    }
+
+    public function getOriginalFilename(): string
+    {
+        return $this->originalFilename;
+    }
+
+    public function getSource(): ImportSource
+    {
+        return $this->source;
+    }
+
+    public function isFailed(): bool
+    {
+        return FileImportStatus::FAILED === $this->status;
+    }
+
+    public function wasSkipped(): bool
+    {
+        return FileImportStatus::SKIPPED === $this->status;
+    }
+
+    public function hasFileContents(): bool
+    {
+        return $this->hasFileContents;
+    }
+
+    public function getErrorMessage(): ?string
+    {
+        return $this->errorMessage;
+    }
+
+    public function getActivityId(): ?ActivityId
+    {
+        return $this->activityId;
+    }
+
+    public function getActivityName(): ?string
+    {
+        return $this->activityName;
+    }
+
+    public function getImportedOn(): SerializableDateTime
+    {
+        return $this->importedOn;
+    }
+}

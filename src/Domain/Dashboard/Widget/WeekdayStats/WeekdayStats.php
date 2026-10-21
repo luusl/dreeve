@@ -6,11 +6,11 @@ namespace App\Domain\Dashboard\Widget\WeekdayStats;
 
 use App\Domain\Activity\Activities;
 use App\Domain\Activity\Activity;
+use App\Infrastructure\Measurement\Length\Kilometer;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Time\Hour;
+use App\Infrastructure\Measurement\Time\Seconds;
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
-use App\Infrastructure\ValueObject\Measurement\Length\Kilometer;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\Time\Hour;
-use App\Infrastructure\ValueObject\Measurement\Time\Seconds;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
 final readonly class WeekdayStats
@@ -40,13 +40,13 @@ final readonly class WeekdayStats
     {
         $statistics = [];
         $daysOfTheWeekMap = [
-            $this->translator->trans('Sunday'),
-            $this->translator->trans('Monday'),
-            $this->translator->trans('Tuesday'),
-            $this->translator->trans('Wednesday'),
-            $this->translator->trans('Thursday'),
-            $this->translator->trans('Friday'),
-            $this->translator->trans('Saturday'),
+            $this->translator->trans('Sun.'),
+            $this->translator->trans('Mon.'),
+            $this->translator->trans('Tue.'),
+            $this->translator->trans('Wed.'),
+            $this->translator->trans('Thu.'),
+            $this->translator->trans('Fri.'),
+            $this->translator->trans('Sat.'),
         ];
         $totalMovingTime = $this->activities->sum(fn (Activity $activity): int => $activity->getMovingTimeInSeconds());
 

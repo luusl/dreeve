@@ -13,17 +13,20 @@ use App\Domain\Activity\Stream\CombinedStream\CombinedActivityStreamRepository;
 use App\Domain\Activity\Stream\CombinedStream\CombinedStreamType;
 use App\Domain\Activity\Stream\CombinedStream\CombinedStreamTypes;
 use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Console\ProgressIndicator;
 use App\Infrastructure\DependencyInjection\Mutex\WithMutex;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Temperature\Celsius;
+use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
 use App\Infrastructure\Mutex\LockName;
 use App\Infrastructure\Mutex\Mutex;
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
-use App\Infrastructure\ValueObject\Measurement\Velocity\MetersPerSecond;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\Attribute\AsTaggedItem;
 
-#[WithMutex(lockName: LockName::IMPORT_DATA_OR_BUILD_APP)]
+#[AsTaggedItem(priority: 40)]
+#[WithMutex(lockName: LockName::IMPORT_DATA)]
 final readonly class CalculateCombinedStreams implements CalculateActivityMetricsStep
 {
     use ProvideTimeFormats;
@@ -32,23 +35,26 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
         private ActivityRepository $activityRepository,
         private CombinedActivityStreamRepository $combinedActivityStreamRepository,
         private ActivityStreamRepository $activityStreamRepository,
-        private UnitSystem $unitSystem,
+        private SettingsRepository $settingsRepository,
         private Mutex $mutex,
     ) {
     }
 
     public function process(OutputInterface $output): void
     {
+        $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
+
         $progressIndicator = new ProgressIndicator($output);
         $progressIndicator->start('=> Calculated combined activity streams for 0 activities');
 
         $activityIdsThatNeedCombining = $this->combinedActivityStreamRepository->findActivityIdsThatNeedStreamCombining(
-            $this->unitSystem
+            $unitSystem
         );
         $activityWithCombinedStreamCalculatedCount = 0;
         foreach ($activityIdsThatNeedCombining as $activityId) {
             $activity = $this->activityRepository->find($activityId);
-            $activityType = $activity->getSportType()->getActivityType();
+            $sportType = $activity->getSportType();
+            $activityType = $sportType->getActivityType();
 
             $streams = $this->activityStreamRepository->findByActivityId($activityId);
             if (!($timeStream = $streams->filterOnType(StreamType::TIME)) instanceof ActivityStream) {
@@ -76,8 +82,14 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
                     $combinedStreamTypes->add(CombinedStreamType::GRADE);
                 }
             }
+            $temperatureData = [];
+            if (($temperatureStream = $streams->filterOnType(StreamType::TEMP)) instanceof ActivityStream) {
+                if ($temperatureStream->hasValidData() && ($temperatureData = $temperatureStream->getData())) {
+                    $combinedStreamTypes->add(CombinedStreamType::TEMP);
+                }
+            }
 
-            /** @var array<int, array{0: CombinedStreamType, 1: ActivityStream}> $otherStreams */
+            /** @var array<int, array{0: CombinedStreamType, 1: array<int, int|float>}> $otherStreams */
             $otherStreams = [];
             foreach (CombinedStreamTypes::othersFor($activity->getSportType()->getActivityType()) as $combinedStreamType) {
                 if (!($stream = $streams->filterOnType($combinedStreamType->getStreamType())) instanceof ActivityStream) {
@@ -114,14 +126,18 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
             $hasDistanceData = $combinedStreamTypes->has(CombinedStreamType::DISTANCE);
             $hasLatLngData = $combinedStreamTypes->has(CombinedStreamType::LAT_LNG);
             $hasGradeData = $combinedStreamTypes->has(CombinedStreamType::GRADE);
+            $hasTemperatureData = $combinedStreamTypes->has(CombinedStreamType::TEMP);
 
             $maxYAxisValue = PHP_INT_MIN;
             $maxTimeDataIndex = count($timeData) - 1;
             foreach ($timeData as $i => $time) {
-                if ($hasMovingData && true === $movingData[$i] && $i < $maxTimeDataIndex) {
+                // Without a moving stream we cannot tell movement from standstill, so we fall back to elapsed time
+                $isMoving = !$hasMovingData || true === $movingData[$i];
+                if ($isMoving && $i < $maxTimeDataIndex) {
                     $delta = $timeData[$i + 1] - $time;
+                    $nextIsMoving = $hasMovingData && true === $movingData[$i + 1];
                     // Ignore session gaps (e.g. activity recorded in multiple sessions).
-                    if (true === $movingData[$i + 1] || $delta <= 60) {
+                    if ($nextIsMoving || $delta <= 60) {
                         $cumulativeMovingTime += $delta;
                     }
                 }
@@ -136,7 +152,9 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
                 ];
 
                 if ($hasDistanceData) {
-                    $distance = Meter::from($distanceData[$i])->toKilometer()->toUnitSystem($this->unitSystem)->toFloat();
+                    $distance = $sportType->toDisplayDistance(
+                        Meter::from($distanceData[$i] ?? 0)->toKilometer()
+                    )->toUnitSystem($unitSystem)->toFloat();
                     $combinedPoint[] = match ($activityType) {
                         ActivityType::RIDE => $distance < 1 ? round($distance, 1) : round($distance),
                         default => round($distance, 1),
@@ -151,17 +169,21 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
                     $combinedPoint[] = $gradeData[$i];
                 }
 
+                if ($hasTemperatureData) {
+                    $combinedPoint[] = round(
+                        Celsius::from($temperatureData[$i] ?? 0)->toUnitSystem($unitSystem)->toFloat()
+                    );
+                }
+
                 foreach ($otherStreams as $otherStream) {
-                    /** @var CombinedStreamType $combinedStreamType */
-                    /** @var array<int|float> $streamData */
                     [$combinedStreamType, $streamData] = $otherStream;
                     $value = $streamData[$i] ?? 0;
 
                     if (0 !== $value && 0.0 !== $value) {
                         $value = match ($combinedStreamType) {
-                            CombinedStreamType::ALTITUDE => round(Meter::from($value)->toUnitSystem($this->unitSystem)->toFloat(), 2),
-                            CombinedStreamType::VELOCITY => round(MetersPerSecond::from($value)->toKmPerHour()->toUnitSystem($this->unitSystem)->toFloat(), 1),
-                            CombinedStreamType::PACE => MetersPerSecond::from($value)->toSecPerKm()->toUnitSystem($this->unitSystem)->toInt(),
+                            CombinedStreamType::ALTITUDE => round(Meter::from($value)->toUnitSystem($unitSystem)->toFloat(), 2),
+                            CombinedStreamType::VELOCITY => round($sportType->toDisplaySpeed(MetersPerSecond::from($value)->toKmPerHour())->toUnitSystem($unitSystem)->toFloat(), 1),
+                            CombinedStreamType::PACE => MetersPerSecond::from($value)->toSecPerKm()->toUnitSystem($unitSystem)->toInt(),
                             CombinedStreamType::STEPS_PER_MINUTE => $value * 2,
                             CombinedStreamType::WATTS => round($value),
                             default => $value,
@@ -178,7 +200,7 @@ final readonly class CalculateCombinedStreams implements CalculateActivityMetric
             $this->combinedActivityStreamRepository->add(
                 CombinedActivityStream::create(
                     activityId: $activityId,
-                    unitSystem: $this->unitSystem,
+                    unitSystem: $unitSystem,
                     streamTypes: $combinedStreamTypes,
                     data: $combinedData,
                     maxYAxisValue: (int) $maxYAxisValue,

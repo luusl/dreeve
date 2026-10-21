@@ -1,6 +1,5 @@
 import Clusterize from '../../../libraries/clusterize/clusterize.min';
 import {SummableCalculator} from "./summable-calculator";
-import {eventBus, Events} from "../../core/event-bus";
 
 export class ClusterRenderer {
     constructor(wrapper, tbody, scrollElem) {
@@ -23,16 +22,23 @@ export class ClusterRenderer {
 
                     const resultCount = this.wrapper.querySelector('[data-dataTable-result-count]');
                     if (resultCount) resultCount.innerText = dataRows.filter(r => r.active).length;
-
-                    eventBus.emit(Events.DATA_TABLE_CLUSTER_CHANGED, {node: this.wrapper});
                 }
             }
         });
     }
 
-    update(dataRows) {
+    destroy() {
+        if (!this.cluster) return;
+
+        this.cluster.destroy();
+        this.cluster = null;
+    }
+
+    update(dataRows, resetScroll = true) {
         if (!this.cluster) return;
         this.cluster.update(dataRows.filter(r => r.active).map(r => r.markup));
-        this.scrollElem.scrollTop = 0;
+        if (resetScroll) {
+            this.scrollElem.scrollTop = 0;
+        }
     }
 }

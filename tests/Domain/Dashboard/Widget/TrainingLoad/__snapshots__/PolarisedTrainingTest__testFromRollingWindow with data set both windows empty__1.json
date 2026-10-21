@@ -1,0 +1,17 @@
+[
+    {
+        "zone": "LOW",
+        "percentage": 0,
+        "trend": "STEADY"
+    },
+    {
+        "zone": "MODERATE",
+        "percentage": 0,
+        "trend": "STEADY"
+    },
+    {
+        "zone": "HIGH",
+        "percentage": 0,
+        "trend": "STEADY"
+    }
+]

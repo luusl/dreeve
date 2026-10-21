@@ -7,23 +7,29 @@ namespace App\Domain\Activity\Route;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
+use App\Infrastructure\Measurement\Length\Kilometer;
+use App\Infrastructure\Measurement\ProvideMeasurementFormats;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Serialization\Escape;
 use App\Infrastructure\Time\Format\DateAndTimeFormat;
-use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
-use App\Infrastructure\ValueObject\Measurement\Length\Kilometer;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 
 final readonly class Route implements \JsonSerializable
 {
+    use ProvideMeasurementFormats;
+
+    /**
+     * @param array<int, array<float, float>> $coordinates
+     */
     private function __construct(
         private ActivityId $activityId,
         private string $name,
         private Kilometer $distance,
-        private string $encodedPolyline,
+        private array $coordinates,
         private RouteGeography $routeGeography,
         private SportType $sportType,
         private bool $isCommute,
+        private bool $isGroupActivity,
         private ?WorkoutType $workoutType,
         private SerializableDateTime $on,
         private ?UnitSystem $unitSystem,
@@ -32,14 +38,18 @@ final readonly class Route implements \JsonSerializable
     ) {
     }
 
+    /**
+     * @param array<int, array<float, float>> $coordinates
+     */
     public static function create(
         ActivityId $activityId,
         string $name,
         Kilometer $distance,
-        string $encodedPolyline,
+        array $coordinates,
         RouteGeography $routeGeography,
         SportType $sportType,
         bool $isCommute,
+        bool $isGroupActivity,
         ?WorkoutType $workoutType,
         SerializableDateTime $on,
     ): self {
@@ -47,10 +57,11 @@ final readonly class Route implements \JsonSerializable
             activityId: $activityId,
             name: $name,
             distance: $distance,
-            encodedPolyline: $encodedPolyline,
+            coordinates: $coordinates,
             routeGeography: $routeGeography,
             sportType: $sportType,
             isCommute: $isCommute,
+            isGroupActivity: $isGroupActivity,
             workoutType: $workoutType,
             on: $on,
             unitSystem: null,
@@ -74,9 +85,12 @@ final readonly class Route implements \JsonSerializable
         return $this->distance;
     }
 
-    public function getEncodedPolyline(): EncodedPolyline
+    /**
+     * @return array<int, array<float, float>>
+     */
+    public function getCoordinates(): array
     {
-        return EncodedPolyline::fromString($this->encodedPolyline);
+        return $this->coordinates;
     }
 
     public function getRouteGeography(): RouteGeography
@@ -92,6 +106,11 @@ final readonly class Route implements \JsonSerializable
     public function isCommute(): bool
     {
         return $this->isCommute;
+    }
+
+    public function isGroupActivity(): bool
+    {
+        return $this->isGroupActivity;
     }
 
     public function getWorkoutType(): ?WorkoutType
@@ -132,9 +151,7 @@ final readonly class Route implements \JsonSerializable
         if (!is_null($this->unitSystem)) {
             $distance = $distance->toUnitSystem($this->unitSystem);
         }
-        $distanceInScalar = $distance->toFloat();
-        $precision = $distanceInScalar < 100 ? 1 : 0;
-        $distance = number_format(round($distanceInScalar, $precision), $precision, '.', ' ').$distance->getSymbol();
+        $distance = $this->formatNumber($distance->toFloat(), 1).$distance->getSymbol();
 
         $startDate = is_null($this->dateAndTimeFormat) ?
             $this->getOn()->format('d-m-Y') :
@@ -148,16 +165,17 @@ final readonly class Route implements \JsonSerializable
             'distance' => $distance,
             'name' => Escape::forJsonEncode($this->getName()),
             'startLocation' => [
-                'countryCode' => $this->getRouteGeography()->getStartingPointCountryCode(),
                 'state' => $state ? Escape::forJsonEncode($state) : null,
             ],
+            'countryCodes' => $this->getRouteGeography()->getPassedThroughCountries(),
             'filterables' => [
                 'sportType' => $this->getSportType(),
                 'start-date' => $this->getOn()->getTimestamp() * 1000, // JS timestamp is in milliseconds,
                 'isCommute' => $this->isCommute() ? 'true' : 'false',
+                'isGroupActivity' => $this->isGroupActivity() ? 'true' : 'false',
                 'workoutType' => $this->getWorkoutType()?->value,
             ],
-            'coordinates' => $this->getEncodedPolyline()->decodeAndPairLatLng(),
+            'coordinates' => $this->getCoordinates(),
         ];
     }
 }

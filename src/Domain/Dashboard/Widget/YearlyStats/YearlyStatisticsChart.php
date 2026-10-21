@@ -7,10 +7,11 @@ namespace App\Domain\Dashboard\Widget\YearlyStats;
 use App\Domain\Activity\ActivityType;
 use App\Domain\Dashboard\StatsContext;
 use App\Domain\Dashboard\Widget\YearlyStats\FindYearlyStatsPerDay\FindYearlyStatsPerDayResponse;
-use App\Infrastructure\ValueObject\Measurement\Length\Kilometer;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\Time\Hour;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Domain\Theme\Theme;
+use App\Infrastructure\Measurement\Length\Kilometer;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\Time\Hour;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Infrastructure\ValueObject\Time\Years;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -84,14 +85,7 @@ final readonly class YearlyStatisticsChart
             $selectedSeries[$year->toInt()] = $delta <= $this->enableLastXYearsByDefault;
             ++$delta;
 
-            $series[(string) $year] = [
-                'name' => (string) $year,
-                'type' => 'line',
-                'smooth' => true,
-                'showSymbol' => false,
-                'data' => [],
-            ];
-
+            $data = [];
             $previousValue = match ($this->context) {
                 StatsContext::MOVING_TIME => Hour::zero(),
                 StatsContext::DISTANCE => Kilometer::zero()->toUnitSystem($this->unitSystem),
@@ -100,7 +94,7 @@ final readonly class YearlyStatisticsChart
             foreach (array_keys($months) as $month) {
                 for ($dayOfMonth = 1; $dayOfMonth <= 31; ++$dayOfMonth) {
                     if (!checkdate($month, $dayOfMonth, $year->toInt())) {
-                        $series[(string) $year]['data'][] = round($previousValue->toFloat());
+                        $data[] = round($previousValue->toFloat());
                         continue;
                     }
 
@@ -125,9 +119,20 @@ final readonly class YearlyStatisticsChart
                         $value = $previousValue;
                     }
                     $previousValue = $value;
-                    $series[(string) $year]['data'][] = round($value->toFloat());
+                    $data[] = round($value->toFloat());
                 }
             }
+
+            $series[(string) $year] = [
+                'name' => (string) $year,
+                'type' => 'line',
+                'smooth' => true,
+                'showSymbol' => false,
+                'itemStyle' => [
+                    'color' => Theme::getColorForYear($year),
+                ],
+                'data' => $data,
+            ];
         }
 
         return [

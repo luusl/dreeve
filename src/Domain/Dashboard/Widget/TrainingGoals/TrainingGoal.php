@@ -6,8 +6,8 @@ namespace App\Domain\Dashboard\Widget\TrainingGoals;
 
 use App\Domain\Activity\SportType\SportTypes;
 use App\Domain\Challenge\Consistency\ProvideGoalConverters;
-use App\Infrastructure\ValueObject\Measurement\ProvideUnitFromScalar;
-use App\Infrastructure\ValueObject\Measurement\Unit;
+use App\Infrastructure\Measurement\ProvideUnitFromScalar;
+use App\Infrastructure\Measurement\Unit;
 use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 
@@ -18,7 +18,6 @@ final readonly class TrainingGoal
 
     private function __construct(
         private string $label,
-        private bool $isEnabled,
         private TrainingGoalType $type,
         private TrainingGoalPeriod $period,
         private Unit $goal,
@@ -29,7 +28,6 @@ final readonly class TrainingGoal
 
     public static function create(
         string $label,
-        bool $isEnabled,
         TrainingGoalType $type,
         TrainingGoalPeriod $period,
         float $goal,
@@ -39,7 +37,6 @@ final readonly class TrainingGoal
     ): self {
         return new self(
             label: $label,
-            isEnabled: $isEnabled,
             type: $type,
             period: $period,
             goal: self::createUnitFromScalars(
@@ -54,11 +51,6 @@ final readonly class TrainingGoal
     public function getLabel(): string
     {
         return $this->label;
-    }
-
-    public function isEnabled(): bool
-    {
-        return $this->isEnabled;
     }
 
     public function getType(): TrainingGoalType

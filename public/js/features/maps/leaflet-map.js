@@ -1,20 +1,27 @@
 import {fetchJson} from "../../utils";
+import L from 'leaflet';
+import {createMapToolsControl} from "./leaflet-controls";
+import './ctrl-scroll-zoom';
 
 export default class LeafletMap {
-    constructor(mapNode, data) {
+    constructor(mapNode, data, config) {
         this.mapNode = mapNode;
         this.data = data;
+        this.config = config;
 
         this.map = L.map(mapNode, {
-            scrollWheelZoom: data.scrollWheelZoom || false,
+            ctrlScrollZoom: config.requireCtrlToZoom,
             minZoom: data.minZoom,
             maxZoom: data.maxZoom,
             zoomSnap: .5,
             zoomDelta: .5,
+            preferCanvas: true,
         });
 
         if (data.tileLayer) {
-            L.tileLayer(data.tileLayer).addTo(this.map);
+            this.config.tileLayerUrls.forEach((tileLayerUrl) => {
+                L.tileLayer(tileLayerUrl).addTo(this.map);
+            });
         }
     }
 
@@ -24,10 +31,11 @@ export default class LeafletMap {
 
         for (const coordinates of polylines) {
             L.polyline(coordinates, {
-                color: '#fc6719',
+                color: this.config.polylineColor,
                 weight: 2,
                 opacity: 0.9,
-                lineJoin: 'round'
+                lineJoin: 'round',
+                smoothFactor: 1.0
             }).addTo(featureGroup);
 
             if (this.data.showStartMarker) {
@@ -47,14 +55,7 @@ export default class LeafletMap {
 
         featureGroup.addTo(this.map);
         this.map.fitBounds(featureGroup.getBounds(), {maxZoom: this.data.maxZoom});
-    }
-
-    addGpxControl() {
-        if (!this.data.gpxLink) {
-            return;
-        }
-
-        L.control.downloadGpx({gpxLink: this.data.gpxLink}).addTo(this.map);
+        this.map.addControl(createMapToolsControl({bounds: featureGroup.getBounds()}));
     }
 
     async connectToEChart() {
@@ -62,7 +63,7 @@ export default class LeafletMap {
             return;
         }
 
-        const eChartNode = document.querySelector('div[data-echarts-options][data-leaflet-echart-connect]');
+        const eChartNode = document.querySelector('div[data-echarts-options-url][data-leaflet-echart-connect]');
         if (!eChartNode) {
             return;
         }
@@ -79,12 +80,12 @@ export default class LeafletMap {
             const initialZoom = this.map.getZoom();
 
             chart.on('updateAxisPointer', (event) => {
-                if (!event.dataIndex || !event.dataIndex in coordinateMap) {
+                const coordinate = event.dataIndex === undefined ? undefined : coordinateMap[event.dataIndex];
+                if (!coordinate) {
                     marker.setStyle({opacity: 0, fillOpacity: 0});
                     return;
                 }
 
-                const coordinate = coordinateMap[event.dataIndex];
                 marker.setLatLng(coordinate);
                 marker.setStyle({opacity: 1, fillOpacity: 1});
 
@@ -96,6 +97,10 @@ export default class LeafletMap {
         } catch (error) {
             console.error('Failed to load coordinate map:', error);
         }
+    }
+
+    destroy() {
+        this.map.remove();
     }
 
     addCircleMarker(latLng, fillColor, {radius = 8, opacity = 1} = {}) {

@@ -1,8 +1,8 @@
 {
     "type": "project",
     "license": "GPL-3.0-or-later",
-    "name": "robiningelbrecht/statistics-for-strava",
-    "description": "Statistics for Strava is a self-hosted, open-source dashboard for your Strava data.",
+    "name": "robiningelbrecht/dreeve",
+    "description": "Dreeve is a self-hosted, open-source dashboard for your sports and fitness data.",
     "authors": [
         {
             "name": "Robin Ingelbrecht",
@@ -12,6 +12,8 @@
     "keywords": [
         "PHP",
         "Strava",
+        "health",
+        "statistics",
         "self-hosted"
     ],
     "minimum-stability": "stable",
@@ -28,13 +30,13 @@
         "ext-uri": "*",
         "ext-zstd": "*",
         "adrenalinkin/doctrine-naming-strategy": "^3.0",
-        "brick/geo": "^0.13.1",
         "doctrine/dbal": "^4",
         "doctrine/doctrine-bundle": "^3.1",
         "doctrine/doctrine-migrations-bundle": "^3.3",
         "doctrine/orm": "^3.3",
         "gehrisandro/tailwind-merge-php": "^1.1",
         "guzzlehttp/guzzle": "^7.9",
+        "halaxa/json-machine": "^1.2",
         "league/flysystem-bundle": "^3.3",
         "league/flysystem-memory": "^3.29",
         "moneyphp/money": "^4.8",
@@ -43,23 +45,25 @@
         "ramsey/uuid": "^4.7",
         "react/child-process": "^0.6.7",
         "respect/validation": "^2.3",
-        "symfony/asset": "8.0.*",
-        "symfony/console": "8.0.*",
-        "symfony/dotenv": "8.0.*",
-        "symfony/expression-language": "8.0.*",
+        "symfony/asset": "8.1.*",
+        "symfony/cache": "8.1.*",
+        "symfony/console": "8.1.*",
+        "symfony/dotenv": "8.1.*",
+        "symfony/expression-language": "8.1.*",
         "symfony/flex": "^2",
-        "symfony/form": "8.0.*",
-        "symfony/framework-bundle": "8.0.*",
-        "symfony/intl": "8.0.*",
-        "symfony/lock": "8.0.*",
-        "symfony/messenger": "8.0.*",
+        "symfony/form": "8.1.*",
+        "symfony/framework-bundle": "8.1.*",
+        "symfony/intl": "8.1.*",
+        "symfony/lock": "8.1.*",
+        "symfony/messenger": "8.1.*",
         "symfony/monolog-bundle": "^4.0",
-        "symfony/process": "8.0.*",
-        "symfony/runtime": "8.0.*",
-        "symfony/translation": "8.0.*",
-        "symfony/twig-bundle": "8.0.*",
-        "symfony/yaml": "8.0.*",
-        "twig/twig": "^3.21",
+        "symfony/process": "8.1.*",
+        "symfony/runtime": "8.1.*",
+        "symfony/security-bundle": "8.1.*",
+        "symfony/translation": "8.1.*",
+        "symfony/twig-bundle": "8.1.*",
+        "symfony/yaml": "8.1.*",
+        "twig/twig": "^3.28",
         "wyrihaximus/react-cron": "^5.3"
     },
     "require-dev": {
@@ -70,8 +74,11 @@
         "phpunit/phpunit": "^13",
         "rector/rector": "*",
         "spatie/phpunit-snapshot-assertions": "^5.1",
-        "symfony/phpunit-bridge": "8.0.*",
-        "symfony/stopwatch": "8.0.*",
+        "symfony/browser-kit": "8.1.*",
+        "symfony/css-selector": "8.1.*",
+        "symfony/dom-crawler": "8.1.*",
+        "symfony/phpunit-bridge": "8.1.*",
+        "symfony/stopwatch": "8.1.*",
         "tomasvotruba/type-coverage": "^2.0"
     },
     "config": {
@@ -123,7 +130,7 @@
     "extra": {
         "symfony": {
             "allow-contrib": false,
-            "require": "8.0.*"
+            "require": "8.1.*"
         }
     }
 }

@@ -9,18 +9,30 @@ use Cron\CronExpression;
 readonly class ConfiguredCronActions implements \IteratorAggregate
 {
     private function __construct(
-        /** @var list<array{action: string, expression: string}> */
+        /** @var list<array{action: string, expression: string, enabled: bool}> */
         private array $config,
     ) {
     }
 
     public function getIterator(): \Traversable
     {
-        return new \ArrayIterator($this->config);
+        $cronActions = [];
+        foreach ($this->config as $action) {
+            if (!$action['enabled']) {
+                continue;
+            }
+
+            $cronActions[] = CronAction::create(
+                id: CronActionId::from($action['action']),
+                expression: new CronExpression($action['expression']),
+            );
+        }
+
+        return new \ArrayIterator($cronActions);
     }
 
     /**
-     * @param array<string, mixed> $config
+     * @param array<int|string, mixed> $config
      */
     public static function fromConfig(array $config): self
     {
@@ -37,6 +49,10 @@ readonly class ConfiguredCronActions implements \IteratorAggregate
 
             if (!is_bool($configuredCronAction['enabled'])) {
                 throw new InvalidCronConfig('configuration item "enabled" must be a boolean');
+            }
+
+            if (null === CronActionId::tryFrom((string) $configuredCronAction['action'])) {
+                throw new InvalidCronConfig(sprintf('"%s" is not a supported cron action', $configuredCronAction['action']));
             }
 
             if (!CronExpression::isValidExpression($configuredCronAction['expression'])) {

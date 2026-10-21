@@ -11,8 +11,9 @@ use App\Domain\Milestone\MilestoneCategory;
 use App\Domain\Milestone\MilestoneIdFactory;
 use App\Domain\Milestone\Milestones;
 use App\Domain\Milestone\PreviousMilestone;
-use App\Infrastructure\ValueObject\Measurement\Length\Meter;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Doctrine\DBAL\Connection;
 
@@ -20,8 +21,7 @@ final readonly class GearElevationMilestoneDiscoverer implements MilestoneDiscov
 {
     public function __construct(
         private Connection $connection,
-        private UnitSystem $unitSystem,
-        private MilestoneIdFactory $milestoneIdFactory,
+        private SettingsRepository $settingsRepository,
     ) {
     }
 
@@ -35,7 +35,7 @@ final readonly class GearElevationMilestoneDiscoverer implements MilestoneDiscov
         100_000, 150_000, 200_000, 300_000, 500_000,
     ];
 
-    public function discover(): Milestones
+    public function discover(MilestoneIdFactory $milestoneIdFactory): Milestones
     {
         $rows = $this->connection->executeQuery(
             'SELECT a.startDateTime, a.gearId, a.elevation, g.name as gearName
@@ -45,7 +45,7 @@ final readonly class GearElevationMilestoneDiscoverer implements MilestoneDiscov
              ORDER BY a.startDateTime ASC'
         )->fetchAllAssociative();
 
-        $thresholds = UnitSystem::IMPERIAL === $this->unitSystem ? self::IMPERIAL_THRESHOLDS : self::METRIC_THRESHOLDS;
+        $thresholds = UnitSystem::IMPERIAL === $this->settingsRepository->appearance()->getUnitSystem() ? self::IMPERIAL_THRESHOLDS : self::METRIC_THRESHOLDS;
         $milestones = [];
 
         /** @var array<string, array{elevationM: float, name: string, idx: int, prev: ?Milestone}> $gearState */
@@ -61,25 +61,23 @@ final readonly class GearElevationMilestoneDiscoverer implements MilestoneDiscov
             $gearName = $row['gearName'];
             $achievedOn = SerializableDateTime::fromString($row['startDateTime']);
 
-            if (!isset($gearState[$gearId])) {
-                $gearState[$gearId] = [
-                    'elevationM' => 0.0,
-                    'name' => $gearName,
-                    'idx' => 0,
-                    'prev' => null,
-                ];
-            }
+            $gearState[$gearId] ??= [
+                'elevationM' => 0.0,
+                'name' => $gearName,
+                'idx' => 0,
+                'prev' => null,
+            ];
 
             $state = &$gearState[$gearId];
             $state['elevationM'] += $elevationM;
-            $cumulativeInUnit = Meter::from($state['elevationM'])->toUnitSystem($this->unitSystem);
+            $cumulativeInUnit = Meter::from($state['elevationM'])->toUnitSystem($this->settingsRepository->appearance()->getUnitSystem());
 
             while ($state['idx'] < count($thresholds) && $cumulativeInUnit->toFloat() >= $thresholds[$state['idx']]) {
                 $threshold = $thresholds[$state['idx']];
-                $thresholdInUnit = $this->unitSystem->elevation($threshold);
+                $thresholdInUnit = $this->settingsRepository->appearance()->getUnitSystem()->elevation($threshold);
 
                 $milestone = Milestone::create(
-                    id: $this->milestoneIdFactory->random(),
+                    id: $milestoneIdFactory->next(),
                     achievedOn: $achievedOn,
                     category: MilestoneCategory::GEAR_ELEVATION,
                     context: new GearElevationContext(

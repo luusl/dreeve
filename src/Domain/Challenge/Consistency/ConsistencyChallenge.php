@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Domain\Challenge\Consistency;
 
 use App\Domain\Activity\SportType\SportTypes;
-use App\Infrastructure\ValueObject\Measurement\ProvideUnitFromScalar;
-use App\Infrastructure\ValueObject\Measurement\Unit;
+use App\Infrastructure\Measurement\ProvideUnitFromScalar;
+use App\Infrastructure\Measurement\Unit;
 use App\Infrastructure\ValueObject\String\Name;
 
 final readonly class ConsistencyChallenge
@@ -16,7 +16,6 @@ final readonly class ConsistencyChallenge
 
     private function __construct(
         private string $label,
-        private bool $isEnabled,
         private ChallengeConsistencyType $type,
         private Unit $goal,
         private SportTypes $sportTypesToInclude,
@@ -25,7 +24,6 @@ final readonly class ConsistencyChallenge
 
     public static function create(
         string $label,
-        bool $isEnabled,
         ChallengeConsistencyType $type,
         float $goal,
         string $unit,
@@ -33,7 +31,6 @@ final readonly class ConsistencyChallenge
     ): self {
         return new self(
             label: $label,
-            isEnabled: $isEnabled,
             type: $type,
             goal: self::createUnitFromScalars(
                 value: $goal,
@@ -51,11 +48,6 @@ final readonly class ConsistencyChallenge
     public function getLabel(): string
     {
         return $this->label;
-    }
-
-    public function isEnabled(): bool
-    {
-        return $this->isEnabled;
     }
 
     public function getType(): ChallengeConsistencyType

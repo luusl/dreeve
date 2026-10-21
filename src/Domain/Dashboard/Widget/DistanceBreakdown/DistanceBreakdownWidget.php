@@ -4,21 +4,43 @@ declare(strict_types=1);
 
 namespace App\Domain\Dashboard\Widget\DistanceBreakdown;
 
+use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityType;
-use App\Domain\Activity\EnrichedActivities;
+use App\Domain\Activity\ActivityTypeRepository;
+use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\Widget\Widget;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
-use App\Infrastructure\ValueObject\Measurement\UnitSystem;
+use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 final readonly class DistanceBreakdownWidget implements Widget
 {
     public function __construct(
-        private EnrichedActivities $enrichedActivities,
+        private TranslatorInterface $translator,
+        private ActivityRepository $activityRepository,
+        private ActivityTypeRepository $activityTypeRepository,
         private Environment $twig,
-        private UnitSystem $unitSystem,
+        private SettingsRepository $settingsRepository,
     ) {
+    }
+
+    public function getLabel(): string
+    {
+        return $this->translator->trans('Distance breakdown');
+    }
+
+    public function getTemplateName(): string
+    {
+        return 'widget--distance-breakdown';
+    }
+
+    public function getCacheTags(): CacheTags
+    {
+        return CacheTags::of(RootCacheTag::ACTIVITIES);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -30,9 +52,9 @@ final readonly class DistanceBreakdownWidget implements Widget
     {
     }
 
-    public function render(SerializableDateTime $now, WidgetConfiguration $configuration): string
+    public function render(DashboardWidgetId $dashboardWidgetId, SerializableDateTime $now, WidgetConfiguration $configuration): string
     {
-        $activitiesPerActivityType = $this->enrichedActivities->findGroupedByActivityType();
+        $activitiesPerActivityType = $this->activityRepository->findAll()->groupByActivityType($this->activityTypeRepository->findAll());
 
         $distanceBreakdowns = [];
         foreach ($activitiesPerActivityType as $activityType => $activities) {
@@ -47,7 +69,7 @@ final readonly class DistanceBreakdownWidget implements Widget
 
             $distanceBreakdown = DistanceBreakdown::create(
                 activities: $activitiesPerActivityType[$activityType->value],
-                unitSystem: $this->unitSystem
+                unitSystem: $this->settingsRepository->appearance()->getUnitSystem()
             );
 
             if ($build = $distanceBreakdown->build()) {
@@ -55,7 +77,8 @@ final readonly class DistanceBreakdownWidget implements Widget
             }
         }
 
-        return $this->twig->load('html/dashboard/widget/widget--distance-breakdown.html.twig')->render([
+        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+            'uniqueId' => $dashboardWidgetId->toHtmlIdSuffix(),
             'distanceBreakdowns' => $distanceBreakdowns,
         ]);
     }

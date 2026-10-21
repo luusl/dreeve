@@ -58,4 +58,56 @@ final readonly class Math
     {
         return max($min, min($max, $value));
     }
+
+    /**
+     * @param array<int|float|null> $values
+     */
+    public static function average(array $values): ?int
+    {
+        $numbers = array_filter($values, static fn (mixed $v): bool => null !== $v);
+        if ([] === $numbers) {
+            return null;
+        }
+
+        return (int) round(array_sum($numbers) / count($numbers));
+    }
+
+    /**
+     * @param array<int|float|null> $values
+     */
+    public static function averageFloat(array $values): ?float
+    {
+        $numbers = array_filter($values, static fn (mixed $v): bool => null !== $v);
+        if ([] === $numbers) {
+            return null;
+        }
+
+        return array_sum($numbers) / count($numbers);
+    }
+
+    /**
+     * @param array<int|float|null> $values
+     */
+    public static function max(array $values): ?int
+    {
+        $numbers = array_filter($values, static fn (mixed $v): bool => null !== $v);
+        if ([] === $numbers) {
+            return null;
+        }
+
+        return (int) max($numbers);
+    }
+
+    /**
+     * @param array<int|float|null> $values
+     */
+    public static function maxFloat(array $values): ?float
+    {
+        $numbers = array_filter($values, static fn (mixed $v): bool => null !== $v);
+        if ([] === $numbers) {
+            return null;
+        }
+
+        return (float) max($numbers);
+    }
 }
