@@ -1,8 +1,12 @@
 import {fetchJson} from "../../utils";
+import {loadEcharts} from "../../features/charts/echarts-loader";
+import {registerEchartsCallbacks, resolveEchartsCallbacks} from "../../features/charts/echarts-callbacks";
+import DarkModeManager from "../dark-mode";
 import {END_MARKER_COLOR, MARKER_BORDER_COLOR, START_MARKER_COLOR} from "../../features/maps/route-marker-colors";
 
 const ROOT_SELECTOR = '[data-route-range-picker]';
 const MAP_SELECTOR = '[data-route-range-picker-map]';
+const CHART_SELECTOR = '[data-route-range-picker-chart]';
 const TILE_LAYER_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" rel="noreferrer noopener">OpenStreetMap</a>';
 const MAX_ZOOM = 17;
@@ -22,6 +26,7 @@ class RouteRangePicker {
         this.options = JSON.parse(root.getAttribute('data-route-range-picker') || '{}');
         this.source = this.options.source ? document.querySelector(this.options.source) : null;
         this.mapNode = root.querySelector(MAP_SELECTOR);
+        this.chartNode = root.querySelector(CHART_SELECTOR);
         this.fields = {
             start: root.querySelector('[data-route-range-picker-field="startIndex"]'),
             end: root.querySelector('[data-route-range-picker-field="endIndex"]'),
@@ -33,6 +38,7 @@ class RouteRangePicker {
 
         this.route = null;
         this.map = null;
+        this.chart = null;
         this.layers = null;
         this.requestId = 0;
         this.loadedValue = null;
@@ -95,6 +101,7 @@ class RouteRangePicker {
         this.setState('ready');
         await this.mount();
         this.renderRoute();
+        await this.renderChart();
         this.render();
     }
 
@@ -116,6 +123,33 @@ class RouteRangePicker {
             zoomDelta: .5,
         });
         L.tileLayer(TILE_LAYER_URL, {attribution: ATTRIBUTION, maxZoom: MAX_ZOOM}).addTo(this.map);
+    }
+
+    async mountChart() {
+        if (this.chart) {
+            return;
+        }
+
+        await loadEcharts();
+        registerEchartsCallbacks();
+        this.chart = echarts.init(this.chartNode, new DarkModeManager().isDarkModeEnabled() ? 'v5-dark' : 'v5');
+        new ResizeObserver(() => this.chart.resize()).observe(this.chartNode);
+    }
+
+    async renderChart() {
+        if (!this.chartNode) {
+            return;
+        }
+
+        const {chart} = this.route;
+        this.chartNode.classList.toggle('hidden', !chart);
+        if (!chart) {
+            return;
+        }
+
+        await this.mountChart();
+        resolveEchartsCallbacks(chart);
+        this.chart.setOption(chart, {notMerge: true});
     }
 
     renderRoute() {
@@ -195,19 +229,36 @@ class RouteRangePicker {
             this.outputs.distance.textContent = ((distance[end] - distance[start]) / this.options.distanceInMetersPerUnit).toFixed(2);
         }
 
-        if (this.outputs.elevationGain) {
-            if (!Array.isArray(altitude) || altitude.length <= end) {
+        if (!Array.isArray(altitude) || altitude.length <= end) {
+            if (this.outputs.elevationGain) {
                 this.outputs.elevationGain.textContent = '-';
-
-                return;
             }
 
-            let elevationGain = 0;
-            for (let index = start + 1; index <= end; index++) {
-                elevationGain += Math.max(0, altitude[index] - altitude[index - 1]);
-            }
+            return;
+        }
+
+        let elevationGain = 0;
+        for (let index = start + 1; index <= end; index++) {
+            elevationGain += Math.max(0, altitude[index] - altitude[index - 1]);
+        }
+
+        if (this.outputs.elevationGain) {
             this.outputs.elevationGain.textContent = String(Math.round(elevationGain / this.options.elevationInMetersPerUnit));
         }
+
+        if (!this.chart) {
+            return;
+        }
+
+        this.chart.setOption({
+            series: [{
+                markArea: {
+                    silent: true,
+                    itemStyle: {color: SELECTION_COLOR, opacity: .25},
+                    data: [[{xAxis: start}, {xAxis: end}]],
+                },
+            }],
+        });
     }
 }
 

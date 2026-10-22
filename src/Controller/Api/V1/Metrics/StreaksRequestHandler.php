@@ -31,22 +31,26 @@ final readonly class StreaksRequestHandler
         ));
 
         return new JsonResponse([
-            'streaks' => [
-                'day' => [
-                    'current' => $streaks->getCurrentDayStreak(),
-                    'currentStartDate' => $streaks->getCurrentDayStreakStartDate()?->format('Y-m-d'),
-                    'longest' => $streaks->getLongestDayStreak(),
-                ],
-                'week' => [
-                    'current' => $streaks->getCurrentWeekStreak(),
-                    'currentStartDate' => $streaks->getCurrentWeekStreakStartDate()?->format('Y-m-d'),
-                    'longest' => $streaks->getLongestWeekStreak(),
-                ],
-                'month' => [
-                    'current' => $streaks->getCurrentMonthStreak(),
-                    'currentStartDate' => $streaks->getCurrentMonthStreakStartDate()?->format('Y-m-d'),
-                    'longest' => $streaks->getLongestMonthStreak(),
-                ],
+            'day' => [
+                'current' => $streaks->getCurrentDayStreak(),
+                'currentStartDate' => $streaks->getCurrentDayStreakStartDate()?->format('Y-m-d'),
+                'longest' => $streaks->getLongestDayStreak(),
+                'longestStartDate' => $streaks->getLongestDayStreakPeriod()?->getFrom()->format('Y-m-d'),
+                'longestEndDate' => $streaks->getLongestDayStreakPeriod()?->getTill()->format('Y-m-d'),
+            ],
+            'week' => [
+                'current' => $streaks->getCurrentWeekStreak(),
+                'currentStartDate' => $streaks->getCurrentWeekStreakStartDate()?->format('Y-m-d'),
+                'longest' => $streaks->getLongestWeekStreak(),
+                'longestStartDate' => $streaks->getLongestWeekStreakPeriod()?->getFrom()->format('Y-m-d'),
+                'longestEndDate' => $streaks->getLongestWeekStreakPeriod()?->getTill()->format('Y-m-d'),
+            ],
+            'month' => [
+                'current' => $streaks->getCurrentMonthStreak(),
+                'currentStartDate' => $streaks->getCurrentMonthStreakStartDate()?->format('Y-m-d'),
+                'longest' => $streaks->getLongestMonthStreak(),
+                'longestStartDate' => $streaks->getLongestMonthStreakPeriod()?->getFrom()->format('Y-m-d'),
+                'longestEndDate' => $streaks->getLongestMonthStreakPeriod()?->getTill()->format('Y-m-d'),
             ],
         ]);
     }
