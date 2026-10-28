@@ -2,6 +2,7 @@
 
 namespace App\Tests\Controller\Strava;
 
+use App\Application\AppUrl;
 use App\Controller\Strava\StravaOAuthRequestHandler;
 use App\Domain\Import\ImportMode;
 use App\Domain\Strava\InsufficientStravaAccessTokenScopes;
@@ -161,6 +162,7 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             $this->client,
             ImportMode::FILES,
             $this->getContainer()->get(Environment::class),
+            AppUrl::fromString('http://localhost:8080/'),
         );
 
         $this->strava
@@ -186,6 +188,7 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             $this->client = $this->createMock(Client::class),
             ImportMode::STRAVA_API,
             $this->getContainer()->get(Environment::class),
+            AppUrl::fromString('http://localhost:8080/'),
         );
     }
 }
