@@ -6,10 +6,14 @@ namespace App\Tests\Application\Import\FileImport\ImportActivityFiles;
 
 use App\Application\Import\FileImport\ImportActivityFiles\ImportActivityFiles;
 use App\Application\Import\FileImport\ImportActivityFiles\ImportActivityFilesCommandHandler;
+use App\Application\Import\ImportedActivities;
+use App\Domain\Activity\Activity;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ImportSource;
 use App\Domain\Activity\Lap\ActivityLapRepository;
+use App\Domain\Activity\Scan\ActivityScanRepository;
+use App\Domain\Activity\Scan\ActivityScanType;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Activity\Stream\StreamType;
 use App\Domain\Import\FileImportStatus;
@@ -20,17 +24,13 @@ use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\ValueObject\String\CompressedString;
 use App\Infrastructure\ValueObject\String\KernelProjectDir;
-use App\Tests\Console\ConsoleOutputSnapshotDriver;
 use App\Tests\ContainerTestCase;
-use App\Tests\Infrastructure\Cache\CacheableStub;
+use App\Tests\Infrastructure\Cache\RenderStub;
 use App\Tests\SpyOutput;
 use League\Flysystem\FilesystemOperator;
-use Spatie\Snapshots\MatchesSnapshots;
 
 class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
 {
-    use MatchesSnapshots;
-
     private ImportActivityFilesCommandHandler $handler;
     private FilesystemOperator $watchStorage;
     private CacheableRenderer $cacheableRenderer;
@@ -40,7 +40,8 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
         $this->watchStorage->write('watch/ride.tcx', $this->fixture('activity.tcx'));
 
         $output = new SpyOutput();
-        $this->handler->handle(new ImportActivityFiles($output));
+        $importedActivities = ImportedActivities::empty();
+        $this->handler->handle(new ImportActivityFiles($output, $importedActivities));
 
         $fileImports = $this->getConnection()
             ->executeQuery('SELECT * FROM FileImport ORDER BY importedOn ASC')
@@ -57,6 +58,7 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
 
         $this->assertSame(ImportSource::TCX_FILE, $activity->getImportSource());
         $this->assertSame('Night Ride', $activity->getName());
+        $this->assertEquals([$activityId], array_map(static fn (Activity $importedActivity): ActivityId => $importedActivity->getId(), $importedActivities->toArray()));
         $this->assertSame('Garmin Edge 530', $activity->getDeviceName());
         $this->assertNotNull($activity->getStartingCoordinate());
         $this->assertNotNull($activity->getEncodedPolyline());
@@ -66,8 +68,19 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
         $streams = $this->getContainer()->get(ActivityStreamRepository::class)->findByActivityId($activityId);
         $this->assertNotNull($streams->filterOnType(StreamType::HEART_RATE));
         $this->assertNotNull($streams->filterOnType(StreamType::LAT_LNG));
+        $this->assertTrue($this->getContainer()->get(ActivityScanRepository::class)->isScanned(
+            activityId: $activityId,
+            type: ActivityScanType::STREAMS,
+        ));
 
-        $this->assertMatchesSnapshot($output, new ConsoleOutputSnapshotDriver());
+        $this->assertSame(
+            implode("\n", [
+                'Importing activity files...',
+                '  => [1/1] Imported "ride.tcx" as activity "Night Ride - 08-09-2021"',
+                '  => Imported 1, skipped 0, failed 0 activity file(s)',
+            ]),
+            (string) $output,
+        );
     }
 
     public function testHandleImportsFileWithUppercaseExtension(): void
@@ -75,7 +88,7 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
         $this->watchStorage->write('watch/Ride_2026-07-02.TCX', $this->fixture('activity.tcx'));
 
         $output = new SpyOutput();
-        $this->handler->handle(new ImportActivityFiles($output));
+        $this->handler->handle(new ImportActivityFiles($output, ImportedActivities::empty()));
 
         $fileImports = $this->getConnection()
             ->executeQuery('SELECT * FROM FileImport ORDER BY importedOn ASC')
@@ -97,7 +110,7 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
         $this->watchStorage->write('watch/ride3.tcx', $bytes);
 
         $output = new SpyOutput();
-        $this->handler->handle(new ImportActivityFiles($output));
+        $this->handler->handle(new ImportActivityFiles($output, ImportedActivities::empty()));
 
         $this->assertCount(3, $this->getConnection()
             ->executeQuery('SELECT * FROM FileImport ORDER BY importedOn ASC')
@@ -111,7 +124,16 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
                     ->fetchAllAssociative())
             )
         );
-        $this->assertMatchesSnapshot($output, new ConsoleOutputSnapshotDriver());
+        $this->assertSame(
+            implode("\n", [
+                'Importing activity files...',
+                '  => [1/3] Imported "ride1.tcx" as activity "Night Ride - 08-09-2021"',
+                '  => [2/3] Skipping "ride2.tcx", activity was already imported',
+                '  => [3/3] Skipping "ride3.tcx", activity was already imported',
+                '  => Imported 1, skipped 2, failed 0 activity file(s)',
+            ]),
+            (string) $output,
+        );
     }
 
     public function testHandleImportsGpxFileAndSkipsDuplicate(): void
@@ -122,7 +144,7 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
         $this->watchStorage->write('watch/run2.gpx', $bytes);
 
         $output = new SpyOutput();
-        $this->handler->handle(new ImportActivityFiles($output));
+        $this->handler->handle(new ImportActivityFiles($output, ImportedActivities::empty()));
 
         $fileImports = array_values($this->getConnection()
             ->executeQuery('SELECT * FROM FileImport ORDER BY importedOn ASC')
@@ -139,12 +161,19 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
         $this->watchStorage->write('watch/notes.txt', 'just some text');
 
         $output = new SpyOutput();
-        $this->handler->handle(new ImportActivityFiles($output));
+        $this->handler->handle(new ImportActivityFiles($output, ImportedActivities::empty()));
 
         $this->assertCount(0, $this->getConnection()
             ->executeQuery('SELECT * FROM FileImport ORDER BY importedOn ASC')
             ->fetchAllAssociative());
-        $this->assertMatchesSnapshot($output, new ConsoleOutputSnapshotDriver());
+        $this->assertSame(
+            implode("\n", [
+                'Importing activity files...',
+                '  => [1/1] Skipping "notes.txt", unsupported file type',
+                '  => Imported 0, skipped 1, failed 0 activity file(s)',
+            ]),
+            (string) $output,
+        );
     }
 
     public function testHandleRecordsFailureForCorruptFile(): void
@@ -152,7 +181,7 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
         $this->watchStorage->write('watch/broken.tcx', 'this is not valid xml');
 
         $output = new SpyOutput();
-        $this->handler->handle(new ImportActivityFiles($output));
+        $this->handler->handle(new ImportActivityFiles($output, ImportedActivities::empty()));
 
         $fileImports = $this->getConnection()
             ->executeQuery('SELECT * FROM FileImport ORDER BY importedOn ASC')
@@ -162,30 +191,44 @@ class ImportActivityFilesCommandHandlerTest extends ContainerTestCase
         $this->assertNull($fileImports[0]['activityId']);
         $this->assertSame('this is not valid xml', CompressedString::fromCompressed($fileImports[0]['fileContents'])->uncompress());
 
-        $this->assertMatchesSnapshot($output, new ConsoleOutputSnapshotDriver());
+        $this->assertSame(
+            implode("\n", [
+                'Importing activity files...',
+                '  => <error>[1/1] Could not import "broken.tcx": "broken.tcx" is not valid TCX XML</error>',
+                '  => Imported 0, skipped 0, failed 1 activity file(s)',
+            ]),
+            (string) $output,
+        );
     }
 
     public function testHandleWithoutImportDirectoryIsNoOp(): void
     {
         $output = new SpyOutput();
-        $this->handler->handle(new ImportActivityFiles($output));
+        $this->handler->handle(new ImportActivityFiles($output, ImportedActivities::empty()));
 
         $this->assertCount(0, $this->getConnection()
             ->executeQuery('SELECT * FROM FileImport ORDER BY importedOn ASC')
             ->fetchAllAssociative());
-        $this->assertMatchesSnapshot($output, new ConsoleOutputSnapshotDriver());
+        $this->assertSame(
+            implode("\n", [
+                'Importing activity files...',
+                '  => No "watch" directory found, nothing to import',
+            ]),
+            (string) $output,
+        );
     }
 
     public function testHandleKeepsRenderedPagesBecauseImportedFilesCarryNoImages(): void
     {
-        $cacheable = CacheableStub::for(Cacheability::for('stub', CacheTags::of(RootCacheTag::ACTIVITY_IMAGES)));
-        $this->cacheableRenderer->render($cacheable);
+        $cacheability = Cacheability::for('stub', CacheTags::of(RootCacheTag::ACTIVITY_IMAGES));
+        $render = new RenderStub();
+        $this->cacheableRenderer->render($cacheability, $render(...));
 
         $this->watchStorage->write('watch/ride.tcx', $this->fixture('activity.tcx'));
-        $this->handler->handle(new ImportActivityFiles(new SpyOutput()));
+        $this->handler->handle(new ImportActivityFiles(new SpyOutput(), ImportedActivities::empty()));
 
-        $this->cacheableRenderer->render($cacheable);
-        $this->assertEquals(1, $cacheable->renderCount);
+        $this->cacheableRenderer->render($cacheability, $render(...));
+        $this->assertEquals(1, $render->renderCount);
     }
 
     private function fixture(string $name): string

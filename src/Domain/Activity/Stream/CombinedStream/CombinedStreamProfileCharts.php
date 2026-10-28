@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\Stream\CombinedStream;
 
+use App\Domain\Activity\ActivityType;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Athlete\HeartRateZone\HeartRateZones;
 use App\Domain\Theme\Theme;
+use App\Infrastructure\ECharts\EChartsCallback;
 use App\Infrastructure\Measurement\UnitSystem;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -181,7 +183,16 @@ final readonly class CombinedStreamProfileCharts
                 'boundaryGap' => false,
                 'axisLabel' => [
                     'show' => !is_null($xAxisPosition),
-                    'formatter' => '{value} '.$xAxisLabelSuffix,
+                    'formatter' => is_null($xAxisLabelSuffix) ? '{value} ' : EChartsCallback::formatRounded(
+                        decimals: ActivityType::RIDE === $this->sportType->getActivityType() ? 0 : 1,
+                        suffix: $xAxisLabelSuffix,
+                    ),
+                ],
+                'axisPointer' => [
+                    'label' => [
+                        'show' => !is_null($xAxisPosition),
+                        'formatter' => '{value} '.$xAxisLabelSuffix,
+                    ],
                 ],
                 'data' => $xAxisData,
                 'min' => 0,
@@ -206,7 +217,7 @@ final readonly class CombinedStreamProfileCharts
                 'axisLabel' => [
                     'show' => true,
                     'customValues' => [$minYAxis, $maxYAxis],
-                    'formatter' => CombinedStreamType::PACE === $yAxisStreamType ? 'callback:formatSecondsTrimZero' : null,
+                    'formatter' => CombinedStreamType::PACE === $yAxisStreamType ? EChartsCallback::formatSecondsTrimZero() : null,
                     'color' => '#aaa',
                     'verticalAlignMaxLabel' => 'top',
                     'verticalAlignMinLabel' => 'bottom',
@@ -297,7 +308,7 @@ final readonly class CombinedStreamProfileCharts
             ],
             'tooltip' => [
                 'trigger' => 'axis',
-                'formatter' => 'callback:formatCombinedProfileTooltip',
+                'formatter' => EChartsCallback::formatCombinedProfileTooltip($this->unitSystem->paceSymbol()),
             ],
             'dataZoom' => [
                 [
@@ -373,6 +384,12 @@ final readonly class CombinedStreamProfileCharts
                 'axisLabel' => [
                     'show' => true,
                     'formatter' => '{value} ',
+                ],
+                'axisPointer' => [
+                    'label' => [
+                        'show' => true,
+                        'formatter' => '{value} ',
+                    ],
                 ],
                 'data' => $this->topXAxisData,
                 'min' => 0,

@@ -10,12 +10,12 @@ use App\Domain\Activity\ActivityTypeRepository;
 use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\Widget\Widget;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
+use App\Domain\Dashboard\Widget\WidgetRenderer;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 final readonly class DistanceBreakdownWidget implements Widget
 {
@@ -23,7 +23,7 @@ final readonly class DistanceBreakdownWidget implements Widget
         private TranslatorInterface $translator,
         private ActivityRepository $activityRepository,
         private ActivityTypeRepository $activityTypeRepository,
-        private Environment $twig,
+        private WidgetRenderer $widgetRenderer,
         private SettingsRepository $settingsRepository,
     ) {
     }
@@ -31,6 +31,11 @@ final readonly class DistanceBreakdownWidget implements Widget
     public function getLabel(): string
     {
         return $this->translator->trans('Distance breakdown');
+    }
+
+    public function getAdminLabel(): string
+    {
+        return $this->getLabel();
     }
 
     public function getTemplateName(): string
@@ -77,7 +82,7 @@ final readonly class DistanceBreakdownWidget implements Widget
             }
         }
 
-        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+        return $this->widgetRenderer->render($this, $configuration, [
             'uniqueId' => $dashboardWidgetId->toHtmlIdSuffix(),
             'distanceBreakdowns' => $distanceBreakdowns,
         ]);

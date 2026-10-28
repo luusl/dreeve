@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api\V1;
 
-use App\Domain\Api\Token;
 use App\Domain\Settings\DbalSettingsRepository;
 use App\Domain\Settings\SettingsName;
-use App\Infrastructure\Security\AuthenticatedVisitor;
+use App\Infrastructure\Security\Token\ApiToken;
+use App\Infrastructure\Security\Token\McpToken;
+use App\Infrastructure\Security\Visitor;
 use App\Infrastructure\Serialization\Json;
 use App\Tests\Controller\ControllerWebTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -15,7 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class ApiFirewallTest extends ControllerWebTestCase
 {
-    private Token $token;
+    private ApiToken $token;
 
     #[DataProvider('provideRequestsWithoutAValidToken')]
     public function testItRejectsARequestWithoutAValidToken(array $server): void
@@ -78,12 +79,12 @@ class ApiFirewallTest extends ControllerWebTestCase
     public function testItDoesNotLeakTheApiUserIntoTheNextRequest(): void
     {
         $this->client->request('GET', '/api/v1/status', server: ['HTTP_AUTHORIZATION' => 'Bearer '.$this->token]);
-        $this->assertTrue($this->getContainer()->get(AuthenticatedVisitor::class)->isAuthenticated());
+        $this->assertTrue($this->getContainer()->get(Visitor::class)->isAuthenticated());
 
         $this->client->request('GET', '/');
 
         $this->assertResponseIsSuccessful();
-        $this->assertFalse($this->getContainer()->get(AuthenticatedVisitor::class)->isAuthenticated());
+        $this->assertFalse($this->getContainer()->get(Visitor::class)->isAuthenticated());
     }
 
     public function testItAnswers401RatherThanRedirectingToTheLoginPage(): void
@@ -106,6 +107,19 @@ class ApiFirewallTest extends ControllerWebTestCase
         $this->assertSame(Response::HTTP_UNAUTHORIZED, $this->client->getResponse()->getStatusCode());
     }
 
+    public function testItRejectsTheMcpKey(): void
+    {
+        $mcpKey = McpToken::generate();
+        $this->withMcpKey((string) $mcpKey);
+
+        $this->client->request('GET', '/api/v1/status', server: ['HTTP_AUTHORIZATION' => 'Bearer '.$mcpKey]);
+
+        $response = $this->client->getResponse();
+        $this->assertSame(Response::HTTP_FORBIDDEN, $response->getStatusCode());
+        $this->assertSame('Bearer realm="Dreeve", error="insufficient_scope"', $response->headers->get('WWW-Authenticate'));
+        $this->assertSame('insufficient_scope', Json::decode((string) $response->getContent())['error']);
+    }
+
     public function testItRejectsEverythingWhenTheConfiguredKeyIsMalformed(): void
     {
         // Strict format validation makes this reachable: the key is set, but unusable.
@@ -120,7 +134,7 @@ class ApiFirewallTest extends ControllerWebTestCase
     protected function prepareEnvironment(): void
     {
         // Runs before createClient(), so the container is built with the key already in place.
-        $this->token = Token::generate();
+        $this->token = ApiToken::generate();
         $_SERVER['DREEVE_API_KEY'] = $_ENV['DREEVE_API_KEY'] = (string) $this->token;
     }
 }

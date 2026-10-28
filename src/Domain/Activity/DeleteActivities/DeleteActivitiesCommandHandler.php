@@ -1,0 +1,69 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Domain\Activity\DeleteActivities;
+
+use App\Domain\Activity\ActivityRepository;
+use App\Domain\Activity\BestEffort\ActivityBestEffortRepository;
+use App\Domain\Activity\Image\ImageRepository;
+use App\Domain\Activity\Lap\ActivityLapRepository;
+use App\Domain\Activity\Route\ExplorerTile\ActivityExplorerTilesRepository;
+use App\Domain\Activity\Route\Signature\ActivityRouteSignatureRepository;
+use App\Domain\Activity\Scan\ActivityScanRepository;
+use App\Domain\Activity\Shifting\ActivityDrivetrainUsageRepository;
+use App\Domain\Activity\Split\ActivitySplitRepository;
+use App\Domain\Activity\Stream\ActivityStreamRepository;
+use App\Domain\Activity\Stream\CombinedStream\CombinedActivityStreamRepository;
+use App\Domain\Activity\Stream\Metric\ActivityStreamMetricRepository;
+use App\Domain\Import\FileImportRepository;
+use App\Domain\Segment\SegmentEffort\SegmentEffortRepository;
+use App\Domain\Segment\SegmentRepository;
+use App\Infrastructure\CQRS\Command\Command;
+use App\Infrastructure\CQRS\Command\CommandHandler;
+
+final readonly class DeleteActivitiesCommandHandler implements CommandHandler
+{
+    public function __construct(
+        private ActivityRepository $activityRepository,
+        private ActivityStreamRepository $activityStreamRepository,
+        private ActivityStreamMetricRepository $activityStreamMetricRepository,
+        private CombinedActivityStreamRepository $combinedActivityStreamRepository,
+        private SegmentEffortRepository $segmentEffortRepository,
+        private SegmentRepository $segmentRepository,
+        private ActivityScanRepository $activityScanRepository,
+        private ActivitySplitRepository $activitySplitRepository,
+        private ActivityLapRepository $activityLapRepository,
+        private ActivityBestEffortRepository $activityBestEffortRepository,
+        private ActivityRouteSignatureRepository $activityRouteSignatureRepository,
+        private ActivityExplorerTilesRepository $activityExplorerTilesRepository,
+        private ActivityDrivetrainUsageRepository $activityDrivetrainUsageRepository,
+        private FileImportRepository $fileImportRepository,
+        private ImageRepository $imageRepository,
+    ) {
+    }
+
+    public function handle(Command $command): void
+    {
+        assert($command instanceof DeleteActivities);
+
+        foreach ($command->getActivityIds() as $activityId) {
+            $this->activityStreamRepository->deleteForActivity($activityId);
+            $this->activityStreamMetricRepository->deleteForActivity($activityId);
+            $this->combinedActivityStreamRepository->deleteForActivity($activityId);
+            $this->segmentEffortRepository->deleteForActivity($activityId);
+            $this->activityScanRepository->deleteForActivity($activityId);
+            $this->activitySplitRepository->deleteForActivity($activityId);
+            $this->activityLapRepository->deleteForActivity($activityId);
+            $this->activityBestEffortRepository->deleteForActivity($activityId);
+            $this->activityRouteSignatureRepository->deleteForActivity($activityId);
+            $this->activityExplorerTilesRepository->deleteForActivity($activityId);
+            $this->activityDrivetrainUsageRepository->deleteForActivity($activityId);
+            $this->fileImportRepository->deleteForActivity($activityId);
+            $this->imageRepository->deleteForActivity($activityId);
+            $this->activityRepository->delete($activityId);
+        }
+
+        $this->segmentRepository->deleteOrphanedImported();
+    }
+}

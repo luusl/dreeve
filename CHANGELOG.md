@@ -1,3 +1,331 @@
+# [v5.7.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.7.0) - 2026-10-26
+
+> [!NOTE]
+> Dreeve now includes a read-only MCP server, allowing AI assistants to access your activity data and statistics.
+> See the [MCP integration documentation](https://docs.dreeve.app/integrations/mcp/) for setup instructions.
+
+> [!WARNING]
+> The AI assistant is no longer available through the CLI. Use the web interface or the new read-only MCP server instead
+
+## New features
+* Added a read-only MCP server for AI integrations
+* Added API support for downloading original activity files
+* Added a one-time popup when a new release is available
+* Added a "Show my location" toggle to the heatmap
+
+## Improvements
+* Added configurable time ranges to the daytime statistics widget
+* Added filtering activities by Zwift world
+
+## Bug fixes
+* Fixed JSON escaping in file upload templates and handling of empty image payloads
+* Fixed activity overview dropdowns breaking the page width
+* Fixed the heart rate zones chart retaining its fullscreen height after exiting fullscreen
+
+## Technical details
+* ISSUE #2892: Show a one-time popup when a new release is available by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2894
+* ISSUE #2893: Download original activity files via the API by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2895
+* Escape JSON data attributes in drop zone templates and handle empty images payload by @julien-gasnier in https://github.com/dreeveapp/dreeve/pull/2898
+* ISSUE #2905: Run CI inside the php-cli Docker image by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2906
+* ISSUE #2901: Drop-down menus in activitiy overview break page width by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2907
+* ISSUE #2902: Stop the heart rate zones chart from keeping its fullscreen height by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2908
+* ISSUE #2909: Allow to filter activities on Zwift world by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2910
+* ISSUE #2896: Add a read-only MCP server by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2911
+* ISSUE #2904: Replace NeuronAI with Symfony AI package by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2912
+* ISSUE #2915: Ability to adjust the times in the daytime stats widget by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2917
+* docs: add Apple Health and Google Health Sync integrations by @jminke in https://github.com/dreeveapp/dreeve/pull/2916
+* ISSUE #2896: List the MCP server under key features by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2919
+* ISSUE #2922: Add a 'Show my location' toggle to the heatmap by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2923
+
+## New Contributors
+* @julien-gasnier made their first contribution in https://github.com/dreeveapp/dreeve/pull/2898
+* @jminke made their first contribution in https://github.com/dreeveapp/dreeve/pull/2916
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.6.2...v5.7.0
+
+# [v5.6.2](https://github.com/dreeveapp/dreeve/releases/tag/v5.6.2) - 2026-10-22
+
+> [!WARNING]
+> The PHP team, the technology that Dreeve is built with, has announced a **critical security update**.
+> This release includes the security fix. Update to this version as soon as possible, as earlier versions of Dreeve are vulnerable to remote code execution.
+> * https://www.php.net/archive/2026.php#2026-10-20-1
+> * https://sansec.io/research/php2shell
+
+## New features
+* Added API endpoints for several dashboard metrics
+* Added an API endpoint to fetch activity streams
+* Added previous and next buttons to navigate between activities
+* Added bulk activity deletion
+* Added support for importing boxing `.fit` files
+
+## Improvements
+* Moved activity exclusion settings to the activity edit page
+* Added an elevation graph to the segment creation page
+* Included e-bike rides in best effort statistics
+* Added the longest streak to the streaks widget
+
+## Bug fixes
+* Fixed chat commands containing apostrophes.
+
+## Technical details
+* ISSUE #2840: Read-only endpoints for the dashboard's metrics by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2861
+* German Translation for v5.6.1 by @effectpears in https://github.com/dreeveapp/dreeve/pull/2863
+* ISSUE #2860: previous and next arrows to move between activities by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2864
+* ISSUE #2862: Bulk delete activities by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2865
+* ISSUE #2866: Migrate activity exclusion settings to the Activity entity by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2868
+* Fix chat being unusable when a chat command contains an apostrophe by @TanguyBaudrin in https://github.com/dreeveapp/dreeve/pull/2867
+* ISSUE #2869: Build all daemon cron actions from one list in SystemDaemon by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2870
+* ISSUE #2871: Reduce duplicated code across the charts and templates by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2872
+* Support boxing .fit files by @techk1ng in https://github.com/dreeveapp/dreeve/pull/2873
+* ISSUE #2874: Group single sport type selects by activity type by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2875
+* ISSUE #2876: Dispatch domain events through the Contracts event dispa… by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2877
+* ISSUE #2879: Add elevation graph underneath the segment creation window by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2882
+* ISSUE #2881: Add e-bike rides to best efforts stats by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2883
+* ISSUE #2878: Expose activity streams through the API by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2884
+* ISSUE #2880: Show the longest streak in the streaks widget and rewind by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2888
+
+## New Contributors
+* @TanguyBaudrin made their first contribution in https://github.com/dreeveapp/dreeve/pull/2867
+* @techk1ng made their first contribution in https://github.com/dreeveapp/dreeve/pull/2873
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.6.1...v5.6.2
+
+# [v5.6.1](https://github.com/dreeveapp/dreeve/releases/tag/v5.6.1) - 2026-10-19
+
+> [!NOTE]
+> This release recalculates stream data for all activities in the background. 
+> Depending on the number of activities, this may take a few minutes. Some data may be temporarily unavailable or incomplete until processing finishes.
+
+## New features
+* Added the option to exclude activities from best efforts and peak power calculations on the activity edit form
+* Added max square and cluster milestones, along with new tiles on the activity detail page
+* Added the ability to remove gear through automation rules
+
+## Improvements
+* Show time and distance when hovering over activity graph axes
+* Improved the heart rate zones dashboard widget
+* Show activity time and distance when hovering over entries in the monthly calendar
+* Improved the usability of settings pages
+* Fixed a stored XSS vulnerability in AI chat by sanitizing messages server-side
+* Avoid invalidating the entire render cache when general settings change
+* Fixed speed and cadence units when importing Nike Run Club FIT files
+* Allowed the AI agent to request smaller activity summaries to reduce context usage
+
+
+## Bug fixes
+* Fixed layout issues on mobile devices
+
+## Technical details
+* ISSUE #2822: Fix layout issues on mobile devices by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2823
+* ISSUE #2825: Use 'manufacturer' instead of 'product_name' for Zwift fit files by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2827
+* ISSUE #2824: Exclude activities from best efforts and peak power outputs by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2828
+* German Translation  by @effectpears in https://github.com/dreeveapp/dreeve/pull/2831
+* ISSUE #2830: Max square and cluster milestones, new tiles per activity by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2833
+* ISSUE #2834: Render the shifting stats inline on the activity page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2835
+* ISSUE #2832: Show the hovered time and distance on the activity graph axes by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2836
+* Update Brazilian Portuguese translation by @SoNdA11 in https://github.com/dreeveapp/dreeve/pull/2841
+* ISSUE #2843: Improve heart rate zone dashboard widget by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2844
+* ISSUE #2842: Show activity time and distance on hover in the monthly calendar by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2845
+* ISSUE #2837: Allow for removal of gear via automation rules by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2846
+* ISSUE #2847: Improve general UX of settings pages by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2848
+* ISSUE #2839: Add a weight history settings page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2850
+* ISSUE #2851: Fix stored XSS in AI chat by sanitizing messages server-side by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2852
+* ISSUE #2853: Stop invalidating the entire render cache when general settings change by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2854
+* ISSUE #2849: Fix Nike Run Club FIT session speed and cadence units by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2856
+* ISSUE #2855: Let the AI agent request a smaller activity summary by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2857
+
+## New Contributors
+* @SoNdA11 made their first contribution in https://github.com/dreeveapp/dreeve/pull/2841
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.6.0...v5.6.1
+
+# [v5.6.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.6.0) - 2026-10-14
+
+## New features
+* Added explorer tiles to the heatmap
+* Added the ability to download original activity files from the activity detail page
+* Added an API endpoint for upcoming gear maintenance
+* Added an activity description condition to automation rules
+
+## Improvements
+* Reworked the gear maintenance features based on feedback of several users
+* Added "unspecified" filter options to the activity overview
+* Recalculate activity metrics when an activity's sport type changes
+* Hide the segments icon in the admin panel when segments aren't applicable
+* Redesigned the gear pages
+* Added the number of days needed to reach upcoming Eddington numbers
+
+## Technical details
+* German Translation for Segment Management by @effectpears in https://github.com/dreeveapp/dreeve/pull/2798
+* ISSUE #2794: Download original activity files by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2799
+* ISSUE #2803: Add "unspecified" filter options in the activity overview by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2804
+* ISSUE #2800: Recalculate activity metrics when activity sport type is updated by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2805
+* ISSUE #2806: Hide segments icon in admin panel when not applicable by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2807
+* ISSUE #2808: Gear page re-vamp by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2809
+* ISSUE #2771: Gear Configurations by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2797
+* ISSUE #2792: API endpoint for upcoming gear maintenance by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2801
+* ISSUE #2810: Show days needed for upcoming Eddington numbers by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2811
+* German Translation (var commits) by @effectpears in https://github.com/dreeveapp/dreeve/pull/2814
+* ISSUE #2812: Automation condition on activity description by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2815
+* ISSUE #2816: Clean up gear component refactor by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2817
+* ISSUE #2813: Show explorer tiles on the heatmap by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2820
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.5.0...v5.6.0
+
+# [v5.5.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.5.0) - 2026-10-12
+
+> [!NOTE]
+> Custom segments can now be managed in file import mode, not just when using the Strava API.
+
+## New features
+* Added support for managing custom segments in file import mode
+
+## Improvements
+* Added separate admin labels for the dashboard widget dropdown
+* Import notifications now show the number of activities imported
+* Added milestone dates to the milestone dashboard widget
+* Added filename and activity filters to the file import page
+* File import filters are now preserved after deleting an entry
+* Added a workout type dropdown to the activity edit form
+
+## Technical details
+* ISSUE #2767: in DEMO mode, hide start time of activities by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2768
+* ISSUE #2773: Use separate admin labels for the widget dropdown button by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2774
+* ISSUE #2772: Mention the number of imported activities in the import notification by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2775
+* ISSUE #2776: New Shoutrrr release available: v0.21.2 by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2777
+* ISSUE #2778: Show the milestone date in the milestone dashboard widget by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2779
+* ISSUE #2781: Add filename and activity filters to the file import page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2782
+* ISSUE #2780: Keep file import filters after deleting an entry by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2783
+* ISSUE #2607: Manage custom segments by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2784
+* ISSUE #2786: Move tracking of activity processing tasks to one generic table by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2787
+* ISSUE #2789: Add workout type dropdown to edit activity by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2793
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.4.4...v5.5.0
+
+# [v5.4.4](https://github.com/dreeveapp/dreeve/releases/tag/v5.4.4) - 2026-10-05
+
+## New features
+* Added API support for adding and removing activity images
+* New automation condition rule to match activities that end near their starting point
+
+## Improvements
+* Improved the documentation for use with LLMs
+* Added security headers to the Caddy configuration
+* Fixed elevation gain being overestimated on noisy data
+* Improved FIT file imports for activities with a session but no record messages
+* Added options to select all or clear all activities in the backfill preview
+
+## Bug fixes
+* Fixed filename filtering on the file imports API
+* Fixed GPX exports for activities without GPS data
+
+## Technical details
+* ISSUE #2737: Make docs LLM friendly by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2738
+* ISSUE #2740: Add security headers to Caddyfile by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2742
+* Update Brazilan Portuguese translation by @gustavobim in https://github.com/dreeveapp/dreeve/pull/2744
+* ISSUE #2741: Elevation gain is about 3x too high on noisy data by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2749
+* ISSUE #2746: filters[filename] on GET /api/v1/file-imports does not a… by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2750
+* ISSUE #2748: the GPX export of an activity without GPS has track points with no position by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2751
+* ISSUE #2745: Import a FIT activity that has a session but no record messages by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2752
+* Complete missing French translations by @Aohzan in https://github.com/dreeveapp/dreeve/pull/2754
+* ISSUE #2747: API: add and remove an activity's images by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2758
+* ISSUE #2755: Elevation imported as 0 from FIT files that declare total_ascent = 0 despite a valid altitude stream by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2760
+* ISSUE #2756: Select all or clear the activities in the backfill preview by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2761
+* ISSUE #2757: Match activities that end near their start point by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2762
+
+## New Contributors
+* @Aohzan made their first contribution in https://github.com/dreeveapp/dreeve/pull/2754
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.4.3...v5.4.4
+
+# [v5.4.3](https://github.com/dreeveapp/dreeve/releases/tag/v5.4.3) - 2026-10-02
+
+## New features
+* Added the ability to delete gear
+* Added API support for updating gear assigned to an activity
+
+## Improvements
+* Cache the sidebar in the app shell for faster navigation
+* Added a delete button to the activity edit form
+* Use total_moving_time from FIT files when calculating moving time
+* Improved the "Closest route" algorithm on the heatmap page
+
+## Technical details
+* Complete dutch (nl_BE) translation + fix spelling by @imrein in https://github.com/dreeveapp/dreeve/pull/2715
+* ISSUE #2716: Cache sidebar in app shell by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2719
+* ISSUE #2717: add delete button to activity edit form by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2720
+* ISSUE #2718: Allow deleting gear by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2722
+* ISSUE #2723: Refactor Fragment resolver to native Symfony controllers by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2726
+* ISSUE #2728: Clean up code and refactor small parts by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2729
+* ISSUE #2724: Update the gear field via the API   by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2730
+* ISSUE #2732: Use total_moving_time from FIT files for moving time by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2733
+* ISSUE #2734: Improve the "closest route" algorithm on the heatmap page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2735
+
+## New Contributors
+* @imrein made their first contribution in https://github.com/dreeveapp/dreeve/pull/2715
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.4.2...v5.4.3
+
+# [v5.4.2](https://github.com/dreeveapp/dreeve/releases/tag/v5.4.2) - 2026-09-30
+
+## New features
+* Added public API endpoints to edit and delete activities
+* Added API endpoint for file imports
+
+## Improvements
+* Improved activity metadata and meta tags
+
+## Technical details
+* German Translation in 5.4.1 by @effectpears in https://github.com/dreeveapp/dreeve/pull/2703
+* ISSUE #2706: Public API - edit and delete an activity by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2707
+* ISSUE #2709: Use Symfony routing instead of javascript router by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2710
+* ISSUE #270: Push  filter changes to browser history by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2711
+* ISSUE #2709: Improve activity's metatags by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2712
+* ISSUE #2705:  Track file imports via the API by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2708
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.4.1...v5.4.2
+
+# [v5.4.1](https://github.com/dreeveapp/dreeve/releases/tag/v5.4.1) - 2026-09-24
+
+## New features
+* Added API endpoints to list activities and download GPX files
+* Added a new "Rolling window stats" dashboard widget
+* Added support for wakeboarding activities
+
+## Improvements
+* Added the option to limit the "Most recent activities" widget to specific sport types
+* Added the possibility to configure a custom title for dashboard widgets
+
+## Technical details
+* German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/2687
+* ISSUE #2688: Allow to limit 'Most recent activities' widget on sport types by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2692
+* ISSUE #2690: Add API endpoint for list activities and get activity summary/gpx by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2694
+* ISSUE #2693: Multi-Day Rolling Volume Chart View by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2695
+* ISSUE #2696: Add support for wakeboarding by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2697
+* ISSUE #2698: Allow to configure a dashboard widget title for all widgets by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2699
+* ISSUE #2700: New Shoutrrr release available: v0.21.1 by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2701
+
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.4.0...v5.4.1
+
+# [v5.4.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.4.0) - 2026-09-17
+
+> [!WARNING]
+> Before upgrading to this release, you'll need to upgrade to `v5.3.3` first. Skipping this step will result in an error.
+
+## New features
+* Added an option to disable image downloads
+* Integrated WindAhead with Dreeve segments
+* Added average heart rate and TRIMP calculations to manual trainings
+
+## Technical details
+* ISSUE #2674: Squash database migrations by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2675
+* ISSUE #2671: Add avg heart rate and TRIMP calculation to manual trainings by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2676
+* ISSUE #2673: Integrate WindAhead with Dreeve segments by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2677
+* ISSUE #2682: Added option to disable image downloads by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2683
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.3.3...v5.4.0
+
 # [v5.3.3](https://github.com/dreeveapp/dreeve/releases/tag/v5.3.3) - 2026-09-11
 
 ## New features

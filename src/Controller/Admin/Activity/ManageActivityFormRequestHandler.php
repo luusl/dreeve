@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin\Activity;
 
+use App\Domain\Activity\Activity;
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
-use App\Domain\Activity\DeleteActivity\DeleteActivity;
+use App\Domain\Activity\DeleteActivities\DeleteActivities;
 use App\Domain\Activity\ImportSource;
 use App\Domain\Activity\ManuallyCreateActivity\ManuallyCreateActivity;
 use App\Domain\Activity\UpdateActivity\UpdateActivity;
@@ -19,6 +21,7 @@ use App\Domain\Gear\RecordingDevice\RecordingDeviceRepository;
 use App\Domain\Import\ImportMode;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Http\HtmlResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
@@ -81,9 +84,17 @@ final readonly class ManageActivityFormRequestHandler
             'dispatchCommand' => UpdateActivity::getCommandName(),
             'activity' => $activity,
             'sportTypes' => $this->settingsRepository->appearance()->getSportTypesSortingOrder(),
+            'workoutTypes' => WorkoutType::cases(),
             'gears' => $gears,
             'gearIsReadOnly' => $gearIsReadOnly,
             'recordingDevices' => $this->recordingDeviceRepository->findAll(),
+            'exclusions' => array_map(
+                fn (ActivityExclusion $exclusion): array => [
+                    'exclusion' => $exclusion,
+                    'isExcluded' => $activity->getExcludedFrom()->has($exclusion),
+                ],
+                ActivityExclusion::cases(),
+            ),
         ]));
     }
 
@@ -91,8 +102,29 @@ final readonly class ManageActivityFormRequestHandler
     public function handleDelete(string $activityId): HtmlResponse
     {
         return new HtmlResponse($this->twig->render('html/admin/page/activity/delete-activity.html.twig', [
-            'dispatchCommand' => DeleteActivity::getCommandName(),
-            'activity' => $this->activityRepository->find(ActivityId::fromString($activityId)),
+            'dispatchCommand' => DeleteActivities::getCommandName(),
+            'activities' => [$this->activityRepository->find(ActivityId::fromString($activityId))],
+        ]));
+    }
+
+    #[Route(path: '/admin/activities/delete', name: 'admin_delete_activities', methods: ['GET'], priority: 10)]
+    public function handleBulkDelete(Request $request): HtmlResponse
+    {
+        if (!$this->importMode->isFiles()) {
+            throw new NotFoundHttpException('Activities can only be deleted when running in file import mode.');
+        }
+
+        $activityIds = $request->query->all('activityIds');
+        if ([] === $activityIds) {
+            throw new NotFoundHttpException('No activities selected for deletion.');
+        }
+
+        return new HtmlResponse($this->twig->render('html/admin/page/activity/delete-activity.html.twig', [
+            'dispatchCommand' => DeleteActivities::getCommandName(),
+            'activities' => array_map(
+                fn (string $activityId): Activity => $this->activityRepository->find(ActivityId::fromString($activityId)),
+                array_values($activityIds),
+            ),
         ]));
     }
 }

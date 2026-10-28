@@ -11,20 +11,24 @@ use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 final readonly class MostRecentActivitiesWidget implements Widget
 {
     public function __construct(
         private TranslatorInterface $translator,
         private ActivityRepository $activityRepository,
-        private Environment $twig,
+        private WidgetRenderer $widgetRenderer,
     ) {
     }
 
     public function getLabel(): string
     {
         return $this->translator->trans('Most recent activities');
+    }
+
+    public function getAdminLabel(): string
+    {
+        return $this->translator->trans('Most recent activities (list)', domain: 'admin');
     }
 
     public function getTemplateName(): string
@@ -62,7 +66,7 @@ final readonly class MostRecentActivitiesWidget implements Widget
     {
         $numberOfActivitiesToDisplay = (int) $configuration->get('numberOfActivitiesToDisplay');
 
-        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+        return $this->widgetRenderer->render($this, $configuration, [
             'mostRecentActivities' => $this->activityRepository->findMostRecent($numberOfActivitiesToDisplay),
         ]);
     }

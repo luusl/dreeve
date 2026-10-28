@@ -10,6 +10,11 @@ parameters:
     env(ADMIN_PASSWORD_HASH): ''
     env(ADMIN_ALLOWED_IPS): ''
     env(DREEVE_API_KEY): ''
+    env(DREEVE_MCP_KEY): ''
+    env(OIDC_ISSUER_URL): ''
+    env(OIDC_CLIENT_ID): ''
+    env(OIDC_CLIENT_SECRET): ''
+    env(OIDC_ALLOWED_USERS): ''
     env(TRUSTED_PROXIES): 'private_ranges'
     env(STRAVA_CLIENT_ID): 'replace-me'
     env(STRAVA_CLIENT_SECRET): 'replace-me'
@@ -25,9 +30,6 @@ services:
     _defaults:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
-    _instanceof:
-        NeuronAI\Tools\ToolInterface:
-            tags: [ 'app.ai_tool' ]
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -72,26 +74,24 @@ services:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:DEV_MODE_IS_ENABLED)%']
 
-    App\Infrastructure\Security\AdminUserName:
+    App\Infrastructure\Security\Admin\AdminUserName:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:ADMIN_USERNAME)%']
 
-    App\Infrastructure\Security\AdminPasswordHash:
+    App\Infrastructure\Security\Admin\AdminPasswordHash:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:ADMIN_PASSWORD_HASH)%']
+
+    App\Infrastructure\Security\Oidc\OidcConfig:
+        factory: [ null, 'fromStrings' ]
+        arguments: ['%env(string:OIDC_ISSUER_URL)%', '%env(string:OIDC_CLIENT_ID)%', '%env(string:OIDC_CLIENT_SECRET)%', '%env(string:OIDC_ALLOWED_USERS)%']
 
     App\Application\AppUrl:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:APP_URL)%']
 
-    NeuronAI\Agent\AgentInterface:
-        class: App\Domain\Integration\AI\NeuronAIAgent
-
-    NeuronAI\Chat\History\ChatHistoryInterface:
-        class: App\Domain\Integration\AI\Chat\SFSChatHistory
-
-    NeuronAI\Tools\Toolkits\ToolkitInterface:
-        class: App\Domain\Integration\AI\Tool\Toolkit
+    Symfony\AI\Agent\AgentInterface:
+        class: App\Domain\Integration\AI\Chat\ChatAgent
 
     App\Domain\Strava\StravaClientId:
         factory: [ null, 'fromString' ]
@@ -105,9 +105,13 @@ services:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:STRAVA_REFRESH_TOKEN)%']
 
-    App\Domain\Api\Token:
+    App\Infrastructure\Security\Token\ApiToken:
         factory: [ null, 'fromString' ]
         arguments: ['%env(string:DREEVE_API_KEY)%']
+
+    App\Infrastructure\Security\Token\McpToken:
+        factory: [ null, 'fromString' ]
+        arguments: ['%env(string:DREEVE_MCP_KEY)%']
 
     App\Domain\Import\ImportMode:
         public: true

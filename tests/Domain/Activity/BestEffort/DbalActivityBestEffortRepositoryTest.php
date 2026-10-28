@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\Activity\BestEffort;
 
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIds;
 use App\Domain\Activity\ActivityRepository;
@@ -13,16 +14,12 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
 use App\Domain\Activity\Stream\StreamType;
 use App\Infrastructure\Measurement\Length\Meter;
-use App\Infrastructure\Serialization\Json;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Activity\Stream\ActivityStreamBuilder;
-use Spatie\Snapshots\MatchesSnapshots;
 
 class DbalActivityBestEffortRepositoryTest extends ContainerTestCase
 {
-    use MatchesSnapshots;
-
     private ActivityBestEffortRepository $activityBestEffortRepository;
 
     public function testAdd(): void
@@ -54,9 +51,29 @@ class DbalActivityBestEffortRepositoryTest extends ContainerTestCase
                 ->build()
         );
 
-        $this->assertMatchesJsonSnapshot(Json::encode(
-            $this->getConnection()->executeQuery('SELECT * FROM ActivityBestEffort')->fetchAllAssociative()
-        ));
+        $this->assertEquals(
+            [
+                [
+                    'activityId' => 'activity-test',
+                    'distanceInMeter' => 10000,
+                    'sportType' => 'Ride',
+                    'timeInSeconds' => 3600,
+                ],
+                [
+                    'activityId' => 'activity-test-2',
+                    'distanceInMeter' => 10000,
+                    'sportType' => 'Ride',
+                    'timeInSeconds' => 3600,
+                ],
+                [
+                    'activityId' => 'activity-test-2',
+                    'distanceInMeter' => 1000,
+                    'sportType' => 'Ride',
+                    'timeInSeconds' => 3600,
+                ],
+            ],
+            $this->getConnection()->executeQuery('SELECT * FROM ActivityBestEffort')->fetchAllAssociative(),
+        );
     }
 
     public function testFindActivityIdsThatNeedBestEffortsCalculation(): void
@@ -127,14 +144,13 @@ class DbalActivityBestEffortRepositoryTest extends ContainerTestCase
                 ->withTimeInSeconds(1800)
                 ->build()
         );
-        $this->activityBestEffortRepository->add(
-            ActivityBestEffortBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed('slowest'))
-                ->withSportType(SportType::RIDE)
-                ->withDistanceInMeter(Meter::from(10000))
-                ->withTimeInSeconds(3600)
-                ->build()
-        );
+        $slowestSharedBestEffort = ActivityBestEffortBuilder::fromDefaults()
+            ->withActivityId(ActivityId::fromUnprefixed('slowest'))
+            ->withSportType(SportType::RIDE)
+            ->withDistanceInMeter(Meter::from(10000))
+            ->withTimeInSeconds(3600)
+            ->build();
+        $this->activityBestEffortRepository->add($slowestSharedBestEffort);
         // A distance only the slowest activity has ridden, so it holds that record.
         $slowestOnlyBestEffort = ActivityBestEffortBuilder::fromDefaults()
             ->withActivityId(ActivityId::fromUnprefixed('slowest'))
@@ -147,6 +163,23 @@ class DbalActivityBestEffortRepositoryTest extends ContainerTestCase
         $this->assertEquals(
             ActivityBestEfforts::fromArray([$slowestOnlyBestEffort]),
             $this->activityBestEffortRepository->findByActivity(ActivityId::fromUnprefixed('slowest'))
+        );
+
+        // Once the fastest activity is excluded, the slowest one takes over its record.
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('fastest'))
+                ->withExcludedFrom(ActivityExclusion::BEST_EFFORTS)
+                ->build(),
+            []
+        ));
+
+        $this->assertEquals(
+            ActivityBestEfforts::fromArray([$slowestSharedBestEffort, $slowestOnlyBestEffort]),
+            $this->activityBestEffortRepository->findByActivity(ActivityId::fromUnprefixed('slowest'))
+        );
+        $this->assertEmpty(
+            $this->activityBestEffortRepository->findByActivity(ActivityId::fromUnprefixed('fastest'))->toArray()
         );
     }
 

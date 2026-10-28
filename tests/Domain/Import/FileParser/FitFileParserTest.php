@@ -49,13 +49,70 @@ class FitFileParserTest extends ActivityFileParserTestCase
         $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-gear-changes.json'));
 
         $this->assertParsedFileMatchesSnapshot(
-            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), '')),
+            hasDrivetrainUsage: true,
         );
     }
 
     public function testParseDerivesSummaryMetricsFromStreamsWhenMissingFromSession(): void
     {
         $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-without-session-summary-metrics.json'));
+
+        $this->assertParsedFileMatchesSnapshot(
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
+        );
+    }
+
+    public function testParseDerivesElevationFromStreamWhenTotalAscentIsZero(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-zero-total-ascent.json'));
+
+        $this->assertParsedFileMatchesSnapshot(
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
+        );
+    }
+
+    public function testParseIgnoresZeroSessionHeartRate(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-zero-heart-rate.json'));
+
+        $this->assertParsedFileMatchesSnapshot(
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
+        );
+    }
+
+    public function testParseSessionWithoutRecords(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-session-only.json'));
+
+        $this->assertParsedFileMatchesSnapshot(
+            $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
+        );
+    }
+
+    public function testParseWithoutRecordsAndWithoutSessionThrows(): void
+    {
+        $this->givenFitToolReturns(Json::encode([
+            'files' => [[
+                'profileVersion' => 2132,
+                'messages' => [
+                    ['name' => 'file_id', 'fields' => []],
+                    ['name' => 'monitoring', 'fields' => [
+                        ['name' => 'timestamp', 'value' => self::START_FIT_SECONDS],
+                    ]],
+                ],
+            ]],
+        ]));
+
+        $rawActivityFile = RawActivityFile::from(Path::fromString('/tmp/activity.fit'), '');
+
+        $this->expectExceptionObject(new CouldNotParseActivityFile('No FIT "record" messages found in "activity.fit"', $rawActivityFile));
+        $this->parser->parse($rawActivityFile);
+    }
+
+    public function testParsePrefersTotalMovingTimeOverTimerTime(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-total-moving-time.json'));
 
         $this->assertParsedFileMatchesSnapshot(
             $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))
@@ -76,6 +133,17 @@ class FitFileParserTest extends ActivityFileParserTestCase
         $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-with-deviating-session-avg-power.json'));
 
         $this->assertSame(113, $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getAveragePower());
+    }
+
+    public function testParseFixesNikeRunClubSessionUnits(): void
+    {
+        $this->givenFitToolReturns((string) file_get_contents(__DIR__.'/fixtures/fit-document-nike-run-club.json'));
+
+        $activity = $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity();
+
+        $this->assertEqualsWithDelta(11.606, $activity->getAverageSpeed()->toFloat(), 0.001);
+        $this->assertEqualsWithDelta(18.356, $activity->getMaxSpeed()->toFloat(), 0.001);
+        $this->assertSame(70, $activity->getAverageCadence());
     }
 
     public function testParseMergesRecordsSplitAcrossSameTimestamp(): void
@@ -163,6 +231,17 @@ class FitFileParserTest extends ActivityFileParserTestCase
         $this->givenFitToolReturns(Json::encode($document));
 
         $this->assertSame('Suunto Vertical', $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getDeviceName());
+    }
+
+    public function testParseIgnoresProductNameForZwift(): void
+    {
+        $document = $this->minimalFitDocument(fileIdFields: [
+            ['name' => 'manufacturer', 'value' => 260],
+            ['name' => 'product_name', 'value' => 'with {wo'],
+        ]);
+        $this->givenFitToolReturns(Json::encode($document));
+
+        $this->assertSame('Zwift', $this->parser->parse(RawActivityFile::from(Path::fromString('/tmp/activity.fit'), ''))->getActivity()->getDeviceName());
     }
 
     public function testParseFallsBackToManufacturerWhenProductNameMissing(): void

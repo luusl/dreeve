@@ -1,0 +1,23 @@
+{
+    "day": {
+        "current": 0,
+        "currentStartDate": null,
+        "longest": 1,
+        "longestStartDate": "2023-08-31",
+        "longestEndDate": "2023-08-31"
+    },
+    "week": {
+        "current": 0,
+        "currentStartDate": null,
+        "longest": 1,
+        "longestStartDate": "2023-08-31",
+        "longestEndDate": "2023-08-31"
+    },
+    "month": {
+        "current": 0,
+        "currentStartDate": null,
+        "longest": 1,
+        "longestStartDate": "2023-08-31",
+        "longestEndDate": "2023-08-31"
+    }
+}

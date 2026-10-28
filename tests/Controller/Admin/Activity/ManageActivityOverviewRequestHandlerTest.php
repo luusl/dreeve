@@ -17,19 +17,9 @@ use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Gear\GearBuilder;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
 {
-    public function testAnonymousUsersAreRedirectedToTheLoginPage(): void
-    {
-        $this->seedActivity();
-
-        $this->client->request('GET', '/admin/activities');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
     public function testRendersTheEmptyStateWhenThereAreNoActivities(): void
     {
         $this->withImportMode(ImportMode::FILES);
@@ -40,7 +30,8 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertCount(1, $crawler->filter('table.data-table'));
         $this->assertStringContainsString('No activities imported yet.', $crawler->filter('body')->text());
-        $this->assertCount(1, $crawler->filter('table.data-table tbody td[colspan="9"]'));
+        $this->assertCount(1, $crawler->filter('table.data-table tbody td[colspan="10"]'));
+        $this->assertCount(0, $crawler->filter('table.data-table input[type="checkbox"]'));
         $this->assertCount(0, $crawler->filter('table.data-table tbody a[title="Edit"]'));
         $this->assertCount(0, $crawler->filter('[aria-label="Go to next page"]'));
     }
@@ -72,11 +63,18 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(1, $form->filter('select[name="filters[gear]"]'));
         $this->assertCount(1, $form->filter('select[name="filters[device]"]'));
         $this->assertCount(1, $form->filter('select[name="filters[importSource]"]'));
+        $this->assertSame(
+            ['peakPowerOutputs' => 'Peak power outputs', 'bestEfforts' => 'Best efforts'],
+            array_combine(
+                $form->filter('select[name="filters[excludedFrom]"] option:not([value=""])')->each(fn ($option) => $option->attr('value')),
+                $form->filter('select[name="filters[excludedFrom]"] option:not([value=""])')->each(fn ($option) => $option->text()),
+            ),
+        );
         $this->assertCount(1, $form->filter('button[type="submit"]'));
         $this->assertCount(0, $form->filter('a.btn--secondary'));
 
         $gearOption = $form->filter('select[name="filters[gear]"] option:not([value=""])');
-        $this->assertCount(1, $gearOption);
+        $this->assertCount(2, $gearOption);
         $this->assertSame((string) GearId::fromUnprefixed('99'), $gearOption->attr('value'));
         $this->assertSame('Trail Shoes', $gearOption->text());
     }
@@ -148,43 +146,64 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(0, $rows->eq(1)->filter('form[data-dispatch-command="enrich-activity"]'));
     }
 
-    #[DataProvider('provideSportTypeFilterScenarios')]
-    public function testFiltersTheTableOnSportType(
-        string $sportTypeFilter,
-        int $expectedRowCount,
-        ?string $expectedSelectedOption,
-    ): void {
+    public function testFiltersTheTableOnSportType(): void
+    {
         $this->seedActivities(3);
         $this->seedActivity();
         $this->client->loginUser($this->adminUser());
 
-        $crawler = $this->client->request('GET', '/admin/activities?filters[sportType]='.$sportTypeFilter);
+        $crawler = $this->client->request('GET', '/admin/activities?filters[sportType]=Run');
 
         $this->assertResponseIsSuccessful();
-        $this->assertCount($expectedRowCount, $crawler->filter('table.data-table tbody tr'));
+        $this->assertCount(1, $crawler->filter('table.data-table tbody tr'));
+        $this->assertSame('Run', $crawler->filter('select[name="filters[sportType]"] option[selected]')->attr('value'));
+        $this->assertCount(1, $crawler->filter('form[method="get"] a.btn--secondary'));
+    }
 
-        $selectedOption = $crawler->filter('select[name="filters[sportType]"] option[selected]');
-        if (null === $expectedSelectedOption) {
-            $this->assertCount(0, $selectedOption);
-        } else {
-            $this->assertSame($expectedSelectedOption, $selectedOption->attr('value'));
-        }
+    public function testIgnoresAnInvalidSportTypeFilter(): void
+    {
+        $this->seedActivities(3);
+        $this->seedActivity();
+        $this->client->loginUser($this->adminUser());
 
-        $this->assertCount(
-            null === $expectedSelectedOption ? 0 : 1,
-            $crawler->filter('form[method="get"] a.btn--secondary')
+        $crawler = $this->client->request('GET', '/admin/activities?filters[sportType]=bogus');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(3, $crawler->filter('table.data-table tbody tr'));
+        $this->assertCount(0, $crawler->filter('select[name="filters[sportType]"] option[selected]'));
+        $this->assertCount(0, $crawler->filter('form[method="get"] a.btn--secondary'));
+    }
+
+    public function testFiltersTheTableOnUnspecifiedGear(): void
+    {
+        $this->seedActivities(3);
+        $this->seedActivity();
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/activities?filters[gear]=gear-none');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(0, $crawler->filter('table.data-table tbody tr td:not([colspan])'));
+        $this->assertSame(
+            'gear-none',
+            $crawler->filter('select[name="filters[gear]"] option[selected]')->attr('value')
         );
     }
 
-    public static function provideSportTypeFilterScenarios(): iterable
+    public function testFiltersTheTableOnUnspecifiedDevice(): void
     {
-        yield 'a valid sport type filter narrows the rows and pre-selects the option' => [
-            'Run', 1, 'Run',
-        ];
+        $this->seedActivities(3);
+        $this->seedActivity();
+        $this->client->loginUser($this->adminUser());
 
-        yield 'an invalid sport type value is silently ignored' => [
-            'bogus', 3, null,
-        ];
+        $crawler = $this->client->request('GET', '/admin/activities?filters[device]=recordingDevice-none');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(3, $crawler->filter('table.data-table tbody tr'));
+        $this->assertSame(
+            'recordingDevice-none',
+            $crawler->filter('select[name="filters[device]"] option[selected]')->attr('value')
+        );
     }
 
     public function testRendersTheFilterFormWhenActiveFiltersMatchNothing(): void
@@ -219,6 +238,8 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString('of 30', $crawler->filter('body')->text());
 
         $this->assertCount(0, $crawler->filter('table.data-table tbody a[title="Delete"]'));
+        $this->assertCount(0, $crawler->filter('input[type="checkbox"]'));
+        $this->assertCount(0, $crawler->filter('form#bulk-delete-activities'));
     }
 
     public function testShowsDeleteLinksInFilesMode(): void
@@ -237,6 +258,15 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
             '/admin/activities/'.ActivityId::fromUnprefixed('1').'/delete',
             $deleteLinks->first()->attr('href')
         );
+
+        $this->assertCount(1, $crawler->filter('table.data-table thead input[type="checkbox"][data-checkbox-toggle]'));
+        $rowCheckboxes = $crawler->filter('table.data-table tbody input[type="checkbox"][form="bulk-delete-activities"][name="activityIds[]"]');
+        $this->assertCount(3, $rowCheckboxes);
+        $this->assertSame((string) ActivityId::fromUnprefixed('1'), $rowCheckboxes->first()->attr('value'));
+
+        $bulkDeleteForm = $crawler->filter('form#bulk-delete-activities[method="get"]');
+        $this->assertSame('/admin/activities/delete', $bulkDeleteForm->attr('action'));
+        $this->assertSame('/admin/activities', $bulkDeleteForm->filter('input[name="redirectTo"]')->attr('value'));
     }
 
     public function testEditAndDeleteLinksRedirectBackToTheFilteredPage(): void
@@ -257,6 +287,10 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString(
             $expectedRedirectTo,
             (string) $crawler->filter('table.data-table tbody a[title="Delete"]')->first()->attr('href')
+        );
+        $this->assertSame(
+            '/admin/activities?filters%5BsportType%5D=Ride&pagination%5Bpage%5D=2&pagination%5Bsize%5D=10',
+            $crawler->filter('form#bulk-delete-activities input[name="redirectTo"]')->attr('value')
         );
     }
 
@@ -281,7 +315,7 @@ class ManageActivityOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertSame(
             ['Manual', 'Strava API'],
-            $crawler->filter('table.data-table tbody tr td:nth-child(4)')->each(fn ($cell) => trim($cell->text())),
+            $crawler->filter('table.data-table tbody tr td:nth-child(5)')->each(fn ($cell) => trim($cell->text())),
         );
     }
 

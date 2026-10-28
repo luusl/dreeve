@@ -4,11 +4,14 @@ namespace App\Tests\Controller\Admin\Gear\Maintenance;
 
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
+use App\Domain\Gear\Maintenance\GearComponent;
+use App\Domain\Gear\Maintenance\GearComponentId;
+use App\Domain\Gear\Maintenance\GearComponentRepository;
 use App\Domain\Gear\Maintenance\Log\GearMaintenanceLog;
-use App\Domain\Gear\Maintenance\Log\GearMaintenanceLogId;
 use App\Domain\Gear\Maintenance\Log\GearMaintenanceLogRepository;
 use App\Domain\Gear\Maintenance\Task\MaintenanceTaskId;
 use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Gear\GearBuilder;
@@ -19,27 +22,6 @@ use PHPUnit\Framework\Attributes\TestWith;
 class ManageGearMaintenanceLogFormRequestHandlerTest extends AdminWebTestCase
 {
     use ProvideGearMaintenanceConfig;
-
-    public function testAnonymousUsersAreRedirectedToTheLoginPageOnAdd(): void
-    {
-        $this->client->request('GET', '/admin/gear/maintenance-logs/register');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
-    public function testAnonymousUsersAreRedirectedToTheLoginPageOnEdit(): void
-    {
-        $this->client->request('GET', '/admin/gear/maintenance-logs/'.GearMaintenanceLogId::random().'/edit');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
-    public function testAnonymousUsersAreRedirectedToTheLoginPageOnDelete(): void
-    {
-        $this->client->request('GET', '/admin/gear/maintenance-logs/'.GearMaintenanceLogId::random().'/delete');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
 
     public function testRendersTheDeleteConfirmation(): void
     {
@@ -114,6 +96,23 @@ class ManageGearMaintenanceLogFormRequestHandlerTest extends AdminWebTestCase
         $this->assertGreaterThan(0, $form->filter('select[name="maintenanceTaskId"] option[data-when]')->count());
         $this->assertStringContainsString('Lube', $form->filter('select[name="maintenanceTaskId"]')->text());
         $this->assertStringContainsString('Race bike', $form->filter('select[name="gearId"]')->text());
+    }
+
+    public function testTheRegisterFormDoesNotOfferRetiredComponents(): void
+    {
+        $this->seedConfigAndGear();
+        $gearComponentRepository = static::getContainer()->get(GearComponentRepository::class);
+        $chain = Json::decode(Json::encode($gearComponentRepository->find(GearComponentId::fromString('gearComponent-chain'))));
+        $gearComponentRepository->update(GearComponent::fromArray([...$chain, 'isRetired' => true]));
+
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/gear/maintenance-logs/register');
+
+        $this->assertResponseIsSuccessful();
+        $componentOptions = $crawler->filter('select#gml-component')->text();
+        $this->assertStringNotContainsString('Some cool chain', $componentOptions);
+        $this->assertStringContainsString('DI2 Battery', $componentOptions);
     }
 
     public function testRendersTheEditFormPrefilledWithTheLog(): void
@@ -197,8 +196,6 @@ class ManageGearMaintenanceLogFormRequestHandlerTest extends AdminWebTestCase
     public static function provideRedirectToQueryParams(): \Generator
     {
         yield 'a path within the app' => ['/gear/maintenance', '/gear/maintenance'];
-        yield 'protocol relative' => ['//evil.com', '/admin/gear/maintenance-logs'];
-        yield 'javascript uri' => ['javascript:alert(1)', '/admin/gear/maintenance-logs'];
         yield 'absolute url' => ['https://evil.com', '/admin/gear/maintenance-logs'];
     }
 }

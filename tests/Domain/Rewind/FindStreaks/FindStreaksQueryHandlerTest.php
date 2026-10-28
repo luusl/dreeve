@@ -10,6 +10,7 @@ use App\Domain\Activity\SportType\SportTypes;
 use App\Domain\Rewind\FindStreaks\FindStreaks;
 use App\Domain\Rewind\FindStreaks\FindStreaksQueryHandler;
 use App\Domain\Rewind\FindStreaks\FindStreaksResponse;
+use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Infrastructure\ValueObject\Time\Years;
 use App\Tests\ContainerTestCase;
@@ -56,6 +57,18 @@ class FindStreaksQueryHandlerTest extends ContainerTestCase
                 longestMonthStreak: 9,
                 currentMonthStreak: 9,
                 currentMonthStreakStartDate: SerializableDateTime::fromString('2024-05-10'),
+                longestDayStreakPeriod: DateRange::fromDates(
+                    SerializableDateTime::fromString('2024-02-06'),
+                    SerializableDateTime::fromString('2024-02-10'),
+                ),
+                longestWeekStreakPeriod: DateRange::fromDates(
+                    SerializableDateTime::fromString('2024-12-30'),
+                    SerializableDateTime::fromString('2025-01-10'),
+                ),
+                longestMonthStreakPeriod: DateRange::fromDates(
+                    SerializableDateTime::fromString('2024-05-10'),
+                    SerializableDateTime::fromString('2025-01-10'),
+                ),
             ),
             $findStreaksQueryHandler->handle(
                 new FindStreaks(
@@ -84,6 +97,9 @@ class FindStreaksQueryHandlerTest extends ContainerTestCase
                 longestMonthStreak: 0,
                 currentMonthStreak: 0,
                 currentMonthStreakStartDate: null,
+                longestDayStreakPeriod: null,
+                longestWeekStreakPeriod: null,
+                longestMonthStreakPeriod: null,
             ),
             $findStreaksQueryHandler->handle(
                 new FindStreaks(

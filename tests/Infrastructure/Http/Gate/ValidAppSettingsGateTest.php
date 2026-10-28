@@ -66,8 +66,9 @@ class ValidAppSettingsGateTest extends ContainerTestCase
     {
         yield 'the redirect target itself' => ['/admin/settings/athlete'];
         yield 'the login page' => ['/admin/login'];
+        yield 'the OIDC login callback' => ['/admin/login/oidc/callback'];
         yield 'the logout endpoint' => ['/admin/logout'];
-        yield 'the command endpoint the athlete form posts to' => ['/admin/dispatchCommand'];
+        yield 'the command endpoint the athlete form posts to' => ['/admin/dispatch-command'];
     }
 
     #[DataProvider('provideGuardedAdminPaths')]

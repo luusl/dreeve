@@ -1,0 +1,47 @@
+{% extends "html/admin/page/template.html.twig" %}
+{% block main %}
+    {% set gearName = '<span class="font-semibold text-gray-900">' ~ gear.getOriginalName()|e ~ '</span>' %}
+    {% embed 'html/admin/component/delete-confirm-modal.html.twig' with {closeUrl: relativeUrl(path('admin_manage_gear_overview'))} %}
+        {% block title %}{{ "Delete gear"|trans({}, 'admin') }}{% endblock %}
+        {% block body %}
+            {% if isInUse %}
+                {% autoescape false %}
+                <div class="flex items-start gap-3">
+                    <span class="grid place-items-center size-10 shrink-0 rounded-full bg-yellow-100 text-yellow-600" aria-hidden="true">
+                        <svg class="size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 13V8m0 8h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/>
+                        </svg>
+                    </span>
+                    <div class="space-y-1 text-sm text-gray-600">
+                        <p>
+                            {{ "{name} can't be deleted because it is still linked to activities, maintenance or automation rules."|trans({
+                                '{name}': gearName,
+                            }, 'admin') }}
+                        </p>
+                        <p>
+                            {{ "Set its status to Retired instead to hide it from your active gear."|trans({}, 'admin') }}
+                        </p>
+                    </div>
+                </div>
+                {% endautoescape %}
+            {% else %}
+                {{ parent() }}
+            {% endif %}
+        {% endblock %}
+        {% block hidden_fields %}
+            <input type="hidden" name="gearId" value="{{ gear.getId() }}">
+        {% endblock %}
+        {% block message %}
+            {% autoescape false %}
+            <p>
+                {{ "Are you sure you want to delete {name}?"|trans({
+                    '{name}': gearName,
+                }, 'admin') }}
+            </p>
+            <p>
+                {{ "This action cannot be undone."|trans({}, 'admin') }}
+            </p>
+            {% endautoescape %}
+        {% endblock %}
+    {% endembed %}
+{% endblock main %}

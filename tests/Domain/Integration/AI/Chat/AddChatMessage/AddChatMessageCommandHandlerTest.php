@@ -8,19 +8,17 @@ use App\Domain\Integration\AI\Chat\ChatRepository;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Infrastructure\Time\Clock\PausedClock;
-use NeuronAI\Chat\Enums\MessageRole;
-use Spatie\Snapshots\MatchesSnapshots;
+use Symfony\AI\Platform\Message\Role;
 
 class AddChatMessageCommandHandlerTest extends ContainerTestCase
 {
-    use MatchesSnapshots;
     private AddChatMessageCommandHandler $addChatMessageCommandHandler;
 
     public function testHandle(): void
     {
         $this->addChatMessageCommandHandler->handle(new AddChatMessage(
             message: 'Le message',
-            messageRole: MessageRole::USER
+            messageRole: Role::User
         ));
 
         $results = $this->getConnection()->executeQuery('SELECT * FROM ChatMessage')->fetchAllAssociative();
@@ -28,7 +26,10 @@ class AddChatMessageCommandHandlerTest extends ContainerTestCase
             unset($result['messageId']);
         }
 
-        $this->assertMatchesJsonSnapshot($results);
+        $this->assertEquals(
+            [['message' => 'Le message', 'messageRole' => 'user', 'on' => '2025-01-01 00:00:00']],
+            $results,
+        );
     }
 
     #[\Override]

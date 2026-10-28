@@ -3,6 +3,7 @@
 namespace App\Tests\Domain\Dashboard;
 
 use App\Domain\Dashboard\DashboardLayout;
+use App\Domain\Dashboard\DashboardLayoutWasUpdated;
 use App\Domain\Dashboard\DashboardWidgetId;
 use App\Domain\Dashboard\KeyValueBasedDashboardLayoutRepository;
 use App\Domain\Dashboard\Widget\WidgetName;
@@ -13,6 +14,7 @@ use App\Infrastructure\KeyValue\KeyValueStore;
 use App\Infrastructure\KeyValue\Value;
 use App\Infrastructure\Serialization\Json;
 use App\Tests\ContainerTestCase;
+use App\Tests\Infrastructure\Eventing\SpyEventBus;
 
 class KeyValueBasedDashboardLayoutRepositoryTest extends ContainerTestCase
 {
@@ -121,7 +123,10 @@ class KeyValueBasedDashboardLayoutRepositoryTest extends ContainerTestCase
             value: Value::fromString(Json::encode($layout)),
         ));
 
-        $this->repository->updateWidgetConfiguration(
+        $eventBus = new SpyEventBus();
+        $repository = new KeyValueBasedDashboardLayoutRepository($this->keyValueStore, $eventBus);
+
+        $repository->updateWidgetConfiguration(
             DashboardWidgetId::fromString('dashboardWidget-b'),
             ['subtitle' => 'Keep it up', 'sportTypesToInclude' => ['Run']],
         );
@@ -132,7 +137,11 @@ class KeyValueBasedDashboardLayoutRepositoryTest extends ContainerTestCase
                 ['id' => 'dashboardWidget-b', 'widget' => 'streaks', 'width' => 33, 'config' => ['subtitle' => 'Keep it up', 'sportTypesToInclude' => ['Run']]],
                 ['id' => 'dashboardWidget-c', 'widget' => 'eddington', 'width' => 33],
             ]),
-            $this->repository->find(),
+            $repository->find(),
+        );
+        $this->assertEquals(
+            [new DashboardLayoutWasUpdated()],
+            $eventBus->getPublishedEvents(),
         );
     }
 

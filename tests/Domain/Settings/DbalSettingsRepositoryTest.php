@@ -31,6 +31,7 @@ class DbalSettingsRepositoryTest extends ContainerTestCase
             'numberOfNewActivitiesToProcessPerImport' => '250',
             'skipActivitiesRecordedBefore' => null,
             'optInToSegmentDetailImport' => true,
+            'skipImageDownloadDuringImport' => false,
             'sportTypesToImport' => ['Ride', 'GravelRide'],
             'webhooks' => ['enabled' => false, 'checkIntervalInMinutes' => 5],
         ];
@@ -134,11 +135,10 @@ class DbalSettingsRepositoryTest extends ContainerTestCase
 
     public function testFindGroupAppliesTheDefaultEddingtonConfiguration(): void
     {
-        $this->settingsRepository->saveGroup(SettingsGroup::METRICS, ['excludeActivitiesFromPeakPowerOutputs' => []]);
+        $this->settingsRepository->saveGroup(SettingsGroup::METRICS, ['eddington' => []]);
 
         $this->assertEquals(
             [
-                'excludeActivitiesFromPeakPowerOutputs' => [],
                 'eddington' => EddingtonConfiguration::getDefaultConfig(),
             ],
             $this->settingsRepository->findGroup(SettingsGroup::METRICS)

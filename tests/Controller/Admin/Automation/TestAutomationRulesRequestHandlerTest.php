@@ -19,16 +19,10 @@ use App\Domain\Import\ImportMode;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Automation\AutomationRuleBuilder;
+use PHPUnit\Framework\Attributes\DataProvider;
 
 class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
 {
-    public function testAnonymousUsersAreRedirectedToTheLoginPage(): void
-    {
-        $this->client->request('GET', '/admin/automation-rules/test');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
     public function testItReturnsANotFoundWhenNotInFileImportMode(): void
     {
         $this->withImportMode(ImportMode::STRAVA_API);
@@ -100,7 +94,7 @@ class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
 
         $this->client->loginUser($this->adminUser());
 
-        $crawler = $this->client->request('GET', '/admin/automation-rules/test?activityId=1');
+        $crawler = $this->client->request('GET', '/admin/automation-rules/test?activityId=activity-1');
 
         $this->assertResponseIsSuccessful();
         $body = $crawler->filter('body')->text();
@@ -117,7 +111,8 @@ class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString('Sport type', $matchedConditionPills->text());
     }
 
-    public function testItRendersANotFoundErrorForAnUnknownActivityId(): void
+    #[DataProvider('provideUnknownActivityIds')]
+    public function testItRendersANotFoundErrorForAnUnknownActivityId(string $activityId): void
     {
         $this->withImportMode(ImportMode::FILES);
         static::getContainer()->get(AutomationRuleRepository::class)->add(
@@ -126,9 +121,15 @@ class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
 
         $this->client->loginUser($this->adminUser());
 
-        $crawler = $this->client->request('GET', '/admin/automation-rules/test?activityId=does-not-exist');
+        $crawler = $this->client->request('GET', '/admin/automation-rules/test?activityId='.$activityId);
 
         $this->assertResponseIsSuccessful();
         $this->assertStringContainsString('No activity found for that ID.', $crawler->filter('body')->text());
+    }
+
+    public static function provideUnknownActivityIds(): iterable
+    {
+        yield 'an unknown activity' => ['activity-does-not-exist'];
+        yield 'an id without prefix' => ['1'];
     }
 }

@@ -1,14 +1,6 @@
 import autoComplete from "../../../libraries/autocomplete";
 import ChatMessageRenderer from "./message-renderer";
-import {eventBus, Events} from "../../core/event-bus";
 import {basePath} from "../../utils";
-
-let activeSource = null;
-
-eventBus.on(Events.PAGE_LOADED, () => {
-    activeSource?.close();
-    activeSource = null;
-});
 
 export default class Chat {
     constructor(rootNode) {
@@ -77,12 +69,10 @@ export default class Chat {
 
     handleSSE(message) {
         const source = new EventSource(`${this.basePath}/chat/sse?message=${encodeURIComponent(message)}`);
-        activeSource = source;
         let renderer = null;
 
         source.addEventListener('error', () => {
             source.close();
-            if (activeSource === source) activeSource = null;
             this.toggleElements(false);
         });
 
@@ -106,10 +96,9 @@ export default class Chat {
             renderer.append(event.data.replace(/\\n/g, '\n'));
         });
 
-        source.addEventListener('done', () => {
+        source.addEventListener('done', event => {
             source.close();
-            if (activeSource === source) activeSource = null;
-            renderer?.renderFinal();
+            renderer?.renderFinal(event.data.replace(/\\n/g, '\n'));
             this.toggleElements(false);
             this.textInput.focus();
         });
@@ -148,22 +137,7 @@ export default class Chat {
         }
     }
 
-    parseExistingMessages() {
-        const messages = this.chatWrapper.querySelectorAll('div.message');
-        messages.forEach(messageEl => {
-            if (messageEl.dataset.markdownParsed === 'true') return;
-
-            const rawText = messageEl.textContent;
-            if (!rawText) return;
-
-            const renderer = new ChatMessageRenderer(messageEl);
-            renderer.setText(rawText);
-            renderer.renderFinal();
-        });
-    }
-
     render() {
-        this.parseExistingMessages();
         this.initAutoComplete();
         this.bindEvents();
     }

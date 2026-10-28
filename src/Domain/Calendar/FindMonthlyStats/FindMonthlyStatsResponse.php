@@ -11,6 +11,7 @@ use App\Infrastructure\CQRS\Query\Response;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Time\Seconds;
+use App\Infrastructure\ValueObject\Time\Year;
 
 final readonly class FindMonthlyStatsResponse implements Response
 {
@@ -18,6 +19,8 @@ final readonly class FindMonthlyStatsResponse implements Response
     private array $totals;
     /** @var array<string, array{'numberOfActivities': int, 'distance': Kilometer, 'elevation': Meter, 'movingTime': Seconds, 'calories': int}> */
     private array $statsPerMonthId;
+    /** @var array<int, array{'numberOfActivities': int, 'distance': Kilometer, 'elevation': Meter, 'movingTime': Seconds, 'calories': int}> */
+    private array $statsPerYear;
     /** @var array<string, array<string, array{'numberOfActivities': int, 'distance': Kilometer, 'elevation': Meter, 'movingTime': Seconds, 'calories': int}>> */
     private array $statsPerMonthIdAndSportType;
     /** @var array<string, array<string, array{'numberOfActivities': int, 'distance': Kilometer, 'elevation': Meter, 'movingTime': Seconds, 'calories': int}>> */
@@ -25,17 +28,22 @@ final readonly class FindMonthlyStatsResponse implements Response
     private ?Month $firstMonth;
     /** @var array<string, array{min: Month, max: Month}> */
     private array $minMaxMonthPerActivityTypeValue;
+    /** @var array<string, list<int>> */
+    private array $activeDaysPerMonthId;
 
     /**
      * @param array<int, array{'month': Month, 'sportType': SportType, 'numberOfActivities': int, 'distance': Kilometer, 'elevation': Meter, 'movingTime': Seconds, 'calories': int}> $statsPerMonth
      * @param array<int, array{'activityType': ActivityType, min: Month, max: Month}>                                                                                                 $minMaxMonthPerActivityType
+     * @param array<int, array{'month': Month, 'day': int}>                                                                                                                           $activeDays
      */
     public function __construct(
         array $statsPerMonth,
         array $minMaxMonthPerActivityType,
+        array $activeDays,
     ) {
         $totals = $this->emptyRawTotals();
         $perMonthId = [];
+        $perYear = [];
         $perMonthIdAndSportType = [];
         $perMonthIdAndActivityType = [];
         $firstMonth = null;
@@ -54,12 +62,14 @@ final readonly class FindMonthlyStatsResponse implements Response
 
             $totals = $this->addToRawTotals($totals, $entry);
             $perMonthId[$monthId] = $this->addToRawTotals($perMonthId[$monthId] ?? $this->emptyRawTotals(), $entry);
+            $perYear[$month->getYear()] = $this->addToRawTotals($perYear[$month->getYear()] ?? $this->emptyRawTotals(), $entry);
             $perMonthIdAndSportType[$monthId][$sportTypeValue] = $this->addToRawTotals($perMonthIdAndSportType[$monthId][$sportTypeValue] ?? $this->emptyRawTotals(), $entry);
             $perMonthIdAndActivityType[$monthId][$activityTypeValue] = $this->addToRawTotals($perMonthIdAndActivityType[$monthId][$activityTypeValue] ?? $this->emptyRawTotals(), $entry);
         }
 
         $this->totals = $this->toMeasuredTotals($totals);
         $this->statsPerMonthId = array_map($this->toMeasuredTotals(...), $perMonthId);
+        $this->statsPerYear = array_map($this->toMeasuredTotals(...), $perYear);
         $this->statsPerMonthIdAndSportType = array_map(
             fn (array $perSportType): array => array_map($this->toMeasuredTotals(...), $perSportType),
             $perMonthIdAndSportType
@@ -78,6 +88,12 @@ final readonly class FindMonthlyStatsResponse implements Response
             ];
         }
         $this->minMaxMonthPerActivityTypeValue = $minMaxMonthPerActivityTypeValue;
+
+        $activeDaysPerMonthId = [];
+        foreach ($activeDays as $activeDay) {
+            $activeDaysPerMonthId[$activeDay['month']->getId()][] = $activeDay['day'];
+        }
+        $this->activeDaysPerMonthId = $activeDaysPerMonthId;
     }
 
     public function getFirstMonthFor(ActivityType $activityType): Month
@@ -114,12 +130,28 @@ final readonly class FindMonthlyStatsResponse implements Response
     }
 
     /**
+     * @return array{'numberOfActivities': int, 'distance': Kilometer, 'elevation': Meter, 'movingTime': Seconds, 'calories': int}|null
+     */
+    public function getForYear(Year $year): ?array
+    {
+        return $this->statsPerYear[$year->toInt()] ?? null;
+    }
+
+    /**
      * @return array{'numberOfActivities': int, 'distance': Kilometer, 'elevation': Meter, 'movingTime': Seconds, 'calories': int}
      */
     public function getForMonthAndSportType(Month $month, SportType $sportType): array
     {
         return $this->statsPerMonthIdAndSportType[$month->getId()][$sportType->value]
             ?? $this->toMeasuredTotals($this->emptyRawTotals());
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function getActiveDaysFor(Month $month): array
+    {
+        return $this->activeDaysPerMonthId[$month->getId()] ?? [];
     }
 
     /**

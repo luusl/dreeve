@@ -12,13 +12,12 @@ use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
-final readonly class IntroTextWidget implements Widget, DependsOnCurrentDay
+final readonly class IntroTextWidget implements Widget, DependsOnCurrentDay, RendersWithoutTitle
 {
     public function __construct(
         private QueryBus $queryBus,
-        private Environment $twig,
+        private WidgetRenderer $widgetRenderer,
         private TranslatorInterface $translator,
     ) {
     }
@@ -26,6 +25,11 @@ final readonly class IntroTextWidget implements Widget, DependsOnCurrentDay
     public function getLabel(): string
     {
         return $this->translator->trans('Intro text', domain: 'admin');
+    }
+
+    public function getAdminLabel(): string
+    {
+        return $this->getLabel();
     }
 
     public function getTemplateName(): string
@@ -55,7 +59,7 @@ final readonly class IntroTextWidget implements Widget, DependsOnCurrentDay
             translator: $this->translator,
         );
 
-        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+        return $this->widgetRenderer->render($this, $configuration, [
             'intro' => $activityTotals,
         ]);
     }

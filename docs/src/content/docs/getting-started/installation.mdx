@@ -1,11 +1,12 @@
 ---
 title: "Installation"
+description: "Install Dreeve with Docker Compose, including an example docker-compose.yml and the minimal .env file."
 ---
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
 :::note
-Make sure to read the <a href="/getting-started/prerequisites/">prerequisites</a> before you start installing the app.
+Make sure to read the [prerequisites](/getting-started/prerequisites/) before you start installing the app.
 :::
 
 Start off by showing some :heart: and give this repo a star. Then, from your command line:
@@ -107,6 +108,13 @@ ADMIN_PASSWORD_HASH='replace-me'
 # Takes a comma-separated allowlist. When it is set, requests to /admin* from any other IP are rejected.
 # CIDR ranges are supported, so 192.168.1.0/24 allows your whole home network.
 # ADMIN_ALLOWED_IPS=192.168.1.10,192.168.1.11,10.0.0.0/24
+
+# Optional login through your own identity provider (Authentik, Authelia, Pocket ID, ...).
+# See https://docs.dreeve.app/integrations/single-sign-on/
+# OIDC_ISSUER_URL=
+# OIDC_CLIENT_ID=
+# OIDC_CLIENT_SECRET=
+# OIDC_ALLOWED_USERS=
 # Which peers Dreeve accepts X-Forwarded-* headers from. Defaults to private_ranges,
 # which is what you want in Docker. See the "Running behind a reverse proxy" section below.
 # TRUSTED_PROXIES=private_ranges
@@ -115,6 +123,11 @@ ADMIN_PASSWORD_HASH='replace-me'
 # to keep the API closed; while it is unset every API request is rejected.
 # Generate a value under Settings -> Security -> API access in the admin panel.
 # DREEVE_API_KEY=drv_...
+
+# Enables the read-only MCP server at /mcp, for AI clients such as Claude or Cursor. Leave it
+# unset to keep the MCP server disabled; while it is unset every MCP request is rejected.
+# Generate a value under Settings -> Security -> MCP access in the admin panel.
+# DREEVE_MCP_KEY=drvm_...
 
 # Only needed when IMPORT_MODE=stravaApi.
 # See https://docs.dreeve.app/importing/strava-import/

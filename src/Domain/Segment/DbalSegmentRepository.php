@@ -30,10 +30,10 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
     {
         $sql = 'INSERT INTO Segment (segmentId, name, sportType, distance, maxGradient, isFavourite, 
                      deviceName, climbCategory, countryCode, detailsHaveBeenImported, polyline,
-                     startingCoordinateLatitude, startingCoordinateLongitude, averageGradient) 
+                     startingCoordinateLatitude, startingCoordinateLongitude, averageGradient, type) 
                 VALUES (:segmentId, :name, :sportType, :distance, :maxGradient, :isFavourite, 
                         :deviceName, :climbCategory, :countryCode, :detailsHaveBeenImported, :polyline,
-                        :startingCoordinateLatitude, :startingCoordinateLongitude, :averageGradient)';
+                        :startingCoordinateLatitude, :startingCoordinateLongitude, :averageGradient, :type)';
 
         $this->connection->executeStatement($sql, [
             'segmentId' => $segment->getId(),
@@ -46,10 +46,11 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
             'climbCategory' => $segment->getClimbCategory(),
             'countryCode' => $segment->getCountryCode(),
             'detailsHaveBeenImported' => (int) $segment->detailsHaveBeenImported(),
-            'polyline' => null,
-            'startingCoordinateLatitude' => null,
-            'startingCoordinateLongitude' => null,
+            'polyline' => $segment->getPolyline(),
+            'startingCoordinateLatitude' => $segment->getStartingCoordinate()?->getLatitude()->toFloat(),
+            'startingCoordinateLongitude' => $segment->getStartingCoordinate()?->getLongitude()->toFloat(),
             'averageGradient' => $segment->getAverageGradient(),
+            'type' => $segment->getType()->value,
         ]);
 
         $this->eventBus->publishEvents($segment->getRecordedEvents());
@@ -58,6 +59,7 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
     public function update(Segment $segment): void
     {
         $sql = 'UPDATE Segment SET 
+                    name = :name,
                     isFavourite = :isFavourite,
                     detailsHaveBeenImported = :detailsHaveBeenImported,
                     polyline = :polyline,
@@ -69,12 +71,25 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
         $startingCoordinate = $polyline?->getStartingCoordinate();
         $this->connection->executeStatement($sql, [
             'segmentId' => $segment->getId(),
+            'name' => $segment->getOriginalName(),
             'isFavourite' => (int) $segment->isFavourite(),
             'detailsHaveBeenImported' => (int) $segment->detailsHaveBeenImported(),
             'polyline' => $polyline,
             'startingCoordinateLatitude' => $startingCoordinate?->getLatitude()->toFloat(),
             'startingCoordinateLongitude' => $startingCoordinate?->getLongitude()->toFloat(),
         ]);
+
+        $this->eventBus->publishEvents($segment->getRecordedEvents());
+    }
+
+    public function delete(Segment $segment): void
+    {
+        $this->connection->executeStatement(
+            'DELETE FROM Segment WHERE segmentId = :segmentId',
+            ['segmentId' => $segment->getId()]
+        );
+
+        $this->eventBus->publishEvents($segment->getRecordedEvents());
     }
 
     public function find(SegmentId $segmentId): Segment
@@ -114,12 +129,29 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
         ));
     }
 
+    public function findByType(SegmentType $type): Segments
+    {
+        $queryBuilder = $this->connection->createQueryBuilder();
+        $queryBuilder->select('*')
+            ->from('Segment')
+            ->andWhere('type = :type')
+            ->setParameter('type', $type->value)
+            ->orderBy('segmentId', 'ASC');
+
+        return Segments::fromArray(array_map(
+            $this->hydrate(...),
+            $queryBuilder->executeQuery()->fetchAllAssociative()
+        ));
+    }
+
     public function findSegmentsIdsMissingDetails(): array
     {
         $queryBuilder = $this->connection->createQueryBuilder();
         $queryBuilder->select('segmentId')
             ->from('Segment')
-            ->andWhere('detailsHaveBeenImported = 0');
+            ->andWhere('detailsHaveBeenImported = 0')
+            ->andWhere('type = :type')
+            ->setParameter('type', SegmentType::IMPORTED->value);
 
         return array_map(
             SegmentId::fromString(...),
@@ -154,14 +186,17 @@ final readonly class DbalSegmentRepository extends DbalRepository implements Seg
                 Longitude::fromOptionalString((string) $result['startingCoordinateLongitude'])
             ),
             averageGradient: isset($result['averageGradient']) ? (float) $result['averageGradient'] : null,
+            type: SegmentType::from($result['type']),
         );
     }
 
-    public function deleteOrphaned(): void
+    public function deleteOrphanedImported(): void
     {
-        $deletedSegments = $this->connection->executeStatement('DELETE FROM Segment WHERE NOT EXISTS(
+        $deletedSegments = $this->connection->executeStatement('DELETE FROM Segment WHERE type = :type AND NOT EXISTS(
             SELECT 1 FROM SegmentEffort WHERE SegmentEffort.segmentId = Segment.segmentId
-        )');
+        )', [
+            'type' => SegmentType::IMPORTED->value,
+        ]);
 
         if (0 === $deletedSegments) {
             return;

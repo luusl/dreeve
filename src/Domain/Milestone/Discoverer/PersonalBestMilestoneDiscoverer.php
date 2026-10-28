@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Milestone\Discoverer;
 
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityType;
 use App\Domain\Activity\SportType\SportType;
@@ -34,7 +35,11 @@ final readonly class PersonalBestMilestoneDiscoverer implements MilestoneDiscove
             'SELECT be.activityId, be.sportType, be.distanceInMeter, be.timeInSeconds, a.startDateTime
              FROM ActivityBestEffort be
              INNER JOIN Activity a ON a.activityId = be.activityId
-             ORDER BY a.startDateTime ASC, be.distanceInMeter ASC'
+             WHERE NOT EXISTS (SELECT 1 FROM json_each(a.excludedFrom) WHERE json_each.value = :excludedFrom)
+             ORDER BY a.startDateTime ASC, be.distanceInMeter ASC',
+            [
+                'excludedFrom' => ActivityExclusion::BEST_EFFORTS->value,
+            ]
         )->fetchAllAssociative();
 
         $distanceMap = $this->buildDistanceMap();

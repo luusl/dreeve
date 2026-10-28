@@ -6,10 +6,18 @@ import starlightImageZoom from 'starlight-image-zoom';
 import starlightLinksValidator from 'starlight-links-validator';
 import starlightOpenAPI, { openAPISidebarGroups } from 'starlight-openapi';
 import starlightSidebarTopics from 'starlight-sidebar-topics';
+import starlightLlmsTxt from 'starlight-llms-txt';
 import remarkGemoji from 'remark-gemoji';
 
 export default defineConfig({
 	site: 'https://docs.dreeve.app',
+	redirects: {
+		'/integrations/garmin-connect': '/connectors/garmin-connect/',
+		'/integrations/polar-flow': '/connectors/polar-flow-connector/',
+		'/integrations/wahoo-connector': '/connectors/wahoo-connector/',
+		'/integrations/hammerhead-connector': '/connectors/hammerhead-connector/',
+		'/integrations/zepp-connector': '/connectors/zepp-connector/',
+	},
 	markdown: {
 		remarkPlugins: [remarkGemoji],
 	},
@@ -24,6 +32,57 @@ export default defineConfig({
 				starlightThemeRapide(),
 				starlightImageZoom(),
 				starlightLinksValidator({ errorOnLocalLinks: false }),
+				starlightLlmsTxt({
+					details: [
+						'Important notes:',
+						'',
+						'- Dreeve was called "Statistics for Strava" before v5. Instructions written for v4 (e.g. a `config.yaml` file) no longer apply.',
+						'- Dreeve runs as two Docker containers (`app` and `daemon`) that share the same volumes, defined in a `docker-compose.yml`.',
+						'- Environment variables live in a `.env` file. All other configuration is done in the admin panel at `/admin`.',
+						'- Changes to `.env` require recreating the containers (`docker compose up -d`), a restart is not enough.',
+						'- Strava is optional. The default import mode is `files` (.fit, .tcx, .gpx); `stravaApi` imports from Strava.',
+					].join('\n'),
+					customSets: [
+						{
+							label: 'Getting started',
+							description: 'installing, updating and migrating a Dreeve instance',
+							paths: ['getting-started/**'],
+						},
+						{
+							label: 'Importing activities',
+							description: 'importing activities from files and from Strava',
+							paths: ['importing/**'],
+						},
+						{
+							label: 'Connectors',
+							description: 'automatically getting activities from Garmin, Polar, Wahoo, Hammerhead, Zepp, Apple Health, Google Health, MyWhoosh and iGPSPORT into Dreeve',
+							paths: ['connectors/**'],
+						},
+						{
+							label: 'Integrations',
+							description: 'connecting Dreeve to AI providers, AI clients and notification services',
+							paths: ['integrations/**'],
+						},
+						{
+							label: 'Troubleshooting',
+							description: 'common errors and how to fix them',
+							paths: ['troubleshooting/**'],
+						},
+					],
+					optionalLinks: [
+						{
+							label: 'HTTP API (OpenAPI 3.1)',
+							url: 'https://docs.dreeve.app/api/openapi.yaml',
+							description: 'the full OpenAPI specification of the Dreeve HTTP API',
+						},
+						{
+							label: 'Releases',
+							url: 'https://github.com/dreeveapp/dreeve/releases',
+							description: 'changelog for every Dreeve version',
+						},
+					],
+					customSelectors: { all: ['.sl-anchor-link'] },
+				}),
 				starlightOpenAPI([
 					{
 						base: 'api',
@@ -59,14 +118,25 @@ export default defineConfig({
 									],
 								},
 								{
+									label: 'Connectors',
+									items: [
+										{ slug: 'connectors/garmin-connect', label: 'Garmin Connect' },
+										{ slug: 'connectors/polar-flow-connector', label: 'Polar Flow Connector' },
+										{ slug: 'connectors/wahoo-connector', label: 'Wahoo Connector' },
+										{ slug: 'connectors/hammerhead-connector', label: 'Hammerhead Connector' },
+										{ slug: 'connectors/zepp-connector', label: 'Zepp Connector' },
+										{ slug: 'connectors/apple-health', label: 'Apple Health', badge: { text: 'Community', variant: 'note' } },
+										{ slug: 'connectors/google-health-sync', label: 'Google Health Sync', badge: { text: 'Community', variant: 'note' } },
+										{ slug: 'connectors/mywhoosh-sync', label: 'MyWhoosh Sync', badge: { text: 'Community', variant: 'note' } },
+										{ slug: 'connectors/igpsport-sync', label: 'iGPSPORT Sync', badge: { text: 'Community', variant: 'note' } },
+									],
+								},
+								{
 									label: 'Integrations',
 									items: [
 										{ slug: 'integrations/ai', label: 'AI assistant' },
-										{ slug: 'integrations/garmin-connect', label: 'Garmin Connect' },
-										{ slug: 'integrations/polar-flow', label: 'Polar Flow' },
-										{ slug: 'integrations/wahoo-connector', label: 'Wahoo Connector' },
-										{ slug: 'integrations/hammerhead-connector', label: 'Hammerhead Connector' },
-										{ slug: 'integrations/zepp-connector', label: 'Zepp Connector' },
+										{ slug: 'integrations/mcp', label: 'MCP server' },
+										{ slug: 'integrations/single-sign-on', label: 'Single sign-on (OIDC)' },
 										{ slug: 'integrations/notifications', label: 'Notifications' },
 									],
 								},

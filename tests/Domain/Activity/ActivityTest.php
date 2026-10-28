@@ -3,10 +3,13 @@
 namespace App\Tests\Domain\Activity;
 
 use App\Domain\Activity\Activity;
+use App\Domain\Activity\ActivityExclusion;
+use App\Domain\Activity\ActivityExclusions;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityImagesHaveBeenUpdated;
 use App\Domain\Activity\ActivityName;
 use App\Domain\Activity\ActivityRouteWasUpdated;
+use App\Domain\Activity\ActivitySportTypeWasChanged;
 use App\Domain\Activity\ActivityWasAdded;
 use App\Domain\Activity\ActivityWasUpdated;
 use App\Domain\Activity\Route\RouteGeography;
@@ -14,6 +17,7 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Gear\GearId;
+use App\Domain\Integration\Weather\OpenMeteo\Weather;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Velocity\KmPerHour;
@@ -26,12 +30,9 @@ use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Infrastructure\ValueObject\Time\Year;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
-use Spatie\Snapshots\MatchesSnapshots;
 
 class ActivityTest extends TestCase
 {
-    use MatchesSnapshots;
-
     public function testGetName(): void
     {
         $activity = ActivityBuilder::fromDefaults()
@@ -305,6 +306,34 @@ class ActivityTest extends TestCase
         );
     }
 
+    public function testItShouldRecordThatTheSportTypeWasChanged(): void
+    {
+        $activity = ActivityBuilder::fromDefaults()
+            ->withSportType(SportType::RUN)
+            ->build();
+
+        $this->assertContainsEquals(
+            new ActivitySportTypeWasChanged(ActivityId::fromUnprefixed('903645')),
+            $activity->withSportType(SportType::RIDE)->getRecordedEvents()
+        );
+        $this->assertEmpty($activity->getRecordedEvents());
+    }
+
+    public function testItShouldNotRecordThatTheSportTypeWasChangedWhenItDidNotChange(): void
+    {
+        $activity = ActivityBuilder::fromDefaults()
+            ->withSportType(SportType::RUN)
+            ->build();
+
+        $this->assertNotContainsEquals(
+            new ActivitySportTypeWasChanged(ActivityId::fromUnprefixed('903645')),
+            $activity
+                ->withSportType(SportType::RUN)
+                ->withName(ActivityName::fromString('Renamed'))
+                ->getRecordedEvents()
+        );
+    }
+
     #[DataProvider('provideUpdates')]
     public function testItShouldRecordThatTheActivityWasUpdated(callable $change): void
     {
@@ -334,6 +363,8 @@ class ActivityTest extends TestCase
         yield 'distance' => [fn (Activity $activity): Activity => $activity->withDistance(Kilometer::from(42))];
         yield 'elevation' => [fn (Activity $activity): Activity => $activity->withElevation(Meter::from(666))];
         yield 'calories' => [fn (Activity $activity): Activity => $activity->withCalories(500)];
+        yield 'average heart rate' => [fn (Activity $activity): Activity => $activity->withAverageHeartRate(140)];
+        yield 'max heart rate' => [fn (Activity $activity): Activity => $activity->withMaxHeartRate(180)];
         yield 'kilojoules' => [fn (Activity $activity): Activity => $activity->withKilojoules(500)];
         yield 'average speed' => [fn (Activity $activity): Activity => $activity->withAverageSpeed(KmPerHour::from(42))];
         yield 'max speed' => [fn (Activity $activity): Activity => $activity->withMaxSpeed(KmPerHour::from(42))];
@@ -350,6 +381,10 @@ class ActivityTest extends TestCase
         yield 'commute' => [fn (Activity $activity): Activity => $activity->withCommute(true)];
         yield 'group activity' => [fn (Activity $activity): Activity => $activity->withGroupActivity(true)];
         yield 'workout type' => [fn (Activity $activity): Activity => $activity->withWorkoutType(WorkoutType::RACE)];
+        yield 'weather' => [fn (Activity $activity): Activity => $activity->withWeather(Weather::fromState(['temperature' => 18.3]))];
+        yield 'excluded from' => [fn (Activity $activity): Activity => $activity->withExcludedFrom(
+            ActivityExclusions::fromArray([ActivityExclusion::BEST_EFFORTS])
+        )];
     }
 
     #[DataProvider('provideNonUpdates')]
@@ -370,9 +405,11 @@ class ActivityTest extends TestCase
         yield 'the same distance' => [fn (Activity $activity): Activity => $activity->withDistance(Kilometer::from(10))];
         yield 'the same calories' => [fn (Activity $activity): Activity => $activity->withCalories(0)];
         yield 'the same kilojoules' => [fn (Activity $activity): Activity => $activity->withKilojoules(null)];
+        yield 'the same average heart rate' => [fn (Activity $activity): Activity => $activity->withAverageHeartRate(null)];
         yield 'the same start date' => [fn (Activity $activity): Activity => $activity->withStartDateTime(
             SerializableDateTime::fromString('2023-10-10')
         )];
+        yield 'the same exclusions' => [fn (Activity $activity): Activity => $activity->withExcludedFrom(ActivityExclusions::empty())];
     }
 
     public function testItShouldRecordThatTheActivityWasUpdatedOnlyOnce(): void

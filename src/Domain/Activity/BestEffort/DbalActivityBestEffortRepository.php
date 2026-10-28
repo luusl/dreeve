@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\BestEffort;
 
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityIds;
 use App\Domain\Activity\SportType\SportType;
@@ -85,6 +86,9 @@ final readonly class DbalActivityBestEffortRepository extends DbalRepository imp
                         ) AS rn
                     FROM ActivityBestEffort
                     WHERE sportType IN (:sportTypes)
+                    AND activityId NOT IN (
+                        SELECT a.activityId FROM Activity a, json_each(a.excludedFrom) WHERE json_each.value = :excludedFrom
+                    )
                 ) ranked
                 WHERE rn = 1
                 AND activityId = :activityId
@@ -102,6 +106,7 @@ final readonly class DbalActivityBestEffortRepository extends DbalRepository imp
                 [
                     'sportTypes' => array_map(fn (SportType $sportType) => $sportType->value, SportTypes::thatSupportsBestEfforts()->toArray()),
                     'activityId' => (string) $activity,
+                    'excludedFrom' => ActivityExclusion::BEST_EFFORTS->value,
                 ],
                 [
                     'sportTypes' => ArrayParameterType::STRING,

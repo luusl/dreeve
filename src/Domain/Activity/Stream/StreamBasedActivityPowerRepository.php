@@ -2,6 +2,7 @@
 
 namespace App\Domain\Activity\Stream;
 
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivitySummaryRepository;
 use App\Domain\Activity\SportType\SportType;
@@ -58,7 +59,7 @@ final readonly class StreamBasedActivityPowerRepository implements ActivityPower
                 AND m.metricType = :metricType
                 AND a.sportType IN(:sportTypes)
                 AND a.startDateTime >= :dateFrom AND a.startDateTime <= :dateTill
-                AND m.activityId NOT IN(:excludedActivityIds)';
+                AND NOT EXISTS (SELECT 1 FROM json_each(a.excludedFrom) WHERE json_each.value = :excludedFrom)';
 
         $params = [
             'streamType' => StreamType::WATTS->value,
@@ -66,16 +67,15 @@ final readonly class StreamBasedActivityPowerRepository implements ActivityPower
             'sportTypes' => $sportTypes->map(fn (SportType $sportType) => $sportType->value),
             'dateFrom' => $dateRange->getFrom()->format('Y-m-d 00:00:00'),
             'dateTill' => $dateRange->getTill()->format('Y-m-d 23:59:59'),
-            'excludedActivityIds' => $this->settingsRepository->metrics()->getActivitiesExcludedFromPeakPowerOutputs()->map(fn (ActivityId $activityId): string => (string) $activityId) ?: ['unexisting-id'],
+            'excludedFrom' => ActivityExclusion::PEAK_POWER_OUTPUTS->value,
         ];
         $types = [
             'sportTypes' => ArrayParameterType::STRING,
-            'excludedActivityIds' => ArrayParameterType::STRING,
         ];
 
         $results = $this->connection->executeQuery($sql, $params, $types)->fetchAllAssociative();
 
-        $athleteWeightHistory = $this->settingsRepository->general()->getAthleteWeightHistory($this->settingsRepository->appearance()->getUnitSystem());
+        $athleteWeightHistory = $this->settingsRepository->athleteWeight()->getHistory($this->settingsRepository->appearance()->getUnitSystem());
 
         /** @var array<int, array{activityId: string, power: int}> $bestPerInterval */
         $bestPerInterval = [];

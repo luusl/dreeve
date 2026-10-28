@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Domain\Athlete\Weight;
 
+use App\Infrastructure\ECharts\EChartsCallback;
 use App\Infrastructure\Measurement\UnitSystem;
+use App\Infrastructure\Time\Format\DateFormat;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -15,6 +17,7 @@ final readonly class AthleteWeightHistoryChart
         private array $athleteWeights,
         private SerializableDateTime $now,
         private UnitSystem $unitSystem,
+        private DateFormat $dateFormat,
         private TranslatorInterface $translator,
     ) {
     }
@@ -26,12 +29,14 @@ final readonly class AthleteWeightHistoryChart
         array $athleteWeights,
         SerializableDateTime $now,
         UnitSystem $unitSystem,
+        DateFormat $dateFormat,
         TranslatorInterface $translator,
     ): self {
         return new self(
             athleteWeights: $athleteWeights,
             now: $now,
             unitSystem: $unitSystem,
+            dateFormat: $dateFormat,
             translator: $translator
         );
     }
@@ -78,7 +83,7 @@ final readonly class AthleteWeightHistoryChart
             'backgroundColor' => null,
             'tooltip' => [
                 'trigger' => 'axis',
-                'formatter' => 'callback:formatDateOnlyTooltip',
+                'formatter' => EChartsCallback::formatDateOnlyTooltip(),
             ],
             'grid' => [
                 'top' => '2%',
@@ -166,15 +171,15 @@ final readonly class AthleteWeightHistoryChart
                     'data' => [
                         ...array_map(
                             fn (AthleteWeight $weight): array => [
-                                $weight->getOn()->format('Y-m-d'),
-                                round($weight->getWeight()->toFloat(), 1),
+                                'value' => [$weight->getOn()->format('Y-m-d'), round($weight->getWeight()->toFloat(), 1)],
+                                'date' => $weight->getOn()->translatedFormat((string) $this->dateFormat),
                             ],
                             $athleteWeights,
                         ),
                         $this->now->format('Y-m-d') != $athleteWeights[$lastKey]->getOn()->format('Y-m-d') ?
                         [
-                            $this->now->format('Y-m-d'),
-                            round($athleteWeights[$lastKey]->getWeight()->toFloat(), 1),
+                            'value' => [$this->now->format('Y-m-d'), round($athleteWeights[$lastKey]->getWeight()->toFloat(), 1)],
+                            'date' => $this->now->translatedFormat((string) $this->dateFormat),
                         ] : [],
                     ],
                 ],

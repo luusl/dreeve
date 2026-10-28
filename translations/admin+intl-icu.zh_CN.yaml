@@ -5,22 +5,23 @@ AI: AI
 AM/PM: AM/PM
 'API access': 'API access'
 'API key': 'API key'
+Access: Access
 Actions: Actions
 Active: Active
-'Activities excluded from peak power outputs': 'Activities excluded from peak power outputs'
 'Activities scanned': 'Activities scanned'
 'Activities to skip during import': 'Activities to skip during import'
 'Activities to update': 'Activities to update'
 'Activities will appear here once they are imported.': 'Activities will appear here once they are imported.'
 Activity: Activity
 'Activity ID': 'Activity ID'
-'Activity IDs to exclude when calculating peak power outputs.': 'Activity IDs to exclude when calculating peak power outputs.'
+'Activity description': 'Activity description'
 'Activity management': 'Activity management'
 'Activity name': 'Activity name'
 'Activity visibilities to import': 'Activity visibilities to import'
 'Add Eddington': 'Add Eddington'
 'Add FTP': 'Add FTP'
 'Add a component to start tracking maintenance.': 'Add a component to start tracking maintenance.'
+'Add a row for every period the component was fitted. Leave the end date empty while it is still fitted.': 'Add a row for every period the component was fitted. Leave the end date empty while it is still fitted.'
 'Add a rule to start automating your activity details.': 'Add a rule to start automating your activity details.'
 'Add a widget': 'Add a widget'
 'Add action': 'Add action'
@@ -32,9 +33,11 @@ Activity: Activity
 'Add condition': 'Add condition'
 'Add gear': 'Add gear'
 'Add goal': 'Add goal'
+'Add installation': 'Add installation'
 'Add max heart rate': 'Add max heart rate'
 'Add resting heart rate': 'Add resting heart rate'
 'Add rule': 'Add rule'
+'Add segment': 'Add segment'
 'Add service': 'Add service'
 'Add task': 'Add task'
 'Add tile layer': 'Add tile layer'
@@ -47,11 +50,14 @@ Admin: Admin
 'Advanced (per-date & per-sport-type overrides)': 'Advanced (per-date & per-sport-type overrides)'
 'Age-based estimate': 'Age-based estimate'
 'All associated maintenance tasks and logs will be removed. This action cannot be undone.': 'All associated maintenance tasks and logs will be removed. This action cannot be undone.'
+'All efforts on this segment are deleted as well. This action cannot be undone.': 'All efforts on this segment are deleted as well. This action cannot be undone.'
 'All sport types': 'All sport types'
 'All sport types must belong to the same activity type.': 'All sport types must belong to the same activity type.'
+'Allow visitors to download original activity files': 'Allow visitors to download original activity files'
 'Allowed IP addresses for the admin panel': 'Allowed IP addresses for the admin panel'
-'Also exposes the workout assistant in the web interface. Requires the AI integration above to be enabled. Use caution when enabling this if your app is publicly accessible.': 'Also exposes the workout assistant in the web interface. Requires the AI integration above to be enabled. Use caution when enabling this if your app is publicly accessible.'
+'Allowed users': 'Allowed users'
 'Any IP address': 'Any IP address'
+'Any gear assigned to the activity will be removed.': 'Any gear assigned to the activity will be removed.'
 'App URL': 'App URL'
 'App subtitle': 'App subtitle'
 'App update available notification': 'App update available notification'
@@ -62,6 +68,7 @@ Apply: 应用
 'Are you sure you want to delete the import of {name}?': 'Are you sure you want to delete the import of {name}?'
 'Are you sure you want to delete the {component} component?': 'Are you sure you want to delete the {component} component?'
 'Are you sure you want to delete the {rule} rule?': 'Are you sure you want to delete the {rule} rule?'
+'Are you sure you want to delete {count} activities?': 'Are you sure you want to delete {count} activities?'
 'Are you sure you want to delete {name}?': 'Are you sure you want to delete {name}?'
 'Are you sure you want to delete {task} on {component} for {gear}, performed on {date}?': 'Are you sure you want to delete {task} on {component} for {gear}, performed on {date}?'
 'Are you sure you want to remove the {widget} widget?': 'Are you sure you want to remove the {widget} widget?'
@@ -73,12 +80,14 @@ Apply: 应用
 'Automation rules are only available in file import mode': 'Automation rules are only available in file import mode'
 'Available tokens': 'Available tokens'
 'Average cadence': 'Average cadence'
+'Average heart rate (bpm)': 'Average heart rate (bpm)'
 'Average power': 'Average power'
 'Back to app': 'Back to app'
 'Back to the admin panel': 'Back to the admin panel'
 'Base URI': 'Base URI'
 'Before you can use the app, we need to know a few things about you. These are used to calculate your heart rate zones and training load. You can fine-tune all other settings later on.': 'Before you can use the app, we need to know a few things about you. These are used to calculate your heart rate zones and training load. You can fine-tune all other settings later on.'
 Birthday: Birthday
+'By default only you can download the original FIT, TCX or GPX file from an activity page. Original files can contain more detail than the page shows.': 'By default only you can download the original FIT, TCX or GPX file from an activity page. Original files can contain more detail than the page shows.'
 'Calculate energy (kJ)': 'Calculate energy (kJ)'
 Cancel: Cancel
 'Challenge name': 'Challenge name'
@@ -91,6 +100,8 @@ Clear: Clear
 'Clear filters': 'Clear filters'
 'Click the map to set the center, or drag the marker to fine-tune it.': 'Click the map to set the center, or drag the marker to fine-tune it.'
 'Click the map to set the location, or drag the marker to fine-tune it.': 'Click the map to set the location, or drag the marker to fine-tune it.'
+'Client ID': 'Client ID'
+'Client secret': 'Client secret'
 Close: Close
 Command: Command
 Commute: Commute
@@ -106,30 +117,41 @@ Configured: Configured
 'Connected sensors': 'Connected sensors'
 'Continues to next rule': 'Continues to next rule'
 'Copy this API key': 'Copy this API key'
+'Copy this MCP key': 'Copy this MCP key'
 'Cron expression': 'Cron expression'
 "Cron expression specifying when the action should run, e.g. '0 14 * * *' runs every day at 14:00. See crontab.guru for help.": "Cron expression specifying when the action should run, e.g. '0 14 * * *' runs every day at 14:00. See crontab.guru for help."
+Custom: Custom
 Daemon: Daemon
 'Dashboard layout': 'Dashboard layout'
+'Date & time': 'Date & time'
 'Date range based': 'Date range based'
 'Define what needs doing and how often.': 'Define what needs doing and how often.'
 Delete: Delete
+'Delete activities': 'Delete activities'
 'Delete activity': 'Delete activity'
 'Delete automation rule': 'Delete automation rule'
 'Delete component': 'Delete component'
 'Delete file import': 'Delete file import'
+'Delete gear': 'Delete gear'
 'Delete maintenance log': 'Delete maintenance log'
+'Delete segment': 'Delete segment'
+'Delete selected': 'Delete selected'
 'Deleting a rule does not revert changes it already made to activities. This action cannot be undone.': 'Deleting a rule does not revert changes it already made to activities. This action cannot be undone.'
 Deleting...: Deleting...
 Description: Description
 'Detailed instructions are available in {linkOpen}the documentation{linkClose}.': 'Detailed instructions are available in {linkOpen}the documentation{linkClose}.'
 Disabled: Disabled
 Distance: Distance
+'Do not download activity photos': 'Do not download activity photos'
 Done: Done
 'Download original file': 'Download original file'
+'Drag the start and end markers along the route to select the segment.': 'Drag the start and end markers along the route to select the segment.'
 'Drag to reorder': 'Drag to reorder'
 'Drag to set the order in which sport types are displayed throughout the app.': 'Drag to set the order in which sport types are displayed throughout the app.'
 Duplicate: Duplicate
 Duration: Duration
+'Each data point sums everything logged in the preceding number of days.': 'Each data point sums everything logged in the preceding number of days.'
+'Each period ends when the next one starts.': 'Each period ends when the next one starts.'
 Edit: Edit
 'Edit activity': 'Edit activity'
 'Edit automation rule': 'Edit automation rule'
@@ -137,21 +159,29 @@ Edit: Edit
 'Edit gear': 'Edit gear'
 'Edit maintenance log': 'Edit maintenance log'
 'Edit recording device': 'Edit recording device'
+'Edit segment': 'Edit segment'
+Efforts: Efforts
+'Efforts are not calculated right away. Your activities are searched for this segment during the next import run, which runs every 5 minutes.': 'Efforts are not calculated right away. Your activities are searched for this segment during the next import run, which runs every 5 minutes.'
 Elevation: Elevation
 'Enable AI integration': 'Enable AI integration'
 'Enable Strava webhooks': 'Enable Strava webhooks'
 Enabled: Enabled
 Endpoint: Endpoint
 'Ends near': 'Ends near'
+'Ends near start': 'Ends near start'
 'Energy in kJ will be calculated from average power × moving time, for activities that do not already provide it.': 'Energy in kJ will be calculated from average power × moving time, for activities that do not already provide it.'
 'Enter an existing activity to preview which rules would apply and what they would change. Nothing is saved.': 'Enter an existing activity to preview which rules would apply and what they would change. Nothing is saved.'
 'Enter your password': 'Enter your password'
 'Enter your username': 'Enter your username'
 Every: Every
+'Exclude from': 'Exclude from'
+'Excluded activities are left out of these statistics, but still show up everywhere else.': 'Excluded activities are left out of these statistics, but still show up everywhere else.'
+'Excluded from': 'Excluded from'
 FTP: FTP
 'FTP history (cycling)': 'FTP history (cycling)'
 'FTP history (running)': 'FTP history (running)'
 Failed: Failed
+Favourite: Favourite
 Female: Female
 'File exceeds {max} MB': 'File exceeds {max} MB'
 'File imports': 'File imports'
@@ -171,6 +201,7 @@ From: From
 Gender: Gender
 General: General
 'Generate an API key': 'Generate an API key'
+'Generate an MCP key': 'Generate an MCP key'
 'Go to first page': 'Go to first page'
 'Go to last page': 'Go to last page'
 'Go to next page': 'Go to next page'
@@ -193,6 +224,7 @@ Images: Images
 Import: Import
 'Import Strava data': 'Import Strava data'
 'Import activities': 'Import activities'
+'Import behaviour': 'Import behaviour'
 'Import pending': 'Import pending'
 'Import segment details': 'Import segment details'
 'Import segment details so segment maps can be displayed. This needs an extra Strava API call per segment and increases import time significantly.': 'Import segment details so segment maps can be displayed. This needs an extra Strava API call per segment and increases import time significantly.'
@@ -202,25 +234,35 @@ Import: Import
 'Imports new Strava activities.': 'Imports new Strava activities.'
 'Include retired gear': 'Include retired gear'
 Info: Info
+'Installed on': 'Installed on'
+Instance: Instance
 Integrations: Integrations
 'Intro text': 'Intro text'
 'Invalid CSRF token.': 'Invalid CSRF token.'
+'Issuer URL': 'Issuer URL'
 Label: Label
 'Last name': 'Last name'
 Latitude: Latitude
 'Leave all unchecked to import every sport type. ⚠️ Restricting this after activities have been imported deletes activities of excluded sport types.': 'Leave all unchecked to import every sport type. ⚠️ Restricting this after activities have been imported deletes activities of excluded sport types.'
 'Leave all unchecked to import every visibility. ⚠️ Restricting this after activities have been imported deletes activities of excluded visibilities.': 'Leave all unchecked to import every visibility. ⚠️ Restricting this after activities have been imported deletes activities of excluded visibilities.'
 'Leave empty to include all sport types.': 'Leave empty to include all sport types.'
-'Lets an external client upload activity files over HTTP. The key is the only thing guarding that endpoint, so treat it like a password.': 'Lets an external client upload activity files over HTTP. The key is the only thing guarding that endpoint, so treat it like a password.'
+'Leave empty to use the default title.': 'Leave empty to use the default title.'
+'Lets an AI assistant such as Claude or Cursor read your data through the MCP server. The key grants read access only, it cannot change anything.': 'Lets an AI assistant such as Claude or Cursor read your data through the MCP server. The key grants read access only, it cannot change anything.'
+'Lets an external client access the API over HTTP. The key is the only thing guarding the API, so treat it like a password.': 'Lets an external client access the API over HTTP. The key is the only thing guarding the API, so treat it like a password.'
+'Lets you log in to the admin panel through your own identity provider, next to the admin username and password.': 'Lets you log in to the admin panel through your own identity provider, next to the admin username and password.'
+'Loading the route...': 'Loading the route...'
 Locale: Locale
 Log: Log
 'Log maintenance': 'Log maintenance'
 Longitude: Longitude
+'MCP access': 'MCP access'
+'MCP key': 'MCP key'
 'Maintenance log': 'Maintenance log'
 'Maintenance logs will appear here once maintenance has been registered.': 'Maintenance logs will appear here once maintenance has been registered.'
 'Maintenance tasks': 'Maintenance tasks'
 Male: Male
 Manage: Manage
+'Map style': 'Map style'
 Maps: Maps
 'Mark as commute': 'Mark as commute'
 'Mark as group activity': 'Mark as group activity'
@@ -228,6 +270,7 @@ Match: Match
 "Matches on the activity's finishing point.": "Matches on the activity's finishing point."
 "Matches on the activity's starting point.": "Matches on the activity's starting point."
 'Matches when any point of the route comes near the location.': 'Matches when any point of the route comes near the location.'
+'Matches when the activity finishes close to where it started.': 'Matches when the activity finishes close to where it started.'
 'Matching activities': 'Matching activities'
 'Max heart rate (bpm)': 'Max heart rate (bpm)'
 'Max heart rate formula': 'Max heart rate formula'
@@ -239,6 +282,8 @@ Mode: Mode
 Model: Model
 Monday: Monday
 'More pages': 'More pages'
+'Most recent activities (cards)': 'Most recent activities (cards)'
+'Most recent activities (list)': 'Most recent activities (list)'
 'Moving time': 'Moving time'
 'No activities imported yet.': 'No activities imported yet.'
 'No activities match the current filters.': 'No activities match the current filters.'
@@ -252,11 +297,17 @@ Monday: Monday
 'No recording devices yet.': 'No recording devices yet.'
 'No rule applies': 'No rule applies'
 'No rules selected yet.': 'No rules selected yet.'
+'No segments added yet.': 'No segments added yet.'
+'No segments match the current filters.': 'No segments match the current filters.'
 'No sport types selected': 'No sport types selected'
 'No unit': 'No unit'
 'Normal date format': 'Normal date format'
-'Not configured, the API is closed': 'Not configured, the API is closed'
+'Not configured, API access is disabled': 'Not configured, API access is disabled'
+'Not configured, MCP server is disabled': 'Not configured, MCP server is disabled'
+'Not fitted': 'Not fitted'
+Notes: Notes
 'Notification services': 'Notification services'
+Notifications: Notifications
 'Notify when an import was successful': 'Notify when an import was successful'
 'Number of activities to display': 'Number of activities to display'
 'Number of challenges to display': 'Number of challenges to display'
@@ -282,21 +333,27 @@ Operator: Operator
 Password: Password
 'Paste the value above, replacing any key that is already there.': 'Paste the value above, replacing any key that is already there.'
 'Performed on': 'Performed on'
+'Photos attached to your Strava activities will not be downloaded or stored on disk. Photos that were downloaded before are kept.': 'Photos attached to your Strava activities will not be downloaded or stored on disk. Photos that were downloaded before are kept.'
 'Photos of the selected sport types are excluded from the photo gallery.': 'Photos of the selected sport types are excluded from the photo gallery.'
 'Pick a device you already recorded with, or type a new name.': 'Pick a device you already recorded with, or type a new name.'
+'Pick an activity to select the segment on its route.': 'Pick an activity to select the segment on its route.'
 'Pick the rules you want to apply to see which activities would change.': 'Pick the rules you want to apply to see which activities would change.'
 'Polyline color': 'Polyline color'
+'Prefer your own AI client, such as Claude or Cursor? Connect it to the MCP server instead, under {linkOpen}Security{linkClose}.': 'Prefer your own AI client, such as Claude or Cursor? Connect it to the MCP server instead, under {linkOpen}Security{linkClose}.'
 'Preview selection': 'Preview selection'
 'Processed on': 'Processed on'
 'Profile picture URL': 'Profile picture URL'
 Provider: Provider
+Queued: Queued
 Queueing...: Queueing...
 Radius: Radius
 'Recording device': 'Recording device'
 'Recording device management': 'Recording device management'
 'Recording devices will appear here once activities have been imported.': 'Recording devices will appear here once activities have been imported.'
 'Recreate your containers': 'Recreate your containers'
+'Redirect URI': 'Redirect URI'
 'Register maintenance': 'Register maintenance'
+'Register this URL as the redirect URI with your identity provider.': 'Register this URL as the redirect URI with your identity provider.'
 'Remember me for 7 days': 'Remember me for 7 days'
 Remove: Remove
 'Remove Eddington': 'Remove Eddington'
@@ -304,7 +361,9 @@ Remove: Remove
 'Remove challenge': 'Remove challenge'
 'Remove command': 'Remove command'
 'Remove condition': 'Remove condition'
+'Remove gear': 'Remove gear'
 'Remove goal': 'Remove goal'
+'Remove installation': 'Remove installation'
 'Remove task': 'Remove task'
 'Remove tile layer': 'Remove tile layer'
 'Remove widget': 'Remove widget'
@@ -320,9 +379,11 @@ Resetting...: Resetting...
 'Resting heart rate formula': 'Resting heart rate formula'
 'Restrict to date range': 'Restrict to date range'
 Retired: Retired
+'Retired components keep their history, but are hidden and no longer tracked.': 'Retired components keep their history, but are hidden and no longer tracked.'
 'Retry weather and reverse geocoding': 'Retry weather and reverse geocoding'
 'Return to app': 'Return to app'
 Ride: Ride
+'Rolling window (days)': 'Rolling window (days)'
 Rules: Rules
 'Rules to apply': 'Rules to apply'
 Saturday: Saturday
@@ -330,10 +391,13 @@ Save: Save
 'Save settings': 'Save settings'
 Saved: Saved
 Saving...: Saving...
+'Scheduled actions': 'Scheduled actions'
 'Scheduled actions the daemon runs at regular intervals.': 'Scheduled actions the daemon runs at regular intervals.'
 'Search by name, date or activity ID': 'Search by name, date or activity ID'
 Seconds: Seconds
 Security: Security
+'Segment management': 'Segment management'
+'Segments will appear here once you create them from one of your activities.': 'Segments will appear here once you create them from one of your activities.'
 'Select a component first...': 'Select a component first...'
 'Select a component…': 'Select a component…'
 'Select all': 'Select all'
@@ -342,6 +406,7 @@ Security: Security
 'Select at least one sensor.': 'Select at least one sensor.'
 'Select at least one sport type.': 'Select at least one sport type.'
 'Select at least one weekday.': 'Select at least one weekday.'
+'Select gear or component': 'Select gear or component'
 'Select gear...': 'Select gear...'
 'Select sensors': 'Select sensors'
 'Select sport types': 'Select sport types'
@@ -351,7 +416,9 @@ Security: Security
 'Sends a notification when gear maintenance is due. Requires a configured notification service.': 'Sends a notification when gear maintenance is due. Requires a configured notification service.'
 Sensors: Sensors
 'Sensors are only recorded for activities imported from FIT files. Activities from Strava, GPX or TCX never match this condition.': 'Sensors are only recorded for activities imported from FIT files. Activities from Strava, GPX or TCX never match this condition.'
+'Serial number, size, where you bought it, ...': 'Serial number, size, where you bought it, ...'
 'Set description': 'Set description'
+'Set its status to Retired instead to hide it from your active gear.': 'Set its status to Retired instead to hide it from your active gear.'
 'Set name': 'Set name'
 'Set recording device': 'Set recording device'
 'Set sport type': 'Set sport type'
@@ -365,12 +432,13 @@ Settings: Settings
 'Show last X years by default': 'Show last X years by default'
 'Show options': 'Show options'
 'Show password': 'Show password'
-'Show the workout assistant in the UI.': 'Show the workout assistant in the UI.'
 'Showing {first} - {last} of {total}': 'Showing {first} - {last} of {total}'
 'Sign in': 'Sign in'
 'Sign in to the admin panel': 'Sign in to the admin panel'
+'Sign in with single sign-on': 'Sign in with single sign-on'
 'Sign out': 'Sign out'
 'Signing in...': 'Signing in...'
+'Single sign-on': 'Single sign-on'
 'Skip activities recorded before': 'Skip activities recorded before'
 Skipped: Skipped
 'Skipped (an earlier rule stopped processing).': 'Skipped (an earlier rule stopped processing).'
@@ -382,10 +450,12 @@ Source: Source
 'Sport types to include': 'Sport types to include'
 'Start date': 'Start date'
 'Start date and time': 'Start date and time'
+'Start hour of each period': 'Start hour of each period'
 'Starts near': 'Starts near'
 'Stop processing further rules when this rule matches': 'Stop processing further rules when this rule matches'
 'Stops after match': 'Stops after match'
 'Stops here': 'Stops here'
+'Strava API': 'Strava API'
 'Strava API credentials.': 'Strava API credentials.'
 'Strava API has rate limits, so we cap the number of new activities processed per import. 250 is a safe number.': 'Strava API has rate limits, so we cap the number of new activities processed per import. 250 is a safe number.'
 'Strava activity IDs to skip during import.': 'Strava activity IDs to skip during import.'
@@ -421,7 +491,8 @@ Tasks: Tasks
 'The elevation gain': 'The elevation gain'
 'The formula used to calculate your max heart rate. The default is Fox (220 − age).': 'The formula used to calculate your max heart rate. The default is Fox (220 − age).'
 'The formula used to calculate your resting heart rate. The default is an age-based estimate.': 'The formula used to calculate your resting heart rate. The default is an age-based estimate.'
-'The key lets an external client upload activity files over HTTP. It is the only thing guarding that endpoint, so treat it like a password.': 'The key lets an external client upload activity files over HTTP. It is the only thing guarding that endpoint, so treat it like a password.'
+'The key lets an AI assistant read your data through the MCP server. It cannot change anything, but it does expose all of your activities, so treat it like a password.': 'The key lets an AI assistant read your data through the MCP server. It cannot change anything, but it does expose all of your activities, so treat it like a password.'
+'The key lets an external client access the API over HTTP. It is the only thing guarding the API, so treat it like a password.': 'The key lets an external client access the API over HTTP. It is the only thing guarding the API, so treat it like a password.'
 'The last zone has no upper bound.': 'The last zone has no upper bound.'
 'The locale used to render the app.': 'The locale used to render the app.'
 'The max heart rate': 'The max heart rate'
@@ -432,6 +503,7 @@ Tasks: Tasks
 'The name of the gear assigned to the activity': 'The name of the gear assigned to the activity'
 'The number of activities recorded with the gear': 'The number of activities recorded with the gear'
 "The page you're looking for doesn't exist or may have been moved.": "The page you're looking for doesn't exist or may have been moved."
+'The segment has been created. Its efforts will show up after the next import run.': 'The segment has been created. Its efforts will show up after the next import run.'
 'The sport type, e.g. "Walk" or "Trail Run"': 'The sport type, e.g. "Walk" or "Trail Run"'
 'The start date, optionally with a custom PHP date format': 'The start date, optionally with a custom PHP date format'
 'The tile layer URLs used to render the maps. Add more than one to stack them, for example to overlay place names on top of a satellite layer.': 'The tile layer URLs used to render the maps. Add more than one to stack them, for example to overlay place names on top of a satellite layer.'
@@ -443,6 +515,7 @@ Tasks: Tasks
 'Then do this': 'Then do this'
 'These rules will be applied to your existing activities on the next import cycle.': 'These rules will be applied to your existing activities on the next import cycle.'
 'This action cannot be undone.': 'This action cannot be undone.'
+'This activity has no GPS data.': 'This activity has no GPS data.'
 'This component is fitted to multiple gears, pick the one you serviced.': 'This component is fitted to multiple gears, pick the one you serviced.'
 'This only removes the import record, the imported activity is kept.': 'This only removes the import record, the imported activity is kept.'
 'This page shows a different key every time it is opened, and only the one in your environment file is applied.': 'This page shows a different key every time it is opened, and only the one in your environment file is applied.'
@@ -453,6 +526,7 @@ Thursday: Thursday
 'Tile layers': 'Tile layers'
 'Time format': 'Time format'
 'Time of day': 'Time of day'
+Title: Title
 To: To
 'Token used to validate incoming Strava webhook requests. Required when webhooks are enabled.': 'Token used to validate incoming Strava webhook requests. Required when webhooks are enabled.'
 "Tokens are replaced with the activity's values when the rule runs.": "Tokens are replaced with the activity's values when the rule runs."
@@ -460,20 +534,23 @@ To: To
 'Track gear usage from your activities and stay on top of usage- and time-based maintenance.': 'Track gear usage from your activities and stay on top of usage- and time-based maintenance.'
 Tuesday: Tuesday
 'Turn gear maintenance tracking on or off.': 'Turn gear maintenance tracking on or off.'
-'Turns on the AI-powered workout assistant, which can then be used from the command line.': 'Turns on the AI-powered workout assistant, which can then be used from the command line.'
+'Turns on the AI-powered workout assistant.': 'Turns on the AI-powered workout assistant.'
 Type: Type
 URL: URL
 Unit: Unit
 'Unit system': 'Unit system'
+'Units & language': 'Units & language'
 'Unsupported file type': 'Unsupported file type'
+Until: Until
 'Upload activity files': 'Upload activity files'
 'Upload failed': 'Upload failed'
 'Upload files': 'Upload files'
 Uploaded: Uploaded
 Uploading...: Uploading...
+'Use caution when enabling this if your app is publicly accessible.': 'Use caution when enabling this if your app is publicly accessible.'
+'Used to calculate the training load of this activity': 'Used to calculate the training load of this activity'
 Username: Username
 'Verify token': 'Verify token'
-Version: Version
 Warning: 警告
 'Weather and reverse geocoding have been retrieved.': 'Weather and reverse geocoding have been retrieved.'
 'Weather and/or reverse geocoding could not be retrieved when this activity was imported.': 'Weather and/or reverse geocoding could not be retrieved when this activity was imported.'
@@ -481,7 +558,9 @@ Webhooks: Webhooks
 Wednesday: Wednesday
 Weekday: Weekday
 Weekdays: Weekdays
+Weigh-ins: Weigh-ins
 'What is my FTP?': 'What is my FTP?'
+'What to import': 'What to import'
 "When checked, no further rules are processed once this rule matches. Uncheck to let later rules run as well. They may overwrite this rule's changes.": "When checked, no further rules are processed once this rule matches. Uncheck to let later rules run as well. They may overwrite this rule's changes."
 'When disabled, gear marked as retired is left out of the chart.': 'When disabled, gear marked as retired is left out of the chart.'
 'When disabled, scrolling over a map zooms it instead of scrolling the page.': 'When disabled, scrolling over a map zooms it instead of scrolling the page.'
@@ -503,6 +582,7 @@ Zone: Zone
 'Zoom level': 'Zoom level'
 Zwift: Zwift
 'Zwift level': 'Zwift level'
+'Zwift profile': 'Zwift profile'
 'Zwift racing score': 'Zwift racing score'
 'active days': 'active days'
 after: after
@@ -536,6 +616,7 @@ minutes: minutes
 'on': 'on'
 'on or after': 'on or after'
 'on or before': 'on or before'
+or: or
 'outside radius': 'outside radius'
 then: then
 'within radius': 'within radius'
@@ -543,8 +624,10 @@ then: then
 '{count} files uploaded': '{count} files uploaded'
 '{count} images selected': '{count} images selected'
 '{count} rules apply': '{count} rules apply'
-'{envVar} is set, but it is not a key this app generated, so the API stays closed. Generate a new one and replace it.': '{envVar} is set, but it is not a key this app generated, so the API stays closed. Generate a new one and replace it.'
+'{envVar} is set, but it is not a key this app generated, so API access stays disabled. Generate a new one and replace it.': '{envVar} is set, but it is not a key this app generated, so API access stays disabled. Generate a new one and replace it.'
+'{envVar} is set, but it is not a key this app generated, so the MCP server stays disabled. Generate a new one and replace it.': '{envVar} is set, but it is not a key this app generated, so the MCP server stays disabled. Generate a new one and replace it.'
 '{label} (copy)': '{label} (copy)'
+"{name} can't be deleted because it is still linked to activities, maintenance or automation rules.": "{name} can't be deleted because it is still linked to activities, maintenance or automation rules."
 '{shoutrrr} notification service URLs (e.g. discord://token@id, telegram://token@telegram/?channels=channel). Leave empty to disable notifications entirely.': '{shoutrrr} notification service URLs (e.g. discord://token@id, telegram://token@telegram/?channels=channel). Leave empty to disable notifications entirely.'
 '{strongOpen}Drag & drop{strongClose} or {strongOpen}browse{strongClose} to choose files': '{strongOpen}Drag & drop{strongClose} or {strongOpen}browse{strongClose} to choose files'
 '{strongOpen}Drag & drop{strongClose} or {strongOpen}browse{strongClose} to choose images': '{strongOpen}Drag & drop{strongClose} or {strongOpen}browse{strongClose} to choose images'
