@@ -1,7 +1,9 @@
 import {fetchJson} from "../../utils";
+import {loadEcharts} from "../charts/echarts-loader";
 import L from 'leaflet';
 import {createMapToolsControl} from "./leaflet-controls";
 import './ctrl-scroll-zoom';
+import {END_MARKER_COLOR, MARKER_BORDER_COLOR, START_MARKER_COLOR} from "./route-marker-colors";
 
 export default class LeafletMap {
     constructor(mapNode, data, config) {
@@ -39,10 +41,10 @@ export default class LeafletMap {
             }).addTo(featureGroup);
 
             if (this.data.showStartMarker) {
-                this.addCircleMarker(coordinates[0], '#3ba272').addTo(featureGroup);
+                this.addCircleMarker(coordinates[0], START_MARKER_COLOR).addTo(featureGroup);
             }
             if (this.data.showEndMarker) {
-                this.addCircleMarker(coordinates.at(-1), '#BD2D22').addTo(featureGroup);
+                this.addCircleMarker(coordinates.at(-1), END_MARKER_COLOR).addTo(featureGroup);
             }
         }
 
@@ -75,6 +77,7 @@ export default class LeafletMap {
 
         try {
             const coordinateMap = await fetchJson(coordinatesUrl);
+            await loadEcharts();
             const marker = this.addCircleMarker([0, 0], '#F26722', {radius: 6, opacity: 0}).addTo(this.map);
             const chart = echarts.getInstanceByDom(eChartNode);
             const initialZoom = this.map.getZoom();
@@ -99,14 +102,10 @@ export default class LeafletMap {
         }
     }
 
-    destroy() {
-        this.map.remove();
-    }
-
     addCircleMarker(latLng, fillColor, {radius = 8, opacity = 1} = {}) {
         return L.circleMarker(latLng, {
             radius,
-            color: '#303030',
+            color: MARKER_BORDER_COLOR,
             fillColor,
             fillOpacity: opacity,
             opacity,

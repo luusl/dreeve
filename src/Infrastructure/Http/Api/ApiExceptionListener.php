@@ -49,39 +49,22 @@ final readonly class ApiExceptionListener implements EventSubscriberInterface
         $event->allowCustomResponseCode();
         $event->setResponse(new ApiErrorResponse(
             statusCode: $statusCode,
-            error: $this->errorCodeFor($statusCode),
-            message: $this->messageFor($exception, $statusCode),
+            error: match ($statusCode) {
+                Response::HTTP_BAD_REQUEST => ApiErrorCode::BAD_REQUEST,
+                Response::HTTP_UNAUTHORIZED => ApiErrorCode::INVALID_TOKEN,
+                Response::HTTP_NOT_FOUND => ApiErrorCode::NOT_FOUND,
+                Response::HTTP_METHOD_NOT_ALLOWED => ApiErrorCode::METHOD_NOT_ALLOWED,
+                Response::HTTP_UNSUPPORTED_MEDIA_TYPE => ApiErrorCode::UNSUPPORTED_MEDIA_TYPE,
+                default => ApiErrorCode::INTERNAL_ERROR,
+            },
+            message: match (true) {
+                $exception instanceof HttpExceptionInterface => $exception->getMessage(),
+                PlatformEnvironment::DEV === $this->platformEnvironment => sprintf('%s: %s', $exception::class, $exception->getMessage()),
+                Response::HTTP_BAD_REQUEST === $statusCode => 'The request could not be processed.',
+                default => 'Something went wrong.',
+            },
             headers: $exception instanceof HttpExceptionInterface ? $exception->getHeaders() : [],
         ));
-    }
-
-    private function errorCodeFor(int $statusCode): string
-    {
-        return match ($statusCode) {
-            Response::HTTP_BAD_REQUEST => 'bad_request',
-            Response::HTTP_UNAUTHORIZED => 'invalid_token',
-            Response::HTTP_FORBIDDEN => 'forbidden',
-            Response::HTTP_NOT_FOUND => 'not_found',
-            Response::HTTP_METHOD_NOT_ALLOWED => 'method_not_allowed',
-            Response::HTTP_UNSUPPORTED_MEDIA_TYPE => 'unsupported_media_type',
-            Response::HTTP_TOO_MANY_REQUESTS => 'too_many_requests',
-            default => 'internal_error',
-        };
-    }
-
-    private function messageFor(\Throwable $exception, int $statusCode): string
-    {
-        if ($exception instanceof HttpExceptionInterface) {
-            return $exception->getMessage();
-        }
-
-        if (PlatformEnvironment::DEV === $this->platformEnvironment) {
-            return sprintf('%s: %s', $exception::class, $exception->getMessage());
-        }
-
-        return Response::HTTP_BAD_REQUEST === $statusCode
-            ? 'The request could not be processed.'
-            : 'Something went wrong.';
     }
 
     /**

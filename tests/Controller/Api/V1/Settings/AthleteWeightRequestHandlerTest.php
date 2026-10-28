@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller\Api\V1\Settings;
 
-use App\Domain\Api\Token;
 use App\Domain\Settings\SettingsName;
 use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Security\Token\ApiToken;
 use App\Infrastructure\Serialization\Json;
 use App\Tests\Controller\ControllerWebTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -16,7 +16,7 @@ class AthleteWeightRequestHandlerTest extends ControllerWebTestCase
 {
     private const string PATH = '/api/v1/athlete/weights';
 
-    private Token $token;
+    private ApiToken $token;
     private SettingsRepository $settingsRepository;
 
     public function testItCreatesAWeightForTheSpecifiedDate(): void
@@ -73,7 +73,9 @@ class AthleteWeightRequestHandlerTest extends ControllerWebTestCase
         );
 
         $this->assertResponseIsSuccessful();
-        $this->assertSame(['on' => '2026-09-08', 'weight' => 71.4], Json::decode((string) $this->client->getResponse()->getContent())['weights'][0]);
+        $response = Json::decode((string) $this->client->getResponse()->getContent());
+        $this->assertSame(['on' => '2026-09-08', 'weight' => 71.4], $response['weights'][0]);
+        $this->assertSame(['page' => 1, 'size' => 5, 'total' => 5, 'totalPages' => 1], $response['pagination']);
     }
 
     public function testItDeletesAWeightForADate(): void
@@ -152,7 +154,7 @@ class AthleteWeightRequestHandlerTest extends ControllerWebTestCase
     #[\Override]
     protected function prepareEnvironment(): void
     {
-        $this->token = Token::generate();
+        $this->token = ApiToken::generate();
         $_SERVER['DREEVE_API_KEY'] = $_ENV['DREEVE_API_KEY'] = (string) $this->token;
     }
 

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Tests\Domain\Activity\UpdateActivity;
 
+use App\Domain\Activity\ActivityExclusion;
+use App\Domain\Activity\ActivityExclusions;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityName;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\UpdateActivity\UpdateActivity;
+use App\Domain\Activity\WorkoutType;
 use App\Domain\Gear\GearId;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -21,23 +24,27 @@ class UpdateActivityTest extends TestCase
             'activityId' => 'activity-1',
             'name' => 'My custom activity',
             'sportType' => 'Run',
+            'workoutType' => 'race',
             'description' => 'A nice run',
             'deviceName' => 'Garmin Edge',
             'gearId' => 'gear-1',
             'calories' => '500',
             'isCommute' => 'true',
             'isGroupActivity' => 'true',
+            'excludedFrom' => ['peakPowerOutputs' => 'true'],
         ]);
 
         $this->assertEquals(ActivityId::fromUnprefixed('1'), $command->getActivityId());
         $this->assertEquals(ActivityName::fromString('My custom activity'), $command->getName());
         $this->assertSame(SportType::RUN, $command->getSportType());
+        $this->assertSame(WorkoutType::RACE, $command->getWorkoutType());
         $this->assertSame('A nice run', $command->getDescription());
         $this->assertSame('Garmin Edge', $command->getDeviceName());
         $this->assertEquals(GearId::fromUnprefixed('1'), $command->getGearId());
         $this->assertSame(500, $command->getCalories());
         $this->assertTrue($command->isCommute());
         $this->assertTrue($command->isGroupActivity());
+        $this->assertEquals(ActivityExclusions::fromArray([ActivityExclusion::PEAK_POWER_OUTPUTS]), $command->getExcludedFrom());
     }
 
     public function testFromPayloadWithoutImagesKeyLeavesImagesUntouched(): void
@@ -50,6 +57,7 @@ class UpdateActivityTest extends TestCase
 
         $this->assertSame([], $command->getNewImages());
         $this->assertSame([], $command->getRemovedImages());
+        $this->assertEquals(ActivityExclusions::empty(), $command->getExcludedFrom());
     }
 
     public function testFromPayloadWithEmptyImages(): void
@@ -158,12 +166,14 @@ class UpdateActivityTest extends TestCase
             'activityId' => 'activity-1',
             'name' => 'My custom activity',
             'sportType' => 'Ride',
+            'workoutType' => '',
             'description' => '   ',
             'deviceName' => '',
             'gearId' => '',
             'calories' => '',
         ]);
 
+        $this->assertNull($command->getWorkoutType());
         $this->assertNull($command->getDescription());
         $this->assertNull($command->getDeviceName());
         $this->assertNull($command->getGearId());
@@ -196,6 +206,11 @@ class UpdateActivityTest extends TestCase
         yield 'invalid sportType' => [
             ['activityId' => 'activity-1', 'name' => 'My custom activity', 'sportType' => 'NotARealSport'],
             'A valid "sportType" is required.',
+        ];
+
+        yield 'invalid workoutType' => [
+            ['activityId' => 'activity-1', 'name' => 'My custom activity', 'sportType' => 'Ride', 'workoutType' => 'NotARealWorkout'],
+            'The "workoutType" is invalid.',
         ];
 
         yield 'missing activityId' => [

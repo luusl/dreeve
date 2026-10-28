@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\BestEffort\FindBestEfforts;
 
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\BestEffort\ActivityBestEffort;
 use App\Domain\Activity\BestEffort\ActivityBestEfforts;
@@ -37,12 +38,14 @@ final readonly class FindBestEffortsQueryHandler implements QueryHandler
                 FROM ActivityBestEffort
                 INNER JOIN Activity ON ActivityBestEffort.activityId = Activity.activityId
                 WHERE ActivityBestEffort.sportType IN (:sportTypes)
+                AND NOT EXISTS (SELECT 1 FROM json_each(Activity.excludedFrom) WHERE json_each.value = :excludedFrom)
                 ORDER BY ActivityBestEffort.timeInSeconds ASC,
                          Activity.startDateTime ASC,
                          ActivityBestEffort.activityId ASC
             SQL,
             [
                 'sportTypes' => SportTypes::thatSupportsBestEfforts()->map(fn (SportType $sportType): string => $sportType->value),
+                'excludedFrom' => ActivityExclusion::BEST_EFFORTS->value,
             ],
             [
                 'sportTypes' => ArrayParameterType::STRING,

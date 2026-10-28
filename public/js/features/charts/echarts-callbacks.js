@@ -1,16 +1,17 @@
-const CALLBACK_PREFIX = 'callback:';
-
 export const resolveEchartsCallbacks = (obj) => {
     if (!obj || typeof obj !== 'object') return;
 
     for (const key of Object.keys(obj)) {
         const value = obj[key];
-        if (typeof value === 'string' && value.startsWith(CALLBACK_PREFIX)) {
-            const callbackName = value.slice(CALLBACK_PREFIX.length);
-            if (callbackName in window.dreeve.callbacks) {
-                obj[key] = window.dreeve.callbacks[callbackName];
-            } else {
+        if (value && typeof value === 'object' && typeof value.callback === 'string') {
+            const {callback: callbackName, args} = value;
+            const callback = window.dreeve.callbacks[callbackName];
+            if (!callback) {
                 console.error(`ECharts callback "${callbackName}" not registered in window.dreeve.callbacks`);
+            } else if (args === undefined) {
+                obj[key] = callback;
+            } else {
+                obj[key] = (...params) => callback(args, ...params);
             }
         } else if (typeof value === 'object' && value !== null) {
             resolveEchartsCallbacks(value);
@@ -26,8 +27,7 @@ const formatSeconds = (secondsToFormat) => {
     return `${hours}:${minutes}:${seconds}`;
 };
 
-const formatPace = (seconds) => {
-    const paceSymbol = window.dreeve.unitSystem.paceSymbol;
+const formatPace = (paceSymbol, seconds) => {
     const secondsToFormat = seconds;
     if (secondsToFormat < 60) {
         return `<strong>${secondsToFormat}s</strong>${paceSymbol}`;
@@ -52,7 +52,6 @@ const formatDuration = (seconds) => {
 export const registerEchartsCallbacks = () => {
     window.dreeve.callbacks = {
         formatSeconds,
-        formatPace,
         formatDuration,
         formatSecondsTrimZero: (secondsToFormat) => {
             const time = formatSeconds(secondsToFormat);
@@ -60,41 +59,32 @@ export const registerEchartsCallbacks = () => {
             let [hours, minutes, seconds] = time.split(':');
             return String(Number(hours)) === "0" ? `${minutes}:${seconds}` : `${hours}:${minutes}:${seconds}`;
         },
-        formatCombinedProfileTooltip: (params) => {
+        formatCombinedProfileTooltip: ({paceSymbol}, params) => {
             if (!Array.isArray(params)) params = [params];
             return [...params].sort((a, b) => a.seriesIndex - b.seriesIndex).map(p => {
                 if (p.seriesName === '__pace') {
-                    return `${p.marker} ${window.dreeve.callbacks.formatPace(p.value)}`;
+                    return `${p.marker} ${formatPace(paceSymbol, p.value)}`;
                 }
 
                 const extra = p.data?.extra !== undefined ? ` (${p.data.extra})` : '';
                 return `${p.marker} <strong>${p.value}</strong> ${p.seriesName}${extra}`;
             }).join('<br/>');
         },
-        formatEffortVsHeartRateTooltip: (params) => {
-            const heartRate = params.value[0];
-            const velocityIsPace = params.value[4];
-            const velocityUnit = params.value[5];
-            const velocity = velocityIsPace
-                ? window.dreeve.callbacks.formatSecondsTrimZero(params.value[1])
-                : params.value[1];
-            const elapsed = window.dreeve.callbacks.formatSecondsTrimZero(params.value[2]);
-            const date = params.value[3];
-
-            return `${date}<br/>`
-                + `Heart rate: <strong>${heartRate}</strong> bpm<br/>`
-                + `${velocityIsPace ? 'Pace' : 'Speed'}: <strong>${velocity}</strong> ${velocityUnit}<br/>`
-                + `Time: <strong>${elapsed}</strong>`;
-        },
+        formatDataTooltip: (params) => params.data?.tooltip ?? '',
         formatPowerDurationTooltip: (params) => {
             if (!Array.isArray(params)) params = [params];
             const duration = formatDuration(params[0].value[0]);
             return '<b>' + duration + '</b><br/>' + params.map(
                 p => p.marker + ' ' + p.seriesName + ': <b>' + p.value[1] + 'w</b>'
+                    + (p.data?.relativePower ? ' · ' + p.data.relativePower + ' w/kg' : '')
             ).join('<br/>');
         },
         symbolSize: (params) => {
             return (params[2] / 100) * 15 + 5;
+        },
+        formatRounded: ({decimals, suffix}, value) => {
+            const rounded = Number(value).toFixed(decimals);
+            return suffix ? `${rounded} ${suffix}` : rounded;
         },
         toInteger: (value) => {
             return value.toFixed(0);
@@ -108,43 +98,26 @@ export const registerEchartsCallbacks = () => {
             }
             return `${value.toFixed(0)}h`;
         },
-        formatDistance: (value) => {
+        formatWholeNumberWithSymbol: ({symbol}, value) => {
             if (value === undefined || value === null) {
                 return '-';
             }
-            const distanceSymbol = window.dreeve.unitSystem.distanceSymbol;
-            return `${value.toFixed(0)}${distanceSymbol}`;
+            return `${value.toFixed(0)}${symbol}`;
         },
-        formatElevation: (value) => {
-            if (value === undefined || value === null) {
-                return '-';
-            }
-            const elevationSymbol = window.dreeve.unitSystem.elevationSymbol;
-            return `${value.toFixed(0)}${elevationSymbol}`;
+        formatStackedDistanceTooltip: ({symbol: distanceSymbol}, params) => {
+            if (!Array.isArray(params)) params = [params];
+            const used = params.filter(p => p.value > 0).sort((a, b) => b.value - a.value);
+            const total = used.reduce((sum, p) => sum + p.value, 0);
+            return '<b>' + params[0].axisValue + ': ' + total + distanceSymbol + '</b>' + used
+                .map(p => '<br/>' + p.marker + ' ' + p.seriesName + ': <b>' + p.value + distanceSymbol + '</b> (' + Math.round(p.value / total * 100) + '%)')
+                .join('');
         },
         formatDateOnlyTooltip: (params) => {
             if (!Array.isArray(params)) params = [params];
-            const dateFormat = window.dreeve.unitSystem.name === 'metric' ? '{dd}-{MM}-{yyyy}' : '{MM}-{dd}-{yyyy}';
-            const date = echarts.time.format(params[0].axisValue, dateFormat, false);
-            return date + params
-                .filter(p => p.data && p.data.length > 0)
-                .map(p => '<br/>' + p.marker + ' ' + p.seriesName + ': <b>' + p.data[1] + '</b>')
+            const points = params.filter(p => p.data?.value);
+            return (points[0]?.data.date ?? '') + points
+                .map(p => '<br/>' + p.marker + ' ' + p.seriesName + ': <b>' + p.data.value[1] + '</b>')
                 .join('');
-        },
-        formatActivityGridTooltip: (value) => {
-            if (value === undefined || value === null) {
-                return '-';
-            }
-
-            const dateFormat = window.dreeve.unitSystem.name === 'metric' ? '{dd}-{MM}-{yyyy}' : '{MM}-{dd}-{yyyy}';
-            const date = echarts.time.format(value.data[0], dateFormat, false);
-            if ('movingTime' === value.seriesName) {
-                const secondsToFormat = value.data[1] * 60;
-                const hours = String(Math.floor(secondsToFormat / 3600)).padStart(2, '0');
-                const minutes = String(Math.floor((secondsToFormat % 3600) / 60)).padStart(2, '0');
-                return date + ': ' + `${hours}h${minutes}`;
-            }
-            return date + ': ' + value.data[1];
         },
     };
 };

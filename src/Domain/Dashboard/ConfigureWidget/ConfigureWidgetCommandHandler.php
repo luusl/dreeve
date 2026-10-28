@@ -8,6 +8,7 @@ use App\Domain\Dashboard\DashboardLayoutRepository;
 use App\Domain\Dashboard\InvalidDashboardLayout;
 use App\Domain\Dashboard\Widget\ConfiguredWidget;
 use App\Domain\Dashboard\Widget\ConfiguredWidgets;
+use App\Domain\Dashboard\Widget\RendersWithoutTitle;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
 use App\Infrastructure\CQRS\Command\Command;
 use App\Infrastructure\CQRS\Command\CommandHandler;
@@ -34,6 +35,20 @@ final readonly class ConfigureWidgetCommandHandler implements CommandHandler
             defaults: $configuredWidget->getWidget()->getDefaultConfiguration(),
             submitted: $command->getConfiguration(),
         );
+
+        if (!$configuredWidget->getWidget() instanceof RendersWithoutTitle) {
+            $submittedTitle = $command->getConfiguration()[WidgetConfiguration::TITLE] ?? null;
+            $title = is_scalar($submittedTitle) ? trim((string) $submittedTitle) : '';
+
+            if (mb_strlen($title) > WidgetConfiguration::MAX_TITLE_LENGTH) {
+                throw CouldNotProcessCommand::withReason(sprintf('The widget title may not be longer than %d characters.', WidgetConfiguration::MAX_TITLE_LENGTH));
+            }
+
+            $configuration->add(
+                key: WidgetConfiguration::TITLE,
+                value: '' !== $title ? $title : null
+            );
+        }
 
         try {
             $configuredWidget->getWidget()->guardValidConfiguration($configuration);

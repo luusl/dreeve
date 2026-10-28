@@ -70,6 +70,16 @@ final readonly class DbalGearRepository extends DbalRepository implements GearRe
         $this->eventBus->publishEvents($gear->getRecordedEvents());
     }
 
+    public function delete(Gear $gear): void
+    {
+        $this->connection->executeStatement(
+            'DELETE FROM Gear WHERE gearId = :gearId',
+            ['gearId' => $gear->getId()]
+        );
+
+        $this->eventBus->publishEvents($gear->getRecordedEvents());
+    }
+
     public function findAll(): Gears
     {
         return $this->fetchFindAllResults(onlyUsedGear: false);
@@ -82,7 +92,9 @@ final readonly class DbalGearRepository extends DbalRepository implements GearRe
 
     public function hasGear(): bool
     {
-        return !$this->findAllUsed()->isEmpty();
+        return (bool) $this->connection->executeQuery(
+            'SELECT EXISTS(SELECT 1 FROM Gear INNER JOIN Activity ON Activity.gearId = Gear.gearId)'
+        )->fetchOne();
     }
 
     public function find(GearId $gearId): Gear

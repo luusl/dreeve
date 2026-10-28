@@ -11,7 +11,9 @@ use App\Domain\Dashboard\Widget\ActivityGrid\FindCaloriesBurnedPerDay\FindCalori
 use App\Domain\Dashboard\Widget\DependsOnCurrentDay;
 use App\Domain\Dashboard\Widget\Widget;
 use App\Domain\Dashboard\Widget\WidgetConfiguration;
+use App\Domain\Dashboard\Widget\WidgetRenderer;
 use App\Domain\Rewind\FindMovingTimePerDay\FindMovingTimePerDay;
+use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
@@ -20,21 +22,26 @@ use App\Infrastructure\ValueObject\Time\DateRange;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Infrastructure\ValueObject\Time\Years;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 final readonly class ActivityGridWidget implements Widget, DependsOnCurrentDay
 {
     public function __construct(
         private DailyTrainingLoad $trainingLoad,
         private QueryBus $queryBus,
-        private Environment $twig,
+        private WidgetRenderer $widgetRenderer,
         private TranslatorInterface $translator,
+        private SettingsRepository $settingsRepository,
     ) {
     }
 
     public function getLabel(): string
     {
         return $this->translator->trans('Activity heatmap');
+    }
+
+    public function getAdminLabel(): string
+    {
+        return $this->getLabel();
     }
 
     public function getTemplateName(): string
@@ -44,7 +51,7 @@ final readonly class ActivityGridWidget implements Widget, DependsOnCurrentDay
 
     public function getCacheTags(): CacheTags
     {
-        return CacheTags::of(RootCacheTag::ACTIVITIES);
+        return CacheTags::of(RootCacheTag::ACTIVITIES, RootCacheTag::SETTINGS_GENERAL);
     }
 
     public function getDefaultConfiguration(): WidgetConfiguration
@@ -122,17 +129,19 @@ final readonly class ActivityGridWidget implements Widget, DependsOnCurrentDay
         /** @var string[] $metricsDisplayOrder */
         $metricsDisplayOrder = $configuration->get('metricsDisplayOrder');
 
+        $dateFormat = $this->settingsRepository->appearance()->getDateAndTimeFormat()->getDateFormatShort();
         $activityGridsCharts = [];
         foreach (ActivityGridType::cases() as $activityGridType) {
             $activityGridsCharts[$activityGridType->value] = Json::encode(ActivityGridChart::create(
                 activityGrid: $activityGrids[$activityGridType->value],
                 fromDate: $fromDate,
                 toDate: $toDate,
+                dateFormat: $dateFormat,
                 translator: $this->translator
             )->build());
         }
 
-        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+        return $this->widgetRenderer->render($this, $configuration, [
             'uniqueId' => $dashboardWidgetId->toHtmlIdSuffix(),
             'gridCharts' => $activityGridsCharts,
             'metricsDisplayOrder' => array_map(

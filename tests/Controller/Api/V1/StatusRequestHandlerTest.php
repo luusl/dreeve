@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Api\V1;
 
 use App\Application\AppVersion;
-use App\Domain\Api\Token;
 use App\Domain\Import\ImportMode;
+use App\Infrastructure\Security\Token\ApiToken;
 use App\Infrastructure\Serialization\Json;
 use App\Tests\Controller\ControllerWebTestCase;
-use Symfony\Component\HttpFoundation\Response;
 
 class StatusRequestHandlerTest extends ControllerWebTestCase
 {
-    private Token $token;
+    private ApiToken $token;
 
     public function testHandle(): void
     {
@@ -39,17 +38,10 @@ class StatusRequestHandlerTest extends ControllerWebTestCase
         $this->assertFalse(Json::decode((string) $this->client->getResponse()->getContent())['canUpload']);
     }
 
-    public function testItRequiresAValidKey(): void
-    {
-        $this->client->request('GET', '/api/v1/status');
-
-        $this->assertSame(Response::HTTP_UNAUTHORIZED, $this->client->getResponse()->getStatusCode());
-    }
-
     #[\Override]
     protected function prepareEnvironment(): void
     {
-        $this->token = Token::generate();
+        $this->token = ApiToken::generate();
         $_SERVER['DREEVE_API_KEY'] = $_ENV['DREEVE_API_KEY'] = (string) $this->token;
         $_SERVER['IMPORT_MODE'] = $_ENV['IMPORT_MODE'] = ImportMode::FILES->value;
     }

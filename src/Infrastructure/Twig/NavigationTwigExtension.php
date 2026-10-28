@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Twig;
 
+use App\Domain\Activity\ActivityIdRepository;
+use App\Domain\Import\ImportMode;
+use App\Domain\Segment\SegmentRepository;
 use App\Domain\Settings\SettingsRepository;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -14,13 +17,26 @@ final readonly class NavigationTwigExtension
     public function __construct(
         private RequestStack $requestStack,
         private SettingsRepository $settingsRepository,
+        private ImportMode $importMode,
+        private ActivityIdRepository $activityIdRepository,
+        private SegmentRepository $segmentRepository,
     ) {
     }
 
-    #[AsTwigFunction('isAIIntegrationWithUIEnabled')]
-    public function isAIIntegrationWithUIEnabled(): bool
+    #[AsTwigFunction('isSegmentManagementAvailable')]
+    public function isSegmentManagementAvailable(): bool
     {
-        return $this->settingsRepository->integrations()->isAIIntegrationWithUIEnabled();
+        if (!$this->importMode->isFiles()) {
+            return false;
+        }
+
+        return $this->activityIdRepository->count() > 0 || $this->segmentRepository->count() > 0;
+    }
+
+    #[AsTwigFunction('isAIIntegrationEnabled')]
+    public function isAIIntegrationEnabled(): bool
+    {
+        return $this->settingsRepository->integrations()->isAIIntegrationEnabled();
     }
 
     /**

@@ -2,7 +2,6 @@
     {
         "activityType": "WaterSports",
         "data": "[]",
-        "streamsAreImported": 1,
         "markedForDeletion": null,
         "activityId": "activity-1",
         "startDateTime": "2026-07-22 09:43:43",
@@ -36,6 +35,7 @@
         "isCommute": 0,
         "isGroupActivity": 0,
         "workoutType": null,
+        "excludedFrom": null,
         "startingCoordinateLatitude": null,
         "startingCoordinateLongitude": null
     }

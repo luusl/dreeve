@@ -4,22 +4,11 @@ declare(strict_types=1);
 
 namespace App\Tests\Domain\Settings;
 
-use App\Domain\Integration\AI\AzureOpenAI;
+use App\Domain\Integration\AI\AIProvider;
 use App\Domain\Integration\AI\Chat\InvalidChatCommandsConfig;
-use App\Domain\Integration\AI\HuggingFace;
 use App\Domain\Integration\AI\InvalidAIConfiguration;
 use App\Domain\Integration\Notification\Shoutrrr\ShoutrrrUrl;
 use App\Domain\Settings\IntegrationsSettings;
-use NeuronAI\Providers\AIProviderInterface;
-use NeuronAI\Providers\Anthropic\Anthropic;
-use NeuronAI\Providers\Deepseek\Deepseek;
-use NeuronAI\Providers\Gemini\Gemini;
-use NeuronAI\Providers\Mistral\Mistral;
-use NeuronAI\Providers\Ollama\Ollama;
-use NeuronAI\Providers\OpenAI\OpenAI;
-use NeuronAI\Providers\OpenAI\Responses\OpenAIResponses;
-use NeuronAI\Providers\OpenAILike;
-use NeuronAI\Providers\XAI\Grok;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -32,7 +21,6 @@ class IntegrationsSettingsTest extends TestCase
         $settings = IntegrationsSettings::fromArray([]);
 
         $this->assertFalse($settings->isAIIntegrationEnabled());
-        $this->assertFalse($settings->isAIIntegrationWithUIEnabled());
         $this->assertSame([], $settings->getChatCommands()->jsonSerialize());
         $this->assertCount(0, iterator_to_array($settings->getConfiguredNotificationUrls()));
         $this->assertTrue($settings->shouldNotifyOnSuccessfulImport());
@@ -52,17 +40,17 @@ class IntegrationsSettingsTest extends TestCase
         $settings = IntegrationsSettings::fromArray([
             'ai' => [
                 'enabled' => true,
-                'enableUI' => true,
                 'provider' => 'openAI',
                 'configuration' => ['key' => 'my-key', 'model' => 'cool-model'],
             ],
         ]);
 
         $this->assertTrue($settings->isAIIntegrationEnabled());
-        $this->assertTrue($settings->isAIIntegrationWithUIEnabled());
+        $this->assertSame(AIProvider::OPEN_AI, $settings->getAIProvider());
+        $this->assertSame(['key' => 'my-key', 'model' => 'cool-model'], $settings->getAIConfiguration());
     }
 
-    public function testItEnablesTheAIIntegrationWithoutUI(): void
+    public function testItKeepsTheAIIntegrationDisabledWhenTheUIWasDisabled(): void
     {
         $settings = IntegrationsSettings::fromArray([
             'ai' => [
@@ -73,8 +61,7 @@ class IntegrationsSettingsTest extends TestCase
             ],
         ]);
 
-        $this->assertTrue($settings->isAIIntegrationEnabled());
-        $this->assertFalse($settings->isAIIntegrationWithUIEnabled());
+        $this->assertFalse($settings->isAIIntegrationEnabled());
     }
 
     #[DataProvider(methodName: 'provideInvalidAIConfig')]
@@ -96,24 +83,10 @@ class IntegrationsSettingsTest extends TestCase
         IntegrationsSettings::fromArray([
             'ai' => [
                 'enabled' => true,
-                'enableUI' => false,
                 'provider' => 'openAI',
                 'configuration' => ['model' => 'cool-model'],
             ],
         ]);
-    }
-
-    #[DataProvider(methodName: 'provideGetAIProviderConfig')]
-    public function testGetAIProvider(array $config, AIProviderInterface $expectedProvider): void
-    {
-        $settings = IntegrationsSettings::fromArray(['ai' => [
-            'enabled' => true,
-            ...$config,
-        ]]);
-        $this->assertEquals(
-            $expectedProvider::class,
-            $settings->getAIProvider()::class
-        );
     }
 
     public function testItGuardsAValidOllamaUrl(): void
@@ -128,23 +101,6 @@ class IntegrationsSettingsTest extends TestCase
                 'model' => 'model',
             ],
         ]]);
-    }
-
-    public function testGetAIProviderUsesTheConfiguredOllamaUrl(): void
-    {
-        $settings = IntegrationsSettings::fromArray(['ai' => [
-            'enabled' => true,
-            'provider' => 'ollama',
-            'configuration' => [
-                'url' => 'http://dreeve-ollama:11434/api',
-                'model' => 'model',
-            ],
-        ]]);
-
-        $this->assertEquals(
-            new Ollama('http://dreeve-ollama:11434/api', 'model'),
-            $settings->getAIProvider()
-        );
     }
 
     public function testItBuildsChatCommands(): void
@@ -197,138 +153,21 @@ class IntegrationsSettingsTest extends TestCase
         ]);
     }
 
-    public static function provideGetAIProviderConfig(): iterable
-    {
-        yield 'anthropic' => [
-            [
-                'provider' => 'anthropic',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new Anthropic('key', 'model'),
-        ];
-
-        yield 'azureOpenAI' => [
-            [
-                'provider' => 'azureOpenAI',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                    'endpoint' => 'endpoint',
-                    'version' => 'version',
-                ],
-            ],
-            new AzureOpenAI('key', 'endpoint', 'model', 'version'),
-        ];
-
-        yield 'deepseek' => [
-            [
-                'provider' => 'deepseek',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new Deepseek('key', 'model'),
-        ];
-
-        yield 'gemini' => [
-            [
-                'provider' => 'gemini',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new Gemini('key', 'model'),
-        ];
-
-        yield 'grok' => [
-            [
-                'provider' => 'grok',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new Grok('key', 'model'),
-        ];
-
-        yield 'huggingFace' => [
-            [
-                'provider' => 'huggingFace',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new HuggingFace('key', 'model'),
-        ];
-
-        yield 'ollama' => [
-            [
-                'provider' => 'ollama',
-                'configuration' => [
-                    'url' => 'http://dreeve-ollama:11434/api',
-                    'model' => 'model',
-                ],
-            ],
-            new Ollama('http://dreeve-ollama:11434/api', 'model'),
-        ];
-
-        yield 'openAI' => [
-            [
-                'provider' => 'openAI',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new OpenAI('key', 'model'),
-        ];
-
-        yield 'openAILike' => [
-            [
-                'provider' => 'openAILike',
-                'configuration' => [
-                    'baseUri' => 'baseUri',
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new OpenAILike('baseUri', 'key', 'model'),
-        ];
-
-        yield 'openAIResponses' => [
-            [
-                'provider' => 'openAIResponses',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new OpenAIResponses('key', 'model'),
-        ];
-
-        yield 'mistral' => [
-            [
-                'provider' => 'mistral',
-                'configuration' => [
-                    'key' => 'key',
-                    'model' => 'model',
-                ],
-            ],
-            new Mistral('key', 'model'),
-        ];
-    }
-
     public static function provideInvalidAIConfig(): iterable
     {
         yield 'Empty provider name' => [
             [],
             'Provider cannot be empty',
+        ];
+
+        yield 'Unsupported provider' => [
+            [
+                'provider' => 'unknown',
+                'configuration' => [
+                    'model' => 'lol',
+                ],
+            ],
+            'AI provider "unknown" is not supported',
         ];
 
         yield 'Empty provider config' => [

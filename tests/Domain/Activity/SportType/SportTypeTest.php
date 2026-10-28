@@ -30,31 +30,35 @@ class SportTypeTest extends ContainerTestCase
         $this->assertMatchesJsonSnapshot($snapshot);
     }
 
-    public function testGetDistanceDisplayPreference(): void
-    {
-        $snapshot = [];
-        foreach (SportType::cases() as $sportType) {
-            $snapshot[$sportType->value] = $sportType->getDistanceDisplayPreference()::class;
-        }
-        $this->assertMatchesJsonSnapshot($snapshot);
-    }
-
     public function testSupportsShiftingStats(): void
     {
-        $snapshot = [];
-        foreach (SportType::cases() as $sportType) {
-            $snapshot[$sportType->value] = $sportType->supportsShiftingStats();
-        }
-        $this->assertMatchesJsonSnapshot($snapshot);
+        $this->assertEqualsCanonicalizing(
+            [
+                SportType::RIDE,
+                SportType::MOUNTAIN_BIKE_RIDE,
+                SportType::GRAVEL_RIDE,
+                SportType::E_BIKE_RIDE,
+                SportType::E_MOUNTAIN_BIKE_RIDE,
+                SportType::VELO_MOBILE,
+            ],
+            array_values(array_filter(SportType::cases(), fn (SportType $sportType): bool => $sportType->supportsShiftingStats())),
+        );
     }
 
     public function testSupportsSplits(): void
     {
-        $snapshot = [];
-        foreach (SportType::cases() as $sportType) {
-            $snapshot[$sportType->value] = $sportType->supportsSplits();
-        }
-        $this->assertMatchesJsonSnapshot($snapshot);
+        $this->assertEqualsCanonicalizing(
+            [
+                SportType::RUN,
+                SportType::TRAIL_RUN,
+                SportType::VIRTUAL_RUN,
+                SportType::WALK,
+                SportType::HIKE,
+                SportType::POOL_SWIM,
+                SportType::OPEN_WATER_SWIM,
+            ],
+            array_values(array_filter(SportType::cases(), fn (SportType $sportType): bool => $sportType->supportsSplits())),
+        );
     }
 
     public function testGetDisplaySymbols(): void

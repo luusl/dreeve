@@ -1,5 +1,6 @@
 ---
 title: "Import fails with syntax error"
+description: "Fix JSON syntax errors during an import by detecting and deleting corrupted activities."
 ---
 
 Several users have reported unexpected "JSON Syntax" errors while importing:
@@ -25,4 +26,4 @@ Run the following command:
 > docker compose exec app bin/console app:import:detect-corrupted-activities
 ```
 
-This command will guide you step by step through identifying and deleting the affected activities..
+This command will guide you step by step through identifying and deleting the affected activities.

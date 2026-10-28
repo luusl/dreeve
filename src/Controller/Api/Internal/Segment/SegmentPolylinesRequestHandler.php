@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controller\Api\Internal\Segment;
+
+use App\Domain\Activity\LeafletMap;
+use App\Domain\Segment\SegmentId;
+use App\Domain\Segment\SegmentRepository;
+use App\Infrastructure\Cache\Cacheability;
+use App\Infrastructure\Cache\CacheableRenderer;
+use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Cache\Tag\RootCacheTag;
+use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Serialization\Json;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpKernel\Attribute\AsController;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Routing\Attribute\Route;
+
+#[AsController]
+final readonly class SegmentPolylinesRequestHandler
+{
+    public function __construct(
+        private SegmentRepository $segmentRepository,
+        private CacheableRenderer $cacheableRenderer,
+    ) {
+    }
+
+    #[Route(path: '/api/internal/segments/{segmentId}/polylines', name: 'segment_polylines', requirements: ['segmentId' => 'segment-[^/]+'], methods: ['GET'])]
+    public function handle(string $segmentId): JsonResponse
+    {
+        try {
+            $segment = $this->segmentRepository->find(SegmentId::fromString($segmentId));
+        } catch (EntityNotFound) {
+            throw new NotFoundHttpException('Not found');
+        }
+
+        if (!$segment->getLeafletMap() instanceof LeafletMap) {
+            throw new NotFoundHttpException('Not found');
+        }
+
+        $render = $this->cacheableRenderer->render(
+            cacheability: Cacheability::for(
+                cacheKey: sprintf('segments.%s.polylines', $segment->getId()->toUnprefixedString()),
+                cacheTags: CacheTags::of(RootCacheTag::SEGMENTS),
+            ),
+            render: fn (): string => Json::encode([$segment->getPolyline()?->decodeAndPairLatLng()]),
+        );
+
+        return new JsonResponse($render->getContent() ?? '[]', headers: $render->getCacheHeaders(), json: true);
+    }
+}

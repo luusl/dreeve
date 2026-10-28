@@ -38,7 +38,6 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Index(name: 'Activity_gearId', columns: ['gearId'])]
 #[ORM\Index(name: 'Activity_gearIdStartDateTime', columns: ['gearId', 'startDateTime'])]
 #[ORM\Index(name: 'Activity_markedForDeletion', columns: ['markedForDeletion'])]
-#[ORM\Index(name: 'Activity_streamsAreImported', columns: ['streamsAreImported'])]
 #[ORM\Index(name: 'Activity_importSource', columns: ['importSource'])]
 final class Activity
 {
@@ -53,9 +52,6 @@ final class Activity
     #[ORM\Column(type: 'json', nullable: true)]
     // @phpstan-ignore-next-line
     private readonly array $data;
-    #[ORM\Column(type: 'boolean', nullable: true)]
-    // @phpstan-ignore-next-line
-    private readonly bool $streamsAreImported;
     #[ORM\Column(type: 'boolean', nullable: true)]
     // @phpstan-ignore-next-line
     private readonly bool $markedForDeletion;
@@ -130,6 +126,8 @@ final class Activity
         private readonly bool $isGroupActivity,
         #[ORM\Column(type: 'string', nullable: true)]
         private readonly ?WorkoutType $workoutType,
+        #[ORM\Column(type: 'json', nullable: true)]
+        private readonly ActivityExclusions $excludedFrom,
     ) {
     }
 
@@ -258,6 +256,7 @@ final class Activity
             isCommute: $isCommute,
             isGroupActivity: $isGroupActivity,
             workoutType: $workoutType,
+            excludedFrom: ActivityExclusions::empty(),
         );
         $activity->recordThat(new ActivityWasAdded($activity->getStartDate()));
         if ($activity->hasMappableRoute()) {
@@ -304,6 +303,7 @@ final class Activity
         bool $isCommute,
         bool $isGroupActivity,
         ?WorkoutType $workoutType,
+        ActivityExclusions $excludedFrom,
     ): self {
         return new self(
             activityId: $activityId,
@@ -338,7 +338,8 @@ final class Activity
             gearId: $gearId,
             isCommute: $isCommute,
             isGroupActivity: $isGroupActivity,
-            workoutType: $workoutType
+            workoutType: $workoutType,
+            excludedFrom: $excludedFrom,
         );
     }
 
@@ -423,6 +424,13 @@ final class Activity
         ]));
     }
 
+    public function withoutGear(): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'gearId' => null,
+        ]));
+    }
+
     public function getWeather(): ?Weather
     {
         if (!$this->weather) {
@@ -437,9 +445,9 @@ final class Activity
 
     public function withWeather(?Weather $weather): self
     {
-        return clone ($this, [
+        return $this->recordUpdate(clone ($this, [
             'weather' => Json::encode($weather),
-        ]);
+        ]));
     }
 
     /**
@@ -625,9 +633,23 @@ final class Activity
         return $this->averageHeartRate;
     }
 
+    public function withAverageHeartRate(?int $averageHeartRate): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'averageHeartRate' => $averageHeartRate,
+        ]));
+    }
+
     public function getMaxHeartRate(): ?int
     {
         return $this->maxHeartRate;
+    }
+
+    public function withMaxHeartRate(?int $maxHeartRate): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'maxHeartRate' => $maxHeartRate,
+        ]));
     }
 
     public function getAverageCadence(): ?int
@@ -710,7 +732,11 @@ final class Activity
 
     public function getDeviceId(): RecordingDeviceId
     {
-        return RecordingDeviceId::fromName($this->getDeviceName() ?? 'none');
+        if (null === $deviceName = $this->getDeviceName()) {
+            return RecordingDeviceId::none();
+        }
+
+        return RecordingDeviceId::fromName($deviceName);
     }
 
     public function isCommute(): bool
@@ -746,6 +772,18 @@ final class Activity
     {
         return $this->recordUpdate(clone ($this, [
             'workoutType' => $workoutType,
+        ]));
+    }
+
+    public function getExcludedFrom(): ActivityExclusions
+    {
+        return $this->excludedFrom;
+    }
+
+    public function withExcludedFrom(ActivityExclusions $excludedFrom): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'excludedFrom' => $excludedFrom,
         ]));
     }
 
@@ -856,6 +894,8 @@ final class Activity
             'distance' => $this->distance->toFloat(),
             'averageSpeed' => $this->averageSpeed->toFloat(),
             'maxSpeed' => $this->maxSpeed->toFloat(),
+            'averageHeartRate' => $this->averageHeartRate,
+            'maxHeartRate' => $this->maxHeartRate,
             'movingTimeInSeconds' => $this->movingTimeInSeconds,
             'elapsedTimeInSeconds' => $this->elapsedTimeInSeconds,
             'elevation' => $this->elevation->toFloat(),
@@ -870,6 +910,7 @@ final class Activity
             'isCommute' => $this->isCommute,
             'isGroupActivity' => $this->isGroupActivity,
             'workoutType' => $this->workoutType?->value,
+            'excludedFrom' => $this->excludedFrom->map(static fn (ActivityExclusion $exclusion): string => $exclusion->value),
         ];
     }
 
@@ -877,6 +918,9 @@ final class Activity
     {
         if ($this->routeSignature() !== $clone->routeSignature()) {
             $clone->recordThat(new ActivityRouteWasUpdated());
+        }
+        if ($this->sportType !== $clone->sportType) {
+            $clone->recordOnlyOnce(new ActivitySportTypeWasChanged($clone->getId()));
         }
         if ($this->updateSignature() !== $clone->updateSignature()) {
             $clone->recordOnlyOnce(new ActivityWasUpdated(
@@ -894,7 +938,11 @@ final class Activity
      */
     public function getSearchables(): array
     {
-        return array_map(strtolower(...), [$this->getName()]);
+        return array_map(strtolower(...), array_filter([
+            $this->getName(),
+            $this->getRouteGeography()->getStartingPointCity(),
+            $this->getRouteGeography()->getStartingPointState(),
+        ]));
     }
 
     /**
@@ -906,6 +954,7 @@ final class Activity
             'sportType' => $this->getSportType()->value,
             'start-date' => $this->getStartDate()->getTimestamp() * 1000, // JS timestamp is in milliseconds,
             'countryCode' => $this->getRouteGeography()->getPassedThroughCountries(),
+            'zwiftWorld' => $this->isZwiftRide() ? $this->getRouteGeography()->getStartingPointState() : null,
             'isCommute' => $this->isCommute() ? 'true' : 'false',
             'isGroupActivity' => $this->isGroupActivity() ? 'true' : 'false',
             'gear' => $this->getGearIdIncludingNone(),

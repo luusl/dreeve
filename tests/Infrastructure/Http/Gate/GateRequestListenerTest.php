@@ -116,6 +116,7 @@ class GateRequestListenerTest extends TestCase
         yield 'web debug toolbar' => ['/_wdt/abc123'];
         yield 'css asset' => ['/css/app.css'];
         yield 'stored image' => ['/files/gear/bike.png'];
+        yield 'mcp server' => ['/mcp'];
     }
 
     public function testItDoesNothingForSubRequests(): void
@@ -151,14 +152,14 @@ class GateRequestListenerTest extends TestCase
      */
     private function recordingGate(\ArrayObject $calls, string $name, GateDecision $decision): Gate
     {
-        return new readonly class($calls, $name, $decision) implements Gate {
+        return new class($calls, $name, $decision) implements Gate {
             /**
              * @param \ArrayObject<int, string> $calls
              */
             public function __construct(
                 private \ArrayObject $calls,
-                private string $name,
-                private GateDecision $decision,
+                private readonly string $name,
+                private readonly GateDecision $decision,
             ) {
             }
 

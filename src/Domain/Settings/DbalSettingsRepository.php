@@ -139,4 +139,9 @@ final readonly class DbalSettingsRepository extends DbalRepository implements Se
     {
         return SecuritySettings::fromArray($this->findGroup(SettingsGroup::SECURITY));
     }
+
+    public function athleteWeight(): AthleteWeightSettings
+    {
+        return AthleteWeightSettings::fromArray($this->findGroup(SettingsGroup::ATHLETE_WEIGHT));
+    }
 }

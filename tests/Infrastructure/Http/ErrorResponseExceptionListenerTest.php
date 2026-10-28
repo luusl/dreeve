@@ -8,8 +8,9 @@ use App\Infrastructure\Http\HttpStatusCode;
 use App\Infrastructure\Http\ServerErrorLogger;
 use App\Tests\ContainerTestCase;
 use App\Tests\Infrastructure\ValueObject\Identifier\FakeUuidFactory;
-use App\Tests\NullLogger;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -21,7 +22,7 @@ class ErrorResponseExceptionListenerTest extends ContainerTestCase
     private ErrorResponseExceptionListener $errorResponseExceptionListener;
     private ServerErrorLogger $serverErrorLogger;
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('provideExceptions')]
+    #[DataProvider('provideExceptions')]
     public function testItRendersAnHtmlPageForTheMatchingStatusCode(\Throwable $exception, HttpStatusCode $expectedStatusCode): void
     {
         $event = $this->exceptionEvent($exception);
@@ -102,6 +103,28 @@ class ErrorResponseExceptionListenerTest extends ContainerTestCase
         $listener->onKernelException($event);
 
         self::assertNull($event->getResponse());
+    }
+
+    #[DataProvider('providePathsAnsweredWithAnEmptyBody')]
+    public function testItAnswersAsyncAndBadgeRequestsWithAnEmptyBody(string $path): void
+    {
+        $event = new ExceptionEvent(
+            $this->createStub(HttpKernelInterface::class),
+            Request::create($path),
+            HttpKernelInterface::MAIN_REQUEST,
+            new NotFoundHttpException('Not found'),
+        );
+
+        $this->errorResponseExceptionListener->onKernelException($event);
+
+        self::assertEquals(404, $event->getResponse()->getStatusCode());
+        self::assertEquals('', $event->getResponse()->getContent());
+    }
+
+    public static function providePathsAnsweredWithAnEmptyBody(): iterable
+    {
+        yield 'the internal api' => ['/api/internal/activities/activity-1/polylines'];
+        yield 'a badge' => ['/badge/zwift.svg'];
     }
 
     private function exceptionEvent(\Throwable $exception): ExceptionEvent

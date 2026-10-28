@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ openGraph ? openGraph.getTitle() : athlete.getName() }} | {{ appName }}</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <meta property="og:site_name" content="{{ appName }}">
+    <meta property="og:type" content="website">
+    {% if openGraph %}
+        <meta property="og:title" content="{{ openGraph.getTitle() }}">
+        <meta property="og:description" content="{{ openGraph.getDescription() }}">
+        <meta property="og:url" content="{{ absoluteUrl(openGraph.getPath()) }}">
+        <meta name="description" content="{{ openGraph.getDescription() }}">
+        {% if openGraph.getImagePath() %}
+        <meta property="og:image" content="{{ absoluteUrl(openGraph.getImagePath()) }}">
+        <meta property="og:image:type" content="image/png">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
+        <meta name="twitter:card" content="summary_large_image">
+        {% endif %}
+    {% else %}
+    <meta property="og:title" content="{{ athlete.getName() }}">
+    {% endif %}
+    <meta name="theme-color" content="#F26822">
+    <meta name="mobile-web-app-title" content="{{ athlete.getName() }} | {{ appName }}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="{{ appName }}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="js-dist-url" content="{{ relativeUrl('js/dist/') }}">
+    <meta name="js-dist-version" content="{{ assetVersion() }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ relativeUrl('assets/images/manifest/icon-apple-180.maskable.png') }}">
+    <link href="{{ relativeUrl('manifest.json') }}" rel="manifest" crossorigin="use-credentials">
+    <link rel="icon" type="image/x-icon" href="{{ relativeUrl('assets/images/logo.svg') }}">
+    <script>
+        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+        if (localStorage.getItem('sideNavCollapsed') === 'true') {
+            document.documentElement.setAttribute('data-sidebar-collapsed', '');
+        }
+    </script>
+    <link href="{{ relativeUrl(asset('css/dist/tailwind.min.css')) }}" rel="stylesheet"/>
+    <link rel="preload" href="{{ relativeUrl(asset('libraries/leaflet/leaflet.min.css')) }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ relativeUrl(asset('libraries/leaflet/leaflet-gesture-handling.min.css')) }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ relativeUrl(asset('libraries/clusterize/clusterize.min.css')) }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ relativeUrl(asset('libraries/lightgallery/lightgallery-bundle.min.css')) }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+</head>
+<body class="bg-gray-50">
+<div class="antialiased">
+    <!-- NAVIGATION -->
+    {% autoescape false %}
+        {% include 'html/navigation/top-nav-bar.html.twig' with {
+            'inAppContext': true,
+            'subTitle': subTitle,
+            'profilePictureUrl': profilePictureUrl,
+            'athlete': athlete
+        } %}
+    {% endautoescape %}
+    <!-- SIDEBAR -->
+    {{ sidebar|raw }}
+    <!-- MAIN -->
+    <main class="p-4 md:ml-64 sidebar-collapsed:md:ml-16 h-auto min-h-screen pt-20 text-gray-900">
+        {% block main %}
+            {{ content|raw }}
+        {% endblock %}
+    </main>
+</div>
+<script>
+    window.dreeve = {{ javascriptWindowConstants|raw }};
+    window.dreeve.placeholderBrokenImage = "{{ relativeUrl('/assets/placeholder-broken.webp') }}";
+    window.dreeve.echartsUrls = [
+        "{{ relativeUrl(asset('libraries/echarts/echarts.min.js')) }}",
+        "{{ relativeUrl(asset('libraries/echarts/echarts.world.min.js')) }}",
+    ];
+</script>
+<script src="{{ relativeUrl(asset('js/dist/app.min.js')) }}" type="module"></script>
+{% block customScripts %}
+{% endblock customScripts %}
+</body>
+</html>

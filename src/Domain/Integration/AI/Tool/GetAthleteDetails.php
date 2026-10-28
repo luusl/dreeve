@@ -5,27 +5,34 @@ declare(strict_types=1);
 namespace App\Domain\Integration\AI\Tool;
 
 use App\Domain\Settings\SettingsRepository;
-use NeuronAI\Tools\Tool;
 
-final class GetAthleteDetails extends Tool
+final readonly class GetAthleteDetails implements AITool
 {
     public function __construct(
-        private readonly SettingsRepository $settingsRepository,
+        private SettingsRepository $settingsRepository,
     ) {
-        parent::__construct(
-            'get_athlete_details',
-            <<<DESC
-            Retrieves the athlete’s personal details from the database.
-            Use this tool when the user asks about their profile or personal information, such as weight, height, or other stored attributes. 
-            Example requests include “Show my profile details”.
-            DESC
-        );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function __invoke(): array
+    public function getName(): string
+    {
+        return 'get_athlete_details';
+    }
+
+    public function getDescription(): string
+    {
+        return <<<DESC
+            Retrieves the athlete’s personal details from the database.
+            Use this tool when the user asks about their profile or personal information, such as weight, height, or other stored attributes.
+            Example requests include “Show my profile details”.
+            DESC;
+    }
+
+    public function getParameters(): array
+    {
+        return [];
+    }
+
+    public function __invoke(ToolArguments $arguments): array
     {
         return $this->settingsRepository->general()->getAthlete()->exportForAITooling();
     }

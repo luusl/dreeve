@@ -17,14 +17,11 @@ use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Gear\GearBuilder;
 use App\Tests\Infrastructure\Eventing\SpyEventBus;
-use Spatie\Snapshots\MatchesSnapshots;
 
 class DbalActivityIdRepositoryTest extends ContainerTestCase
 {
-    use MatchesSnapshots;
-
     private ActivityIdRepository $activityIdRepository;
-    private GearRepository $gearRepository;
+    private readonly GearRepository $gearRepository;
     private ActivityRepository $activityRepository;
 
     public function testFindAllAndCount(): void

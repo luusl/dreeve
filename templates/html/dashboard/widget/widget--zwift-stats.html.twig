@@ -1,6 +1,6 @@
 {% autoescape false %}
     <h3 class="mb-4 text-lg font-semibold">
-        {{ "Zwift stats"|trans }}
+        {{ widgetTitle|e }}
     </h3>
     <div class="relative overflow-auto max-h-65">
         <table class="data-table">
@@ -32,8 +32,8 @@
                     <th scope="row"
                         class="narrow sticky left-0 bg-white font-medium text-gray-900 whitespace-nowrap">
                         <div class="flex items-center gap-x-2">
-                            <img class="shrink-0 size-10 object-cover lazy rounded-sm" src="{{ placeholderImage() }}" data-src="{{ relativeUrl('assets/images/maps/thumbs/zwift-' ~ statistic.zwiftWorld|lower|replace({' ': '-'}) ~ '.webp') }}" alt="{{ statistic.zwiftWorld }}">
-                            <div>{{ statistic.zwiftWorld }}</div>
+                            <img class="shrink-0 size-10 object-cover lazy rounded-sm" src="{{ placeholderImage() }}" data-src="{{ relativeUrl('assets/images/maps/thumbs/zwift-' ~ statistic.zwiftWorld.getId() ~ '.webp') }}" alt="{{ statistic.zwiftWorld.getLabel() }}">
+                            <a href="{{ filteredUrl(path('activities'), {zwiftWorld: statistic.zwiftWorld.getId()}) }}" class="text-blue-600 hover:underline">{{ statistic.zwiftWorld.getLabel() }}</a>
                         </div>
                     </th>
                     <td class="narrow">

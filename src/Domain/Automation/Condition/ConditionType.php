@@ -7,6 +7,7 @@ namespace App\Domain\Automation\Condition;
 enum ConditionType: string
 {
     case NAME = 'name';
+    case DESCRIPTION = 'description';
     case DEVICE = 'device';
     case CONNECTED_SENSORS = 'connectedSensors';
     case SPORT_TYPE = 'sportType';
@@ -20,5 +21,6 @@ enum ConditionType: string
     case TIME_OF_DAY = 'timeOfDay';
     case STARTS_NEAR = 'startsNear';
     case ENDS_NEAR = 'endsNear';
+    case ENDS_NEAR_START = 'endsNearStart';
     case PASSES_NEAR = 'passesNear';
 }

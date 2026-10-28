@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin\Activity;
 
-use App\Domain\Activity\ActivityOverviewRepository;
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\EnrichActivity\EnrichActivity;
 use App\Domain\Activity\ImportSource;
+use App\Domain\Activity\Overview\ActivityOverviewFilters;
+use App\Domain\Activity\Overview\ActivityOverviewRepository;
 use App\Domain\Activity\SportType\SportTypeRepository;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Gear\RecordingDevice\RecordingDeviceRepository;
@@ -47,6 +49,7 @@ final readonly class ManageActivityOverviewRequestHandler
             'gearOptions' => $this->gearRepository->findAllUsed(),
             'deviceOptions' => $this->recordingDeviceRepository->findAll(),
             'importSourceOptions' => ImportSource::cases(),
+            'exclusionOptions' => ActivityExclusion::cases(),
         ]));
     }
 }

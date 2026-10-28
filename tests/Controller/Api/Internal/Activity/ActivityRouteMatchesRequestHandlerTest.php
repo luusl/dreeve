@@ -1,0 +1,57 @@
+<?php
+
+namespace App\Tests\Controller\Api\Internal\Activity;
+
+use App\Application\Import\CalculateActivityMetrics\Pipeline\CalculateActivityRouteSignatures;
+use App\Tests\Controller\ControllerWebTestCase;
+use App\Tests\ProvideTestData;
+use App\Tests\SpyOutput;
+use Spatie\Snapshots\MatchesSnapshots;
+
+class ActivityRouteMatchesRequestHandlerTest extends ControllerWebTestCase
+{
+    use MatchesSnapshots;
+    use ProvideTestData;
+
+    public function testRender(): void
+    {
+        $this->provideFullTestSet();
+        $this->calculateRouteSignatures();
+
+        $this->client->request('GET', '/api/internal/activities/activity-9830227167/route-matches');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertResponseHeaderSame('Content-Type', 'text/html; charset=UTF-8');
+        $this->assertMatchesHtmlSnapshot((string) $this->client->getResponse()->getContent());
+    }
+
+    public function testItEntersTheRenderCache(): void
+    {
+        $this->provideFullTestSet();
+
+        $this->client->request('GET', '/api/internal/activities/activity-9830227167/route-matches');
+
+        $this->assertResponseHeaderSame('X-Dreeve-Cache', 'MISS');
+        $this->assertResponseHeaderSame('X-Dreeve-Cache-Tags', 'settings.appearance, activities.9830227167, activities');
+    }
+
+    public function testItDoesNotResolveAnActivityThatDoesNotExist(): void
+    {
+        $this->provideFullTestSet();
+
+        $this->client->request('GET', '/api/internal/activities/activity-1/route-matches');
+
+        $this->assertResponseStatusCodeSame(404);
+    }
+
+    private function calculateRouteSignatures(): void
+    {
+        $this->getContainer()->get(CalculateActivityRouteSignatures::class)->process(new SpyOutput());
+    }
+
+    #[\Override]
+    protected function shouldSeedActivity(): bool
+    {
+        return false;
+    }
+}

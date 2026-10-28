@@ -5,9 +5,9 @@ namespace App\Tests\Application\Import\FileImport\ImportActivityFiles\Pipeline;
 use App\Application\Import\FileImport\ImportActivityFiles\Pipeline\ActivityImportContext;
 use App\Application\Import\FileImport\ImportActivityFiles\Pipeline\AnalyzeRouteGeography;
 use App\Domain\Activity\Route\RouteGeography;
-use App\Domain\Activity\Route\RouteGeographyAnalyzer;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorldType;
+use App\Domain\Geography\Country\RouteGeographyAnalyzer;
 use App\Domain\Integration\Geocoding\Nominatim\CouldNotReverseGeocodeAddress;
 use App\Domain\Integration\Geocoding\Nominatim\Nominatim;
 use App\Infrastructure\ValueObject\Geography\Coordinate;
@@ -65,7 +65,7 @@ class AnalyzeRouteGeographyTest extends ContainerTestCase
         $context = $this->analyzeRouteGeography->process($context);
 
         $this->assertEquals(
-            RouteGeography::create(['test' => 'lol', 'state' => 'Watopia']),
+            RouteGeography::create(['test' => 'lol', 'state' => 'watopia']),
             $context->getActivity()->getRouteGeography(),
         );
     }

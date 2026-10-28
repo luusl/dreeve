@@ -7,13 +7,6 @@ use App\Tests\Controller\Admin\AdminWebTestCase;
 
 class MetricsSettingsRequestHandlerTest extends AdminWebTestCase
 {
-    public function testAnonymousUsersAreRedirectedToTheLoginPage(): void
-    {
-        $this->client->request('GET', '/admin/settings/metrics');
-
-        $this->assertResponseRedirects('/admin/login');
-    }
-
     public function testItRendersTheMetricsSettingsPage(): void
     {
         $this->client->loginUser($this->adminUser());
@@ -26,7 +19,6 @@ class MetricsSettingsRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(1, $crawler->filter('form[data-dispatch-command="update-settings"]'));
         $this->assertCount(1, $crawler->filter('form[data-dispatch-command="update-settings"] input[name="group"][value="metrics"]'));
         $this->assertCount(1, $crawler->filter('template[data-repeater-template] input[name="data[eddington][__index__][label]"]'));
-        $this->assertCount(1, $crawler->filter('template[data-repeater-template] input[name="data[excludeActivitiesFromPeakPowerOutputs][]"]'));
 
         // The default Eddington configuration is surfaced when nothing is stored.
         $initial = $crawler->filter('div[data-repeater]')->first()->filter('[data-repeater-list]')->attr('data-repeater-initial');

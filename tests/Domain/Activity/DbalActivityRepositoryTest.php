@@ -192,6 +192,8 @@ class DbalActivityRepositoryTest extends ContainerTestCase
             ->withElevation(Meter::from(9999))
             ->withCalories(1234)
             ->withKilojoules(4321)
+            ->withAverageHeartRate(142)
+            ->withMaxHeartRate(175)
             ->withPolyline('updated polyline')
             ->withStartingCoordinate(Coordinate::createFromLatAndLng(
                 latitude: Latitude::fromString('20'),
@@ -221,6 +223,14 @@ class DbalActivityRepositoryTest extends ContainerTestCase
         $this->assertSame(
             4321,
             $persistedActivity->getKilojoules()
+        );
+        $this->assertSame(
+            142,
+            $persistedActivity->getAverageHeartRate()
+        );
+        $this->assertSame(
+            175,
+            $persistedActivity->getMaxHeartRate()
         );
         $this->assertSame(
             18.5,
@@ -282,29 +292,6 @@ class DbalActivityRepositoryTest extends ContainerTestCase
         $this->assertEquals(
             SportType::BADMINTON,
             $persistedActivity->getSportType()
-        );
-    }
-
-    public function testActivityNeedsStreamImport(): void
-    {
-        $activity = ActivityBuilder::fromDefaults()->build();
-        $activityWithRawData = ActivityWithRawData::fromState(
-            $activity,
-            ['raw' => 'data']
-        );
-
-        $this->activityRepository->add($activityWithRawData);
-
-        $this->assertTrue(
-            $this->activityRepository->activityNeedsStreamImport($activity->getId())
-        );
-        $this->assertFalse(
-            $this->activityRepository->activityNeedsStreamImport(ActivityId::fromUnprefixed('test'))
-        );
-
-        $this->activityRepository->markActivityStreamsAsImported($activity->getId());
-        $this->assertFalse(
-            $this->activityRepository->activityNeedsStreamImport($activity->getId())
         );
     }
 

@@ -35,7 +35,7 @@ class ConfiguredWidgetsTest extends ContainerTestCase
         $this->assertSame([], $configuredWidget->getConfiguration()->get('restrictToSportTypes'));
     }
 
-    public function testAWidgetWithoutConfigurationIsNotConfigurable(): void
+    public function testAWidgetWithoutATitleOrConfigurationIsNotConfigurable(): void
     {
         $this->saveLayout([
             ['id' => 'dashboardWidget-1', 'widget' => 'introText', 'width' => 66],
@@ -45,7 +45,58 @@ class ConfiguredWidgetsTest extends ContainerTestCase
         $configuredWidgets = iterator_to_array($this->getContainer()->get(ConfiguredWidgets::class));
 
         $this->assertCount(1, $configuredWidgets);
+        $this->assertFalse($configuredWidgets[0]->hasConfigurableTitle());
+        $this->assertNull($configuredWidgets[0]->getConfigurationTemplate());
         $this->assertFalse($configuredWidgets[0]->isConfigurable());
+    }
+
+    public function testAWidgetWithoutItsOwnConfigurationIsStillConfigurableThroughItsTitle(): void
+    {
+        $this->saveLayout([
+            ['id' => 'dashboardWidget-1', 'widget' => 'eddington', 'width' => 33],
+        ]);
+
+        /** @var ConfiguredWidget[] $configuredWidgets */
+        $configuredWidgets = iterator_to_array($this->getContainer()->get(ConfiguredWidgets::class));
+
+        $this->assertCount(1, $configuredWidgets);
+        $this->assertTrue($configuredWidgets[0]->hasConfigurableTitle());
+        $this->assertNull($configuredWidgets[0]->getConfigurationTemplate());
+        $this->assertTrue($configuredWidgets[0]->isConfigurable());
+    }
+
+    public function testLabelIsTheConfiguredTitleAndFallsBackToTheWidgetLabel(): void
+    {
+        $this->saveLayout([
+            ['id' => 'dashboardWidget-1', 'widget' => 'eddington', 'width' => 33],
+            ['id' => 'dashboardWidget-2', 'widget' => 'eddington', 'width' => 33, 'config' => ['title' => 'My big rides']],
+        ]);
+
+        /** @var ConfiguredWidget[] $configuredWidgets */
+        $configuredWidgets = iterator_to_array($this->getContainer()->get(ConfiguredWidgets::class));
+
+        $this->assertSame('Eddington', $configuredWidgets[0]->getLabel());
+        $this->assertSame('My big rides', $configuredWidgets[1]->getLabel());
+    }
+
+    public function testAdminLabelIsTheConfiguredTitleAndFallsBackToTheWidgetAdminLabel(): void
+    {
+        $this->saveLayout([
+            ['id' => 'dashboardWidget-1', 'widget' => 'mostRecentActivities', 'width' => 66],
+            ['id' => 'dashboardWidget-2', 'widget' => 'mostRecentActivityCards', 'width' => 66],
+            ['id' => 'dashboardWidget-3', 'widget' => 'mostRecentActivityCards', 'width' => 66, 'config' => ['title' => 'My latest rides']],
+            ['id' => 'dashboardWidget-4', 'widget' => 'eddington', 'width' => 33],
+        ]);
+
+        /** @var ConfiguredWidget[] $configuredWidgets */
+        $configuredWidgets = iterator_to_array($this->getContainer()->get(ConfiguredWidgets::class));
+
+        $this->assertSame('Most recent activities (list)', $configuredWidgets[0]->getAdminLabel());
+        $this->assertSame('Most recent activities', $configuredWidgets[0]->getLabel());
+        $this->assertSame('Most recent activities (cards)', $configuredWidgets[1]->getAdminLabel());
+        $this->assertSame('Most recent activities', $configuredWidgets[1]->getLabel());
+        $this->assertSame('My latest rides', $configuredWidgets[2]->getAdminLabel());
+        $this->assertSame('Eddington', $configuredWidgets[3]->getAdminLabel());
     }
 
     public function testTrainingGoalsWidgetWithoutConfiguredGoalsStillNeedsConfiguration(): void
@@ -128,7 +179,7 @@ class ConfiguredWidgetsTest extends ContainerTestCase
         $this->assertArrayHasKey('eddington', $availableWidgets);
         $this->assertArrayHasKey('gearStats', $availableWidgets);
 
-        $labels = array_map(static fn ($widget): string => $widget->getLabel(), $availableWidgets);
+        $labels = array_map(static fn ($widget): string => $widget->getAdminLabel(), $availableWidgets);
         $sorted = $labels;
         uasort($sorted, strcasecmp(...));
         $this->assertSame(array_values($sorted), array_values($labels));

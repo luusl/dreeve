@@ -29,12 +29,10 @@ RUN apt-get update && apt-get install -y \
     libxslt1-dev \
     acl
 
-RUN docker-php-ext-configure gd --with-jpeg --with-freetype
-
 RUN docker-php-ext-install pdo
 RUN docker-php-ext-install pdo_mysql
 RUN docker-php-ext-install zip
-RUN docker-php-ext-install gd
+RUN docker-php-ext-configure gd --with-jpeg --with-freetype && docker-php-ext-install gd
 RUN docker-php-ext-install exif
 RUN docker-php-ext-install mbstring
 RUN docker-php-ext-install bcmath
@@ -65,7 +63,7 @@ RUN apt-get install -y nodejs
 # Install Shoutrrr.
 ARG TARGETARCH
 ENV TARGETARCH=${TARGETARCH}
-ARG SHOUTRRR_VERSION="0.20.0"
+ARG SHOUTRRR_VERSION="0.22.1"
 
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
       curl -fL -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_arm64v8_${SHOUTRRR_VERSION}.tar.gz"; \

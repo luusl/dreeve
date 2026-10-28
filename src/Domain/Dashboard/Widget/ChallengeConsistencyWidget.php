@@ -14,7 +14,6 @@ use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Twig\Environment;
 
 final readonly class ChallengeConsistencyWidget implements Widget, HasWideConfigurationForm
 {
@@ -22,13 +21,18 @@ final readonly class ChallengeConsistencyWidget implements Widget, HasWideConfig
         private TranslatorInterface $translator,
         private QueryBus $queryBus,
         private ConsistencyChallengeCalculator $consistencyChallengeCalculator,
-        private Environment $twig,
+        private WidgetRenderer $widgetRenderer,
     ) {
     }
 
     public function getLabel(): string
     {
         return $this->translator->trans('Challenge consistency');
+    }
+
+    public function getAdminLabel(): string
+    {
+        return $this->getLabel();
     }
 
     public function getTemplateName(): string
@@ -64,7 +68,7 @@ final readonly class ChallengeConsistencyWidget implements Widget, HasWideConfig
         $config = $configuration->get('challenges');
         $consistencyChallenges = ConsistencyChallenges::fromConfig($config);
 
-        return $this->twig->load(sprintf('html/dashboard/widget/%s.html.twig', $this->getTemplateName()))->render([
+        return $this->widgetRenderer->render($this, $configuration, [
             'allMonths' => $allMonths,
             'allConsistencyChallenges' => $consistencyChallenges,
             'calculatedConsistencyChallenges' => $this->consistencyChallengeCalculator->calculateFor(

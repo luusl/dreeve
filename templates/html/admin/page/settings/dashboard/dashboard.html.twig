@@ -2,7 +2,7 @@
 {% block main %}
     {% set dashboardUrl = relativeUrl(path('admin_settings_dashboard')) %}
     {% autoescape false %}
-        <form data-dashboard-layout-form data-save-command="{{ saveLayoutCommand }}" class="p-4 sm:p-6 bg-white border border-gray-200 rounded-lg shadow-xs max-w-6xl">
+        <form data-dashboard-layout-form data-save-command="{{ saveLayoutCommand }}" class="p-4 sm:p-6 bg-white border border-gray-200 rounded-lg shadow-xs">
             <div class="flex flex-wrap items-start justify-between gap-3 mb-1">
                 <div>
                     <h3 class="text-lg font-semibold">{{ "Dashboard layout"|trans({}, 'admin') }}</h3>
@@ -27,7 +27,7 @@
                                     <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 6h.01M9 12h.01M9 18h.01M15 6h.01M15 12h.01M15 18h.01"/>
                                 </svg>
                             </span>
-                            <span class="min-w-0 truncate text-sm font-medium text-gray-800">{{ widget.getLabel() }}</span>
+                            <span class="min-w-0 truncate text-sm font-medium text-gray-800">{{ widget.getAdminLabel()|e }}</span>
                             {% if widget.stillNeedsConfiguration() %}
                                 <span class="shrink-0 text-amber-500" title="{{ "This widget still needs to be configured."|trans({}, 'admin') }}">
                                     <svg class="size-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@
                         <svg class="size-4 shrink-0 text-gray-300" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7 7V5"/>
                         </svg>
-                        <span class="flex-1 truncate">{{ widget.getLabel() }}</span>
+                        <span class="flex-1 truncate">{{ widget.getAdminLabel() }}</span>
                         {% if configuredWidgetCountPerType[name] is defined %}
                             <span class="shrink-0 pill pill--neutral justify-center min-w-5 h-5 px-1.5 font-semibold" title="{{ "Number of widgets of this type you already have configured."|trans({}, 'admin') }}">{{ configuredWidgetCountPerType[name] }}</span>
                         {% endif %}

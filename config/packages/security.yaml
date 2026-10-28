@@ -6,9 +6,9 @@ security:
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         admin_provider:
-            id: App\Infrastructure\Security\AdminUserProvider
-        api_provider:
-            id: App\Infrastructure\Security\Api\ApiUserProvider
+            id: App\Infrastructure\Security\Admin\AdminUserProvider
+        token_provider:
+            id: App\Infrastructure\Security\Token\TokenUserProvider
 
     firewalls:
         dev:
@@ -16,19 +16,23 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        api:
-            pattern: ^/api/v1(/|$)
+        token:
+            pattern: ^/(api/v1|mcp)(/|$)
             stateless: true
-            provider: api_provider
-            entry_point: App\Infrastructure\Security\Api\ApiAuthenticationEntryPoint
+            provider: token_provider
+            entry_point: App\Infrastructure\Security\Token\TokenAuthenticationEntryPoint
+            access_denied_handler: App\Infrastructure\Security\Token\TokenAuthenticationEntryPoint
             access_token:
                 realm: 'Dreeve'
-                token_handler: App\Infrastructure\Security\Api\ApiTokenHandler
-                failure_handler: App\Infrastructure\Security\Api\ApiAuthenticationEntryPoint
+                token_handler: App\Infrastructure\Security\Token\TokenHandler
+                failure_handler: App\Infrastructure\Security\Token\TokenAuthenticationEntryPoint
 
         main:
             lazy: true
             provider: admin_provider
+            entry_point: form_login
+            custom_authenticators:
+                - App\Infrastructure\Security\Oidc\OidcAuthenticator
             form_login:
                 login_path: admin_login
                 check_path: admin_login
@@ -47,6 +51,7 @@ security:
     # The ^/admin/login PUBLIC_ACCESS rule must precede ^/admin to avoid a redirect loop.
     access_control:
         - { path: '^/api/v1(/|$)', roles: ROLE_API }
+        - { path: '^/mcp(/|$)', roles: ROLE_MCP }
         - { path: ^/admin/login, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
 

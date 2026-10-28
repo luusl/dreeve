@@ -1,0 +1,21 @@
+{% extends "html/admin/page/template.html.twig" %}
+{% block main %}
+    {% embed 'html/admin/component/delete-confirm-modal.html.twig' with {closeUrl: redirectUrl(relativeUrl(path('admin_manage_segment_overview')))} %}
+        {% block title %}{{ "Delete segment"|trans({}, 'admin') }}{% endblock %}
+        {% block hidden_fields %}
+            <input type="hidden" name="segmentId" value="{{ segment.getId() }}">
+        {% endblock %}
+        {% block message %}
+            {% autoescape false %}
+            <p>
+                {{ "Are you sure you want to delete {name}?"|trans({
+                    '{name}': '<span class="font-semibold text-gray-900">' ~ segment.getOriginalName()|e ~ '</span>',
+                }, 'admin') }}
+            </p>
+            <p>
+                {{ "All efforts on this segment are deleted as well. This action cannot be undone."|trans({}, 'admin') }}
+            </p>
+            {% endautoescape %}
+        {% endblock %}
+    {% endembed %}
+{% endblock main %}

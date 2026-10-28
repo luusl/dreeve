@@ -2,19 +2,24 @@
 
 namespace App\Tests\Domain\Segment;
 
+use App\Domain\Activity\SportType\SportType;
 use App\Domain\Segment\DbalSegmentRepository;
+use App\Domain\Segment\Segment;
 use App\Domain\Segment\SegmentEffort\SegmentEffortId;
 use App\Domain\Segment\SegmentEffort\SegmentEffortRepository;
 use App\Domain\Segment\SegmentId;
 use App\Domain\Segment\SegmentRepository;
 use App\Domain\Segment\Segments;
+use App\Domain\Segment\SegmentType;
 use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Repository\Pagination;
 use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
 use App\Infrastructure\ValueObject\String\Name;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Segment\SegmentEffort\SegmentEffortBuilder;
 use App\Tests\Infrastructure\Eventing\SpyEventBus;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Snapshots\MatchesSnapshots;
 
 class DbalSegmentRepositoryTest extends ContainerTestCase
@@ -22,9 +27,11 @@ class DbalSegmentRepositoryTest extends ContainerTestCase
     use MatchesSnapshots;
     private SegmentRepository $segmentRepository;
 
-    public function testFindAndSave(): void
+    #[DataProvider(methodName: 'provideSegmentTypes')]
+    public function testFindAndSave(SegmentType $type): void
     {
         $segment = SegmentBuilder::fromDefaults()
+            ->withType($type)
             ->build();
         $this->segmentRepository->add($segment);
 
@@ -32,6 +39,33 @@ class DbalSegmentRepositoryTest extends ContainerTestCase
             $segment,
             $this->segmentRepository->find($segment->getId())
         );
+    }
+
+    public function testFindAndSaveCustomSegment(): void
+    {
+        $segment = Segment::createCustom(
+            segmentId: SegmentId::fromUnprefixed('custom'),
+            name: Name::fromString('Custom segment'),
+            sportType: SportType::RIDE,
+            distance: Kilometer::from(1.2),
+            maxGradient: 8.1,
+            averageGradient: 4.3,
+            isFavourite: true,
+            countryCode: 'BE',
+            polyline: EncodedPolyline::fromString('_p~iF~ps|U_ulLnnqC'),
+        );
+        $this->segmentRepository->add($segment);
+
+        $this->assertEquals(
+            $segment,
+            $this->segmentRepository->find($segment->getId())
+        );
+    }
+
+    public static function provideSegmentTypes(): iterable
+    {
+        yield 'imported' => [SegmentType::IMPORTED];
+        yield 'custom' => [SegmentType::CUSTOM];
     }
 
     public function testUpdate(): void
@@ -43,13 +77,49 @@ class DbalSegmentRepositoryTest extends ContainerTestCase
 
         $this->segmentRepository->update(
             $segment
-                ->updateIsFavourite(true)
+                ->withIsFavourite(true)
                 ->withPolyline(EncodedPolyline::fromString('pr_fA{ybz^wA_DeAgE@sAr@mEyBkFLo@f@_@~CC\qEZi@~@SnALnDlBJ~B|Bz@aAbDRn@j@ZfBHrEa@rAaAz@sABq@_AgBKeARm@hCwBTsAKgBiBmFoCqCkBkAOkAlA}EhEeBz@}AJ_BS_B]s@oCeCUs@xB_CI{CnI_T^_BHgCQiAc@k@iHyC{@aBQqBlGoNbAsDvCw@bCr@dAEv@i@bB{CxCGrBgAd@}A?cBcDoFd@gA`Ao@`AGz@d@lFvIdAl@h@E|@u@bAsD`@g@fBZ~@`ABhE`@h@pB`ARdAWp@eC`Aa@bAC`KiAvNEjDvDzE`@fBZRxFh@~L{C~Ah@x@jF\bN_@|AgB|AK`B^tFt@nB~An@zBKzAn@lD`@jBxA`@pCfA`AdAc@vCaJnAmAfANtAbA`@pC~EVlCfDnCGhAq@`@{@LuAMq@yBaBgA@aA\sBhCgEEm@WYgC_BgAeAKmAfAyCbJaAf@cAeAa@kCgBuAsDg@_Bo@_CH_Bq@o@{BSwGPs@nBoBP_Dq@gNc@aC_By@aM|CyFe@_@Qc@kBqCwCe@aArAsSBsKh@_AtBs@^_A_@qAiC}ACiEoAmAiBSa@j@}@nD{@t@e@DkAy@eFmIaAe@}@FqAx@a@~@Pt@pCdE@tAa@`BuBdAuCDkBbDk@`@iABuBs@kDz@uAvEyFdMDjB`ApBfA|@~E|Aj@v@NfAg@rEmI`TKt@X|A_ChCZfAdDpDRjBMvA_ArAaE~Ak@lAg@jCPxAvDpCxAlBpA~DJxBa@~AoBpA]p@FjAdA`CkAvBw@n@kE`@oBCo@[OcAbCwEpBiA~Ca@lCmAh@i@\cBSoCoAiDwAmBwDqCMiA`@aCl@wAfEeBz@sANiBWgBmDuDQw@|BaCUaBH{@nIaTXmAJoCSiAe@m@cFaBiA}@_AuBC_BjG_NpAcEnCm@vBr@jAAz@m@tAsChDOpBeAb@yAEoB_D_F\gAnAw@~@Ez@d@|E`ItA`Ah@Gz@w@|AuE|APhA|@Pv@E~ClCfBTjA[r@aCz@a@hA?lKwAdSn@tApCvCXzA\VvFj@~L{Cx@Hj@f@l@lDh@rMMdCqBhBSv@PrFZtB^t@vAn@lCGvAl@rDf@~AhAd@pCjAhAhAq@rCuIfAiAnALnA|@j@zCdFVnBvCd@PxBK`Ag@h@}@NyAs@aBqB}@mBf@}A~BkAB'))
                 ->flagDetailsAsImported()
         );
 
         $this->assertMatchesJsonSnapshot(
             $this->getConnection()->executeQuery('SELECT * FROM Segment')->fetchAllAssociative()
+        );
+    }
+
+    public function testUpdateName(): void
+    {
+        $segment = SegmentBuilder::fromDefaults()
+            ->withName(Name::fromString('Old name'))
+            ->withType(SegmentType::CUSTOM)
+            ->build();
+        $this->segmentRepository->add($segment);
+
+        $updatedSegment = $segment->withName(Name::fromString('New name'));
+        $this->segmentRepository->update($updatedSegment);
+
+        $this->assertEquals(
+            $updatedSegment,
+            $this->segmentRepository->find($segment->getId())
+        );
+    }
+
+    public function testDelete(): void
+    {
+        $segmentToDelete = SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed('1'))
+            ->build();
+        $this->segmentRepository->add($segmentToDelete);
+        $segmentToKeep = SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed('2'))
+            ->build();
+        $this->segmentRepository->add($segmentToKeep);
+
+        $this->segmentRepository->delete($segmentToDelete);
+
+        $this->assertEquals(
+            Segments::fromArray([$segmentToKeep]),
+            $this->segmentRepository->findAll(Pagination::fromOffsetAndLimit(0, 100))
         );
     }
 
@@ -74,6 +144,33 @@ class DbalSegmentRepositoryTest extends ContainerTestCase
         );
     }
 
+    public function testFindByType(): void
+    {
+        $importedSegment = SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed('1'))
+            ->build();
+        $this->segmentRepository->add($importedSegment);
+        $customSegmentOne = SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed('custom-2'))
+            ->withType(SegmentType::CUSTOM)
+            ->build();
+        $this->segmentRepository->add($customSegmentOne);
+        $customSegmentTwo = SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed('custom-1'))
+            ->withType(SegmentType::CUSTOM)
+            ->build();
+        $this->segmentRepository->add($customSegmentTwo);
+
+        $this->assertEquals(
+            Segments::fromArray([$customSegmentTwo, $customSegmentOne]),
+            $this->segmentRepository->findByType(SegmentType::CUSTOM)
+        );
+        $this->assertEquals(
+            Segments::fromArray([$importedSegment]),
+            $this->segmentRepository->findByType(SegmentType::IMPORTED)
+        );
+    }
+
     public function testFindSegmentsIdsMissingDetails(): void
     {
         $segmentOne = SegmentBuilder::fromDefaults()
@@ -94,6 +191,11 @@ class DbalSegmentRepositoryTest extends ContainerTestCase
             ->withName(Name::fromString('B name'))
             ->build();
         $this->segmentRepository->add($segmentThree);
+        $this->segmentRepository->add(SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(4))
+            ->withDetailsHaveBeenImported(false)
+            ->withType(SegmentType::CUSTOM)
+            ->build());
 
         $this->assertEquals(
             [$segmentTwo->getId(), $segmentThree->getId()],
@@ -101,14 +203,19 @@ class DbalSegmentRepositoryTest extends ContainerTestCase
         );
     }
 
-    public function testDeleteOrphaned(): void
+    public function testDeleteOrphanedImported(): void
     {
         [$segmentOne, , $segmentThree] = $this->seedSegmentsWithEfforts();
+        $customSegmentWithoutEfforts = SegmentBuilder::fromDefaults()
+            ->withSegmentId(SegmentId::fromUnprefixed(4))
+            ->withType(SegmentType::CUSTOM)
+            ->build();
+        $this->segmentRepository->add($customSegmentWithoutEfforts);
 
-        $this->segmentRepository->deleteOrphaned();
+        $this->segmentRepository->deleteOrphanedImported();
 
         $this->assertEquals(
-            Segments::fromArray([$segmentOne, $segmentThree]),
+            Segments::fromArray([$segmentOne, $segmentThree, $customSegmentWithoutEfforts]),
             $this->segmentRepository->findAll(Pagination::fromOffsetAndLimit(0, 100))
         );
     }

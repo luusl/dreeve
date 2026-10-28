@@ -16,8 +16,10 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\RequestOptions;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use Spatie\Snapshots\MatchesSnapshots;
+use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Twig\Environment;
@@ -40,15 +42,7 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ->expects($this->never())
             ->method('post');
 
-        $response = $this->stravaOAuthRequestHandler->handle(new Request(
-            query: ['code' => 'the-code'],
-            request: [],
-            attributes: [],
-            cookies: [],
-            files: [],
-            server: [],
-            content: [],
-        ));
+        $response = $this->stravaOAuthRequestHandler->handle(new Request(query: ['code' => 'the-code']));
 
         $this->assertInstanceOf(RedirectResponse::class, $response);
         $this->assertSame('/', $response->getTargetUrl());
@@ -75,15 +69,7 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ])
             ->willReturn(new Response(200, [], Json::encode(['refresh_token' => 'the-token'])));
 
-        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(
-            query: ['code' => 'the-code'],
-            request: [],
-            attributes: [],
-            cookies: [],
-            files: [],
-            server: [],
-            content: [],
-        ))->getContent());
+        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(query: ['code' => 'the-code']))->getContent());
     }
 
     public function testHandleWithCodeButAnError(): void
@@ -96,33 +82,16 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
         $this->client
             ->expects($this->once())
             ->method('post')
-            ->with('https://www.strava.com/oauth/token', [
-                RequestOptions::FORM_PARAMS => [
-                    'grant_type' => 'authorization_code',
-                    'client_id' => 'client',
-                    'client_secret' => 'secret',
-                    'code' => 'the-code',
-                ],
-            ])
             ->willThrowException(new RequestException(
                 message: 'The error',
                 request: new \GuzzleHttp\Psr7\Request('GET', 'uri'),
-                response: new Response(
-                    404,
-                    [],
-                    Json::encode(['error' => 'The error']
-                    )
-                )));
+                response: new Response(404, [], Json::encode(['error' => 'The error'])),
+            ));
 
-        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(
-            query: ['code' => 'the-code'],
-            request: [],
-            attributes: [],
-            cookies: [],
-            files: [],
-            server: [],
-            content: [],
-        ))->getContent());
+        $page = new Crawler((string) $this->stravaOAuthRequestHandler->handle(new Request(query: ['code' => 'the-code']))->getContent());
+
+        $this->assertSame('Connect your Strava account', $page->filter('h2')->text());
+        $this->assertSame('{"error":"The error"}', $page->filter('.text-red-800')->text());
     }
 
     public function testHandleItShouldStartAuthorization(): void
@@ -136,18 +105,10 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ->expects($this->never())
             ->method('post');
 
-        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(
-            query: [],
-            request: [],
-            attributes: [],
-            cookies: [],
-            files: [],
-            server: [],
-            content: [],
-        ))->getContent());
+        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request())->getContent());
     }
 
-    public function testHandleItShouldWhenInsufficientScopes(): void
+    public function testHandleWhenTheAccessTokenHasInsufficientScopes(): void
     {
         $this->strava
             ->expects($this->once())
@@ -158,59 +119,37 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ->expects($this->never())
             ->method('post');
 
-        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(
-            query: [],
-            request: [],
-            attributes: [],
-            cookies: [],
-            files: [],
-            server: [],
-            content: [],
-        ))->getContent());
+        $page = new Crawler((string) $this->stravaOAuthRequestHandler->handle(new Request())->getContent());
+
+        $this->assertSame('Your refresh token is missing a scope', $page->filter('h2')->text());
+        $this->assertCount(0, $page->filter('.text-red-800'));
     }
 
-    public function testHandleItShouldWhenTheApplicationIsInactive(): void
+    #[DataProvider('provideVerificationErrors')]
+    public function testHandleWhenTheAccessTokenCannotBeVerified(\Throwable $exception, string $expectedError): void
     {
         $this->strava
             ->expects($this->once())
             ->method('verifyAccessToken')
-            ->willThrowException(StravaApplicationIsInactive::create());
+            ->willThrowException($exception);
 
         $this->client
             ->expects($this->never())
             ->method('post');
 
-        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(
-            query: [],
-            request: [],
-            attributes: [],
-            cookies: [],
-            files: [],
-            server: [],
-            content: [],
-        ))->getContent());
+        $page = new Crawler((string) $this->stravaOAuthRequestHandler->handle(new Request())->getContent());
+
+        $this->assertSame('Hmmm, something went wrong', $page->filter('h2')->text());
+        $this->assertSame($expectedError, $page->filter('.text-red-800')->text());
     }
 
-    public function testHandleItShouldOnRandomError(): void
+    public static function provideVerificationErrors(): iterable
     {
-        $this->strava
-            ->expects($this->once())
-            ->method('verifyAccessToken')
-            ->willThrowException(new \RuntimeException('OH NOWZ'));
-
-        $this->client
-            ->expects($this->never())
-            ->method('post');
-
-        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(
-            query: [],
-            request: [],
-            attributes: [],
-            cookies: [],
-            files: [],
-            server: [],
-            content: [],
-        ))->getContent());
+        yield 'inactive application' => [
+            StravaApplicationIsInactive::create(),
+            'Your Strava API application is inactive, so Dreeve can no longer access the Strava API. Reactivate it on https://www.strava.com/settings/api, or switch to IMPORT_MODE=files',
+        ];
+        yield 'random error' => [new \RuntimeException('OH NOWZ'), 'OH NOWZ'];
     }
 
     public function testHandleItShouldWhenImportModeIsFiles(): void
@@ -232,15 +171,9 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ->expects($this->never())
             ->method('post');
 
-        $this->assertMatchesHtmlSnapshot($stravaOAuthRequestHandler->handle(new Request(
-            query: [],
-            request: [],
-            attributes: [],
-            cookies: [],
-            files: [],
-            server: [],
-            content: [],
-        ))->getContent());
+        $page = new Crawler((string) $stravaOAuthRequestHandler->handle(new Request())->getContent());
+
+        $this->assertSame('Strava authorization is not needed here', $page->filter('h2')->text());
     }
 
     #[\Override]

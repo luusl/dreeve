@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\Milestone\Discoverer;
 
+use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
@@ -10,20 +11,20 @@ use App\Domain\Activity\BestEffort\ActivityBestEffortRepository;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Milestone\Context\PersonalBestContext;
 use App\Domain\Milestone\Discoverer\PersonalBestMilestoneDiscoverer;
+use App\Domain\Milestone\Milestone;
+use App\Domain\Milestone\MilestoneCategory;
+use App\Domain\Milestone\MilestoneId;
 use App\Domain\Milestone\MilestoneIdFactory;
+use App\Domain\Milestone\PreviousMilestone;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Time\Seconds;
-use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
-use Spatie\Snapshots\MatchesSnapshots;
 
 class PersonalBestMilestoneDiscovererTest extends ContainerTestCase
 {
-    use MatchesSnapshots;
-
     private PersonalBestMilestoneDiscoverer $discoverer;
     private MilestoneIdFactory $milestoneIdFactory;
 
@@ -39,14 +40,17 @@ class PersonalBestMilestoneDiscovererTest extends ContainerTestCase
 
         $milestones = $this->discoverer->discover($this->milestoneIdFactory);
 
-        $context = $milestones->getFirst()->getContext();
-        $this->assertInstanceOf(PersonalBestContext::class, $context);
-        $this->assertInstanceOf(Kilometer::class, $context->getDistance());
-        $this->assertEquals(5.0, $context->getDistance()->toFloat());
-        $this->assertInstanceOf(Seconds::class, $context->getTime());
-        $this->assertEquals(1200, $context->getTime()->toInt());
-
-        $this->assertMatchesJsonSnapshot(Json::encode($milestones));
+        $this->assertEquals(
+            [
+                Milestone::create(
+                    id: MilestoneId::fromString('milestone-1'),
+                    achievedOn: SerializableDateTime::fromString('2024-01-01 00:00:00'),
+                    category: MilestoneCategory::PERSONAL_BEST,
+                    context: new PersonalBestContext(distance: Kilometer::from(5.0), time: Seconds::from(1200.0)),
+                )->withSportType(SportType::RUN)->withActivityId(ActivityId::fromString('activity-1')),
+            ],
+            $milestones->toArray(),
+        );
     }
 
     public function testDiscoverTracksImprovements(): void
@@ -57,8 +61,39 @@ class PersonalBestMilestoneDiscovererTest extends ContainerTestCase
         $this->insertActivity(2, '2024-01-02', SportType::RUN);
         $this->insertBestEffort(2, SportType::RUN, 5000, 1100);
 
+        // An excluded activity never becomes a personal best, even when it's faster.
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed(3))
+                ->withStartDateTime(SerializableDateTime::fromString('2024-01-03'))
+                ->withSportType(SportType::RUN)
+                ->withExcludedFrom(ActivityExclusion::BEST_EFFORTS)
+                ->build(), []
+        ));
+        $this->insertBestEffort(3, SportType::RUN, 5000, 900);
+
         $milestones = $this->discoverer->discover($this->milestoneIdFactory);
-        $this->assertMatchesJsonSnapshot(Json::encode($milestones));
+        $this->assertEquals(
+            [
+                Milestone::create(
+                    id: MilestoneId::fromString('milestone-1'),
+                    achievedOn: SerializableDateTime::fromString('2024-01-01 00:00:00'),
+                    category: MilestoneCategory::PERSONAL_BEST,
+                    context: new PersonalBestContext(distance: Kilometer::from(5.0), time: Seconds::from(1200.0)),
+                )->withSportType(SportType::RUN)->withActivityId(ActivityId::fromString('activity-1')),
+                Milestone::create(
+                    id: MilestoneId::fromString('milestone-2'),
+                    achievedOn: SerializableDateTime::fromString('2024-01-02 00:00:00'),
+                    category: MilestoneCategory::PERSONAL_BEST,
+                    context: new PersonalBestContext(distance: Kilometer::from(5.0), time: Seconds::from(1100.0)),
+                )->withSportType(SportType::RUN)->withActivityId(ActivityId::fromString('activity-2'))->withPrevious(PreviousMilestone::create(
+                    previousMilestoneId: MilestoneId::fromString('milestone-1'),
+                    threshold: Seconds::from(1200.0),
+                    achievedOn: SerializableDateTime::fromString('2024-01-01 00:00:00'),
+                )),
+            ],
+            $milestones->toArray(),
+        );
     }
 
     public function testDiscoverDoesNotCreateMilestoneForSlowerTime(): void
@@ -70,7 +105,17 @@ class PersonalBestMilestoneDiscovererTest extends ContainerTestCase
         $this->insertBestEffort(2, SportType::RUN, 5000, 1500);
 
         $milestones = $this->discoverer->discover($this->milestoneIdFactory);
-        $this->assertMatchesJsonSnapshot(Json::encode($milestones));
+        $this->assertEquals(
+            [
+                Milestone::create(
+                    id: MilestoneId::fromString('milestone-1'),
+                    achievedOn: SerializableDateTime::fromString('2024-01-01 00:00:00'),
+                    category: MilestoneCategory::PERSONAL_BEST,
+                    context: new PersonalBestContext(distance: Kilometer::from(5.0), time: Seconds::from(1200.0)),
+                )->withSportType(SportType::RUN)->withActivityId(ActivityId::fromString('activity-1')),
+            ],
+            $milestones->toArray(),
+        );
     }
 
     public function testDiscoverTracksSportTypesSeparately(): void
@@ -82,7 +127,23 @@ class PersonalBestMilestoneDiscovererTest extends ContainerTestCase
         $this->insertBestEffort(2, SportType::RIDE, 10000, 1800);
 
         $milestones = $this->discoverer->discover($this->milestoneIdFactory);
-        $this->assertMatchesJsonSnapshot(Json::encode($milestones));
+        $this->assertEquals(
+            [
+                Milestone::create(
+                    id: MilestoneId::fromString('milestone-1'),
+                    achievedOn: SerializableDateTime::fromString('2024-01-01 00:00:00'),
+                    category: MilestoneCategory::PERSONAL_BEST,
+                    context: new PersonalBestContext(distance: Kilometer::from(5.0), time: Seconds::from(1200.0)),
+                )->withSportType(SportType::RUN)->withActivityId(ActivityId::fromString('activity-1')),
+                Milestone::create(
+                    id: MilestoneId::fromString('milestone-2'),
+                    achievedOn: SerializableDateTime::fromString('2024-01-02 00:00:00'),
+                    category: MilestoneCategory::PERSONAL_BEST,
+                    context: new PersonalBestContext(distance: Kilometer::from(10.0), time: Seconds::from(1800.0)),
+                )->withSportType(SportType::RIDE)->withActivityId(ActivityId::fromString('activity-2')),
+            ],
+            $milestones->toArray(),
+        );
     }
 
     public function testDiscoverTracksDistancesSeparately(): void
@@ -92,7 +153,23 @@ class PersonalBestMilestoneDiscovererTest extends ContainerTestCase
         $this->insertBestEffort(1, SportType::RUN, 10000, 2700);
 
         $milestones = $this->discoverer->discover($this->milestoneIdFactory);
-        $this->assertMatchesJsonSnapshot(Json::encode($milestones));
+        $this->assertEquals(
+            [
+                Milestone::create(
+                    id: MilestoneId::fromString('milestone-1'),
+                    achievedOn: SerializableDateTime::fromString('2024-01-01 00:00:00'),
+                    category: MilestoneCategory::PERSONAL_BEST,
+                    context: new PersonalBestContext(distance: Kilometer::from(5.0), time: Seconds::from(1200.0)),
+                )->withSportType(SportType::RUN)->withActivityId(ActivityId::fromString('activity-1')),
+                Milestone::create(
+                    id: MilestoneId::fromString('milestone-2'),
+                    achievedOn: SerializableDateTime::fromString('2024-01-01 00:00:00'),
+                    category: MilestoneCategory::PERSONAL_BEST,
+                    context: new PersonalBestContext(distance: Kilometer::from(10.0), time: Seconds::from(2700.0)),
+                )->withSportType(SportType::RUN)->withActivityId(ActivityId::fromString('activity-1')),
+            ],
+            $milestones->toArray(),
+        );
     }
 
     public function setUp(): void
