@@ -21,12 +21,11 @@ final class SegmentBuilder
     private Kilometer $distance;
     private float $maxGradient = 5.3;
     private bool $isFavourite = false;
-    private ?string $deviceName = 'Polar';
-    private readonly ?int $climbCategory;
-    private readonly ?string $countryCode;
+    private string $deviceName = 'Polar';
+    private readonly string $countryCode = 'BE';
     private bool $detailsHaveBeenImported = false;
-    private ?EncodedPolyline $polyline;
-    private readonly ?Coordinate $startingCoordinate;
+    private ?EncodedPolyline $polyline = null;
+    private ?Coordinate $startingCoordinate = null;
     private ?float $averageGradient = 2.7;
     private SegmentType $type = SegmentType::IMPORTED;
 
@@ -35,10 +34,6 @@ final class SegmentBuilder
         $this->segmentId = SegmentId::fromUnprefixed('1');
         $this->name = Name::fromString('Segment');
         $this->distance = Kilometer::from(1);
-        $this->climbCategory = null;
-        $this->countryCode = 'BE';
-        $this->polyline = null;
-        $this->startingCoordinate = null;
     }
 
     public static function fromDefaults(): self
@@ -55,7 +50,7 @@ final class SegmentBuilder
             distance: $this->distance,
             maxGradient: $this->maxGradient,
             isFavourite: $this->isFavourite,
-            climbCategory: $this->climbCategory,
+            climbCategory: null,
             deviceName: $this->deviceName,
             countryCode: $this->countryCode,
             detailsHaveBeenImported: $this->detailsHaveBeenImported,
@@ -125,6 +120,13 @@ final class SegmentBuilder
     public function withPolyline(EncodedPolyline $polyline): self
     {
         $this->polyline = $polyline;
+
+        return $this;
+    }
+
+    public function withStartingCoordinate(Coordinate $startingCoordinate): self
+    {
+        $this->startingCoordinate = $startingCoordinate;
 
         return $this;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Athlete\HeartRateZone;
 
 use App\Domain\Athlete\HeartRateZone\HeartRateZone;
@@ -9,7 +11,10 @@ use PHPUnit\Framework\TestCase;
 
 class HeartRateZoneTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideTestRangeInBpmData')]
+    /**
+     * @param list<int> $expectedRange
+     */
+    #[DataProvider('provideTestRangeInBpmData')]
     public function testGetRangeInBpm(int $from, ?int $to, int $athleteMaxHeartRate, HeartRateZoneMode $mode, array $expectedRange): void
     {
         $this->assertEquals(
@@ -23,7 +28,7 @@ class HeartRateZoneTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideTestColorData')]
+    #[DataProvider('provideTestColorData')]
     public function testGetColor(string $name, string $expectedColor): void
     {
         $this->assertEquals(
@@ -93,6 +98,9 @@ class HeartRateZoneTest extends TestCase
         );
     }
 
+    /**
+     * @return list<array{string, string}>
+     */
     public static function provideTestColorData(): array
     {
         return [
@@ -104,6 +112,9 @@ class HeartRateZoneTest extends TestCase
         ];
     }
 
+    /**
+     * @return list<array{int, ?int, int, HeartRateZoneMode, list<int>}>
+     */
     public static function provideTestRangeInBpmData(): array
     {
         return [

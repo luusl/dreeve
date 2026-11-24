@@ -13,15 +13,25 @@ use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Gear\GearType;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemPath;
+use App\Domain\Media\MediaItemRepository;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
+use App\Infrastructure\Serialization\Json;
+use App\Infrastructure\Twig\SvgsTwigExtension;
+use App\Infrastructure\ValueObject\Geography\Coordinate;
+use App\Infrastructure\ValueObject\Geography\Latitude;
+use App\Infrastructure\ValueObject\Geography\Longitude;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Gear\GearBuilder;
+use App\Tests\Domain\Media\MediaItemBuilder;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\DomCrawler\Crawler;
 
 class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 {
@@ -40,6 +50,29 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
                 ->withName('My Custom Gear')
                 ->build()
         );
+        static::getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId(GearId::fromUnprefixed('zwift-bike'))
+                ->withGearType(GearType::CUSTOM)
+                ->withName('Zwift bike')
+                ->build()
+        );
+        static::getContainer()->get(GearRepository::class)->add(
+            GearBuilder::fromDefaults()
+                ->withGearId(GearId::fromUnprefixed('old-shoes'))
+                ->withGearType(GearType::CUSTOM)
+                ->withName('Old shoes')
+                ->withIsRetired(true)
+                ->build()
+        );
+        static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            ActivityBuilder::fromDefaults()
+                ->withActivityId(ActivityId::fromUnprefixed('zwift-ride'))
+                ->withDistance(Kilometer::from(40))
+                ->withGearId(GearId::fromUnprefixed('zwift-bike'))
+                ->build(),
+            [],
+        ));
 
         $this->client->loginUser($this->adminUser());
 
@@ -69,10 +102,10 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 
         $this->assertSame(
             ['None', 'Race', 'Workout', 'Long run'],
-            $crawler->filter('select#activity-workout-type option')->each(fn ($option) => $option->text()),
+            $crawler->filter('select#activity-workout-type option')->each(fn (Crawler $option): string => $option->text()),
         );
 
-        $sportTypeOptions = $crawler->filter('select#activity-sport-type option')->each(fn ($option) => $option->attr('value'));
+        $sportTypeOptions = $crawler->filter('select#activity-sport-type option')->each(fn (Crawler $option): ?string => $option->attr('value'));
         $this->assertCount(count(SportType::cases()), $sportTypeOptions);
         $this->assertSame(
             [SportType::WALK->value, SportType::HIKE->value, SportType::RUN->value],
@@ -84,8 +117,14 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString('(m)', $crawler->filter('label[for="activity-elevation"]')->text());
 
         $this->assertSame(
-            ['None', 'My Custom Gear'],
-            $crawler->filter('select#activity-gear option')->each(fn ($option) => $option->text()),
+            [
+                ['Cycling' => ['Zwift bike']],
+                ['Unused gear' => ['My Custom Gear']],
+                ['Retired' => ['Old shoes ☠️']],
+            ],
+            $crawler->filter('select#activity-gear optgroup')->each(fn (Crawler $optgroup): array => [
+                (string) $optgroup->attr('label') => $optgroup->filter('option')->each(fn (Crawler $option): string => $option->text()),
+            ]),
         );
 
         // Images can be attached right away.
@@ -123,10 +162,27 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
                 ->withGearId(GearId::fromUnprefixed('custom-gear'))
                 ->withIsCommute(true)
                 ->withIsGroupActivity(true)
-                ->withLocalImagePaths('activity-1/image.jpg')
+                ->withMediaItemIds(
+                    MediaItemId::fromUnprefixed('image'),
+                    MediaItemId::fromUnprefixed('image-with-metadata'),
+                )
                 ->build(),
             [],
         ));
+
+        static::getContainer()->get(MediaItemRepository::class)->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('image'))
+            ->withPath(MediaItemPath::fromString('activities/image.jpg'))
+            ->build());
+        static::getContainer()->get(MediaItemRepository::class)->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('image-with-metadata'))
+            ->withPath(MediaItemPath::fromString('activities/image-with-metadata.jpg'))
+            ->withCoordinate(Coordinate::createFromLatAndLng(
+                latitude: Latitude::fromString('51.2'),
+                longitude: Longitude::fromString('3.2'),
+            ))
+            ->withTakenOn(SerializableDateTime::fromString('2023-10-17 16:30:00'))
+            ->build());
 
         $this->client->loginUser($this->adminUser());
 
@@ -170,7 +226,42 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
 
         // The existing image can be managed.
         $this->assertCount(1, $crawler->filter('[data-image-dropzone]'));
-        $this->assertStringContainsString('image.jpg', (string) $crawler->filter('[data-image-dropzone]')->attr('data-existing-images'));
+        $svgs = static::getContainer()->get(SvgsTwigExtension::class);
+        $calendarIcon = $svgs->svg(
+            name: 'calendar',
+            size: 'size-3',
+            iconColor: 'shrink-0',
+        );
+        $globeIcon = $svgs->svg(
+            name: 'globe',
+            size: 'size-3',
+            iconColor: 'shrink-0',
+        );
+        $this->assertSame(
+            [
+                [
+                    'url' => '/files/activities/image.jpg',
+                    'name' => 'image.jpg',
+                    'id' => 'mediaItem-image',
+                    'editUrl' => '/admin/activities/activity-1/media/mediaItem-image/edit?redirectTo=%2Fadmin%2Factivities%2Factivity-1%2Fedit',
+                    'metadata' => [
+                        ['icon' => $calendarIcon, 'label' => 'No date', 'missing' => true],
+                        ['icon' => $globeIcon, 'label' => 'No location', 'missing' => true],
+                    ],
+                ],
+                [
+                    'url' => '/files/activities/image-with-metadata.jpg',
+                    'name' => 'image-with-metadata.jpg',
+                    'id' => 'mediaItem-image-with-metadata',
+                    'editUrl' => '/admin/activities/activity-1/media/mediaItem-image-with-metadata/edit?redirectTo=%2Fadmin%2Factivities%2Factivity-1%2Fedit',
+                    'metadata' => [
+                        ['icon' => $calendarIcon, 'label' => '17-10-2023', 'missing' => false],
+                        ['icon' => $globeIcon, 'label' => 'Location set', 'missing' => false],
+                    ],
+                ],
+            ],
+            Json::decode((string) $crawler->filter('[data-image-dropzone]')->attr('data-existing-images')),
+        );
 
         $this->assertSame(
             '/admin/activities/activity-1/delete',
@@ -199,7 +290,7 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
                 ->withCalories(500)
                 ->withIsCommute(true)
                 ->withIsGroupActivity(true)
-                ->withLocalImagePaths('activity-1/image.jpg')
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('image'))
                 ->withExcludedFrom(ActivityExclusion::PEAK_POWER_OUTPUTS)
                 ->build(),
             [],
@@ -248,6 +339,9 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(0, $crawler->filter('[data-image-dropzone]'));
 
         $this->assertCount(0, $crawler->filter('a.btn--danger'));
+
+        $this->client->request('GET', '/admin/activities/'.ActivityId::fromUnprefixed('unknown').'/edit');
+        $this->assertResponseStatusCodeSame(404);
     }
 
     #[DataProvider('provideRedirectToQueryParams')]
@@ -360,7 +454,7 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         // Only custom gears are selectable, Strava gears would be reverted on the next import.
         $this->assertSame(
             ['None', 'My Custom Gear', 'Second Custom Gear'],
-            $crawler->filter('select#activity-gear option')->each(fn ($option) => $option->text()),
+            $crawler->filter('select#activity-gear option')->each(fn (Crawler $option): string => $option->text()),
         );
         $this->assertNotNull($crawler->filter('select#activity-gear option[value="gear-custom-gear"]')->attr('selected'));
     }
@@ -421,6 +515,50 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
                 ->withName('My Custom Gear')
                 ->build()
         );
+        $gearRepository->add(
+            GearBuilder::fromDefaults()
+                ->withGearId(GearId::fromUnprefixed('trail-shoes'))
+                ->withName('Trail shoes')
+                ->build()
+        );
+        $gearRepository->add(
+            GearBuilder::fromDefaults()
+                ->withGearId(GearId::fromUnprefixed('road-shoes'))
+                ->withName('Road shoes')
+                ->build()
+        );
+        $gearRepository->add(
+            GearBuilder::fromDefaults()
+                ->withGearId(GearId::fromUnprefixed('walking-shoes'))
+                ->withName('Walking shoes')
+                ->build()
+        );
+        $gearRepository->add(
+            GearBuilder::fromDefaults()
+                ->withGearId(GearId::fromUnprefixed('old-bike'))
+                ->withName('Old bike')
+                ->withIsRetired(true)
+                ->build()
+        );
+
+        foreach ([
+            ['2', 'b5', SportType::RIDE],
+            ['3', 'trail-shoes', SportType::RUN],
+            ['4', 'trail-shoes', SportType::RUN],
+            ['5', 'trail-shoes', SportType::RIDE],
+            ['6', 'road-shoes', SportType::RUN],
+            ['7', 'walking-shoes', SportType::WALK],
+            ['8', 'old-bike', SportType::RIDE],
+        ] as [$activityId, $gearId, $sportType]) {
+            static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+                ActivityBuilder::fromDefaults()
+                    ->withActivityId(ActivityId::fromUnprefixed($activityId))
+                    ->withGearId(GearId::fromUnprefixed($gearId))
+                    ->withSportType($sportType)
+                    ->build(),
+                [],
+            ));
+        }
 
         static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
@@ -451,7 +589,7 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="workoutType"]'));
         $this->assertSame(
             ['None', 'Race', 'Workout', 'Long run'],
-            $crawler->filter('select#activity-workout-type option')->each(fn ($option) => $option->text()),
+            $crawler->filter('select#activity-workout-type option')->each(fn (Crawler $option): string => $option->text()),
         );
         $this->assertNotNull($crawler->filter('select#activity-workout-type option[value="race"]')->attr('selected'));
         $this->assertCount(0, $crawler->filter('input[type="hidden"][name="gearId"]'));
@@ -460,10 +598,19 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertSame('false', $crawler->filter('input[type="hidden"][name="isCommute"]')->attr('value'));
         $this->assertNull($crawler->filter('input[type="checkbox"][name="excludedFrom[peakPowerOutputs]"]')->attr('checked'));
 
-        // In files mode all gears are selectable, imported or custom.
+        // In files mode all gears are selectable, imported or custom. Gear used for rides is suggested first,
+        // the rest is grouped per main activity type, and gear is never listed twice.
         $this->assertSame(
-            ['None', 'Strava Bike', 'My Custom Gear'],
-            $crawler->filter('select#activity-gear option')->each(fn ($option) => $option->text()),
+            [
+                ['Suggested' => ['Strava Bike', 'Trail shoes']],
+                ['Running' => ['Road shoes']],
+                ['Walking' => ['Walking shoes']],
+                ['Unused gear' => ['My Custom Gear']],
+                ['Retired' => ['Old bike ☠️']],
+            ],
+            $crawler->filter('select#activity-gear optgroup')->each(fn (Crawler $optgroup): array => [
+                (string) $optgroup->attr('label') => $optgroup->filter('option')->each(fn (Crawler $option): string => $option->text()),
+            ]),
         );
 
         // The image upload is available.
@@ -531,7 +678,7 @@ class ManageActivityFormRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(1, $form);
         $this->assertSame(
             ['activity-1', 'activity-2'],
-            $form->filter('input[name="activityIds[]"]')->each(fn ($input): ?string => $input->attr('value')),
+            $form->filter('input[name="activityIds[]"]')->each(fn (Crawler $input): ?string => $input->attr('value')),
         );
 
         $listedActivities = $crawler->filter('[data-activities-to-delete] li');

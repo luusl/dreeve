@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Activity\Stream;
 
 use App\Domain\Activity\ActivityId;
@@ -25,18 +27,13 @@ class DbalActivityStreamRepositoryTest extends ContainerTestCase
             streamType: $stream->getStreamType()
         ));
         $this->assertFalse($this->activityStreamRepository->hasOneForActivityAndStreamType(
-            activityId: ActivityId::fromUnprefixed(1),
+            activityId: ActivityId::fromUnprefixed('1'),
             streamType: $stream->getStreamType()
         ));
         $this->assertFalse($this->activityStreamRepository->hasOneForActivityAndStreamType(
             activityId: $stream->getActivityId(),
             streamType: StreamType::CADENCE
         ));
-
-        $this->assertEquals(
-            ActivityStreams::fromArray([$stream]),
-            $this->activityStreamRepository->findByStreamType($stream->getStreamType())
-        );
     }
 
     public function testFindActivityIdsByStreamType(): void
@@ -60,24 +57,24 @@ class DbalActivityStreamRepositoryTest extends ContainerTestCase
     public function testFindOneByActivityAndStreamType(): void
     {
         $streamOne = ActivityStreamBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1))
+            ->withActivityId(ActivityId::fromUnprefixed('1'))
             ->withStreamType(StreamType::WATTS)
             ->build();
         $this->activityStreamRepository->add($streamOne);
         $streamTwo = ActivityStreamBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1))
+            ->withActivityId(ActivityId::fromUnprefixed('1'))
             ->withStreamType(StreamType::CADENCE)
             ->build();
         $this->activityStreamRepository->add($streamTwo);
         $this->activityStreamRepository->add(
             ActivityStreamBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(1))
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
                 ->withStreamType(StreamType::HEART_RATE)
                 ->build()
         );
         $this->activityStreamRepository->add(
             ActivityStreamBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(2))
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
                 ->withStreamType(StreamType::CADENCE)
                 ->build()
         );
@@ -85,7 +82,7 @@ class DbalActivityStreamRepositoryTest extends ContainerTestCase
         $this->assertEquals(
             $streamTwo,
             $this->activityStreamRepository->findOneByActivityAndStreamType(
-                activityId: ActivityId::fromUnprefixed(1),
+                activityId: ActivityId::fromUnprefixed('1'),
                 streamType: StreamType::CADENCE
             )
         );
@@ -96,7 +93,7 @@ class DbalActivityStreamRepositoryTest extends ContainerTestCase
         $this->expectExceptionObject(new EntityNotFound('ActivityStream activity-1-cadence not found'));
 
         $this->activityStreamRepository->findOneByActivityAndStreamType(
-            activityId: ActivityId::fromUnprefixed(1),
+            activityId: ActivityId::fromUnprefixed('1'),
             streamType: StreamType::CADENCE
         );
     }
@@ -104,18 +101,18 @@ class DbalActivityStreamRepositoryTest extends ContainerTestCase
     public function testFindByActivity(): void
     {
         $streamOne = ActivityStreamBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1))
+            ->withActivityId(ActivityId::fromUnprefixed('1'))
             ->withStreamType(StreamType::WATTS)
             ->build();
         $this->activityStreamRepository->add($streamOne);
         $streamTwo = ActivityStreamBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1))
+            ->withActivityId(ActivityId::fromUnprefixed('1'))
             ->withStreamType(StreamType::CADENCE)
             ->build();
         $this->activityStreamRepository->add($streamTwo);
         $this->activityStreamRepository->add(
             ActivityStreamBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(2))
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
                 ->withStreamType(StreamType::CADENCE)
                 ->build()
         );
@@ -123,7 +120,7 @@ class DbalActivityStreamRepositoryTest extends ContainerTestCase
         $this->assertEquals(
             ActivityStreams::fromArray([$streamOne, $streamTwo]),
             $this->activityStreamRepository->findByActivityId(
-                activityId: ActivityId::fromUnprefixed(1),
+                activityId: ActivityId::fromUnprefixed('1'),
             )
         );
     }

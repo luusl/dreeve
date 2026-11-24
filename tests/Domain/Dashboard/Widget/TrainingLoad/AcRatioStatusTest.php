@@ -9,7 +9,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class AcRatioStatusTest extends ContainerTestCase
 {
-    #[DataProvider(methodName: 'fromFloatProvider')]
+    #[DataProvider('fromFloatProvider')]
     public function testFromFloat(float $value, AcRatioStatus $expected): void
     {
         self::assertSame($expected, AcRatioStatus::fromFloat($value));
@@ -43,7 +43,7 @@ class AcRatioStatusTest extends ContainerTestCase
         );
     }
 
-    #[DataProvider(methodName: 'presentationProvider')]
+    #[DataProvider('presentationProvider')]
     public function testPresentation(AcRatioStatus $status, string $expectedRange, string $expectedTextColor, string $expectedPillColors): void
     {
         self::assertSame($expectedRange, $status->getRange());
@@ -51,6 +51,9 @@ class AcRatioStatusTest extends ContainerTestCase
         self::assertSame($expectedPillColors, $status->getPillColors());
     }
 
+    /**
+     * @return iterable<string, array{AcRatioStatus, string, string, string}>
+     */
     public static function presentationProvider(): iterable
     {
         yield 'HIGH_RISK' => [AcRatioStatus::HIGH_RISK, '> 1.3', 'text-red-600', 'bg-red-100 text-red-800'];
@@ -58,6 +61,9 @@ class AcRatioStatusTest extends ContainerTestCase
         yield 'LOW_TRAINING_LOAD' => [AcRatioStatus::LOW_TRAINING_LOAD, '< 0.8', 'text-yellow-600', 'bg-yellow-100 text-yellow-800'];
     }
 
+    /**
+     * @return iterable<string, array{float, AcRatioStatus}>
+     */
     public static function fromFloatProvider(): iterable
     {
         yield 'high risk' => [1.31, AcRatioStatus::HIGH_RISK];

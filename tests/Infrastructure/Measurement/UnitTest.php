@@ -29,7 +29,7 @@ use PHPUnit\Framework\TestCase;
 
 class UnitTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideConversions')]
+    #[DataProvider('provideConversions')]
     public function testConversions(Unit $a, Unit $b): void
     {
         $this->assertEquals(
@@ -52,6 +52,9 @@ class UnitTest extends TestCase
         Kilometer::from(220)->subtract(Mile::from(210));
     }
 
+    /**
+     * @return list<array{Unit, Unit}>
+     */
     public static function provideConversions(): array
     {
         return [
@@ -94,7 +97,7 @@ class UnitTest extends TestCase
         ];
     }
 
-    #[DataProvider(methodName: 'provideNauticalMeasurements')]
+    #[DataProvider('provideNauticalMeasurements')]
     public function testNauticalUnitsAreNeverConverted(NauticalMile|Knot $measurement): void
     {
         foreach (UnitSystem::cases() as $unitSystem) {
@@ -105,6 +108,9 @@ class UnitTest extends TestCase
         }
     }
 
+    /**
+     * @return list<array{NauticalMile|Knot}>
+     */
     public static function provideNauticalMeasurements(): array
     {
         return [
@@ -113,7 +119,7 @@ class UnitTest extends TestCase
         ];
     }
 
-    #[DataProvider(methodName: 'provideMeasurements')]
+    #[DataProvider('provideMeasurements')]
     public function testRepresentation(Unit $measurement, string $expectedSymbol, string $expectedValue): void
     {
         $this->assertSame($expectedSymbol, $measurement->getSymbol());
@@ -122,6 +128,9 @@ class UnitTest extends TestCase
         $this->assertSame($expectedValue, Json::encode($measurement));
     }
 
+    /**
+     * @return iterable<string, array{Unit, string, string}>
+     */
     public static function provideMeasurements(): iterable
     {
         yield 'Foot' => [Foot::from(10), 'ft', '10'];

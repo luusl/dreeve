@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Athlete\HeartRateZone;
 
 use App\Domain\Activity\SportType\SportType;
@@ -43,7 +45,7 @@ class HeartRateZoneConfigurationTest extends TestCase
                 zone5: {from: 83, to: null}
         YML;
 
-    #[DataProvider(methodName: 'provideValidConfig')]
+    #[DataProvider('provideValidConfig')]
     public function testGetHeartRateZonesFor(SportType $sportType, SerializableDateTime $on, int $expectedZone4To): void
     {
         $config = HeartRateZoneConfiguration::fromArray([
@@ -70,6 +72,9 @@ class HeartRateZoneConfigurationTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{SportType, SerializableDateTime, int}>
+     */
     public static function provideValidConfig(): iterable
     {
         yield 'sport type + matching date' => [SportType::GRAVEL_RIDE, SerializableDateTime::fromString('2025-06-01'), 82];
@@ -112,13 +117,19 @@ class HeartRateZoneConfigurationTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideInvalidConfig')]
+    /**
+     * @param array<string, mixed> $config
+     */
+    #[DataProvider('provideInvalidConfig')]
     public function testFromArrayItShouldThrow(array $config, string $expectedException): void
     {
         $this->expectExceptionObject(new InvalidHeartZoneConfiguration($expectedException));
         HeartRateZoneConfiguration::fromArray($config);
     }
 
+    /**
+     * @return iterable<string, array{array<string, mixed>, string}>
+     */
     public static function provideInvalidConfig(): iterable
     {
         $validZones = [

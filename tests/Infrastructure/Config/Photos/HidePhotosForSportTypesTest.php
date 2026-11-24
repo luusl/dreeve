@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Infrastructure\Config\Photos;
 
 use App\Domain\Activity\SportType\SportType;
@@ -8,19 +10,19 @@ use PHPUnit\Framework\TestCase;
 
 class HidePhotosForSportTypesTest extends TestCase
 {
-    public function testFrom(): void
+    public function testFromValues(): void
     {
         $this->assertEquals(
             HidePhotosForSportTypes::fromArray([SportType::RIDE]),
-            HidePhotosForSportTypes::from(['Ride'])
+            HidePhotosForSportTypes::fromValues(['Ride'])
         );
     }
 
-    public function testFromEmpty(): void
+    public function testFromValuesEmpty(): void
     {
         $this->assertEquals(
             HidePhotosForSportTypes::empty(),
-            HidePhotosForSportTypes::from([])
+            HidePhotosForSportTypes::fromValues([])
         );
     }
 }

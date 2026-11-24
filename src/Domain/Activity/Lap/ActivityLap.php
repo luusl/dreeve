@@ -192,7 +192,7 @@ final readonly class ActivityLap implements SupportsAITooling
         $averageSpeed = $this->getAverageSpeed()->toFloat();
 
         $relative = ($averageSpeed - $min) / ($max - $min) * 100;
-        $relative = max(0, min(100, $relative));
+        $relative = clamp($relative, 0, 100);
 
         return round($relative, 2);
     }
@@ -229,7 +229,6 @@ final readonly class ActivityLap implements SupportsAITooling
     {
         return [
             'id' => $this->getLapId()->toUnprefixedString(),
-            'activityId' => $this->getActivityId()->toUnprefixedString(),
             'lapNumber' => $this->getLapNumber(),
             'elapsedTimeInSeconds' => $this->getElapsedTimeInSeconds(),
             'movingTimeInSeconds' => $this->getMovingTimeInSeconds(),

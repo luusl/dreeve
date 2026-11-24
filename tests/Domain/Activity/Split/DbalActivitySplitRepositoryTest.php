@@ -237,7 +237,9 @@ class DbalActivitySplitRepositoryTest extends ContainerTestCase
         $this->activitySplitRepository->update($split);
 
         $updatedSplits = $this->activitySplitRepository->findBy(ActivityId::fromUnprefixed('test'), UnitSystem::METRIC);
-        $this->assertEqualsWithDelta(350.5, $updatedSplits->toArray()[0]->getGapPaceInSecondsPerKm()->toFloat(), 0.01);
+        $gapPace = $updatedSplits->toArray()[0]->getGapPaceInSecondsPerKm();
+        $this->assertNotNull($gapPace);
+        $this->assertEqualsWithDelta(350.5, $gapPace->toFloat(), 0.01);
     }
 
     private function addActivity(string $id, SportType $sportType, ImportSource $importSource = ImportSource::STRAVA_API): void
@@ -252,6 +254,10 @@ class DbalActivitySplitRepositoryTest extends ContainerTestCase
         ));
     }
 
+    /**
+     * @param list<int>|null   $time
+     * @param list<float>|null $distance
+     */
     private function addStreams(string $id, ?array $time, ?array $distance): void
     {
         foreach ([StreamType::TIME->value => $time, StreamType::DISTANCE->value => $distance] as $streamType => $data) {

@@ -6,9 +6,9 @@ namespace App\Controller\Api\V1\Activity\Image;
 
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
-use App\Domain\Activity\Image\ActivityImageId;
 use App\Domain\Activity\RemoveActivityImage\RemoveActivityImage;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\MediaItemId;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\Http\Api\ApiErrorCode;
@@ -41,12 +41,12 @@ final readonly class ActivityImageRemoveRequestHandler
 
         try {
             $activity = $this->activityRepository->find(ActivityId::fromString($activityId));
-        } catch (EntityNotFound|\InvalidArgumentException) {
+        } catch (\InvalidArgumentException) {
             throw new NotFoundHttpException(sprintf('Activity "%s" not found', $activityId));
         }
 
         try {
-            $activityImageId = ActivityImageId::fromString($imageId);
+            $mediaItemId = MediaItemId::fromString($imageId);
         } catch (\InvalidArgumentException) {
             throw new NotFoundHttpException(sprintf('Image "%s" not found', $imageId));
         }
@@ -54,7 +54,7 @@ final readonly class ActivityImageRemoveRequestHandler
         try {
             $this->commandBus->dispatch(new RemoveActivityImage(
                 activityId: $activity->getId(),
-                activityImageId: $activityImageId,
+                mediaItemId: $mediaItemId,
             ));
         } catch (EntityNotFound) {
             throw new NotFoundHttpException(sprintf('Image "%s" not found', $imageId));

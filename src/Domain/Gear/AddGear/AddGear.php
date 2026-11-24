@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Domain\Gear\AddGear;
 
 use App\Domain\Gear\GearStatus;
+use App\Domain\Gear\ProvideNotesFromPayload;
 use App\Domain\Gear\ProvidePurchasePriceFromPayload;
-use App\Domain\Image\NewImage;
-use App\Domain\Image\ProvideLocalImageFromDropZonePayload;
+use App\Domain\Media\DropZone\ProvideMediaItemsFromDropZonePayload;
+use App\Domain\Media\NewMediaItem;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
@@ -16,15 +17,17 @@ use Money\Money;
 
 final readonly class AddGear extends DomainCommand implements DeserializableCommand
 {
+    use ProvideNotesFromPayload;
     use ProvidePurchasePriceFromPayload;
-    use ProvideLocalImageFromDropZonePayload;
+    use ProvideMediaItemsFromDropZonePayload;
     use ProvidesCommandName;
 
     private function __construct(
         private string $name,
         private bool $isRetired,
         private ?Money $purchasePrice,
-        private ?NewImage $newImage,
+        private ?NewMediaItem $newMediaItem,
+        private ?string $notes,
     ) {
     }
 
@@ -44,13 +47,14 @@ final readonly class AddGear extends DomainCommand implements DeserializableComm
             throw CouldNotDeserializeCommand::invalidPayload('The status is invalid.');
         }
 
-        [$newImages] = self::parseImages($payload, 'localImagePath');
+        [$newMediaItems] = self::parseMediaItems($payload, 'mediaItem');
 
         return new self(
             name: $name,
             isRetired: GearStatus::RETIRED === $gearStatus,
             purchasePrice: self::parsePurchasePrice($payload),
-            newImage: $newImages[0] ?? null,
+            newMediaItem: $newMediaItems[0] ?? null,
+            notes: self::parseNotes($payload),
         );
     }
 
@@ -69,8 +73,13 @@ final readonly class AddGear extends DomainCommand implements DeserializableComm
         return $this->purchasePrice;
     }
 
-    public function getNewImage(): ?NewImage
+    public function getNewMediaItem(): ?NewMediaItem
     {
-        return $this->newImage;
+        return $this->newMediaItem;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
     }
 }

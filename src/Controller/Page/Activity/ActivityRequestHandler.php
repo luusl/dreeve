@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Controller\Page\Activity;
 
 use App\Application\Navigation\NavigationSection;
-use App\Application\OpenGraph\OpenGraph;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\ActivityCacheTag;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
+use App\Domain\Activity\Collection\ActivityCollectionRepository;
 use App\Domain\Activity\DistributionChartsBuilder;
 use App\Domain\Activity\EnrichedActivityRepository;
 use App\Domain\Activity\GpxFileName;
@@ -25,6 +26,9 @@ use App\Domain\Activity\Stream\CombinedStream\CombinedStreamProfileCharts;
 use App\Domain\Activity\Stream\CombinedStream\CombinedStreamType;
 use App\Domain\Activity\Stream\StreamType;
 use App\Domain\Import\FileImportRepository;
+use App\Domain\Media\MediaItem;
+use App\Domain\Media\MediaItemCacheTag;
+use App\Domain\Media\MediaItemRepository;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\Context\AuthenticatedCacheContext;
@@ -33,11 +37,10 @@ use App\Infrastructure\Cache\Context\TrustedVisitorCacheContext;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\Exception\EntityNotFound;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Measurement\ProvideMeasurementFormats;
 use App\Infrastructure\Security\Visitor;
 use Symfony\Component\HttpKernel\Attribute\AsController;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -58,12 +61,14 @@ final readonly class ActivityRequestHandler
         private ActivitySplitRepository $activitySplitRepository,
         private ActivityLapRepository $activityLapRepository,
         private ActivityDrivetrainUsageRepository $activityDrivetrainUsageRepository,
+        private ActivityCollectionRepository $activityCollectionRepository,
         private SettingsRepository $settingsRepository,
         private TranslatorInterface $translator,
         private PageRenderer $pageRenderer,
         private UrlGeneratorInterface $urlGenerator,
         private Visitor $visitor,
         private FileImportRepository $fileImportRepository,
+        private MediaItemRepository $mediaItemRepository,
         private Environment $twig,
     ) {
     }
@@ -72,13 +77,7 @@ final readonly class ActivityRequestHandler
     public function handle(string $activityId): HtmlResponse
     {
         $activityId = ActivityId::fromString($activityId);
-
-        try {
-            $activity = $this->activityRepository->find($activityId);
-        } catch (EntityNotFound) {
-            throw new NotFoundHttpException('Not found');
-        }
-
+        $activity = $this->activityRepository->find($activityId);
         $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
 
         return $this->pageRenderer->render(
@@ -87,16 +86,18 @@ final readonly class ActivityRequestHandler
                 cacheTags: CacheTags::of(
                     ActivityCacheTag::for($activityId),
                     RootCacheTag::GEAR,
+                    RootCacheTag::ACTIVITY_COLLECTIONS,
                     RootCacheTag::SETTINGS_SECURITY,
                     RootCacheTag::SETTINGS_GENERAL,
                     RootCacheTag::SETTINGS_ATHLETE_WEIGHT,
+                    RootCacheTag::SETTINGS_ATHLETE_FTP,
+                    ...MediaItemCacheTag::forAll($activity->getMediaItemIds()),
                 ),
                 cacheContexts: CacheContexts::of(AuthenticatedCacheContext::class, TrustedVisitorCacheContext::class),
             ),
             render: fn (): string => $this->renderFor($activityId),
             navigationSection: NavigationSection::ACTIVITIES,
-            openGraph: new OpenGraph(
-                path: $this->urlGenerator->generate('activity', ['activityId' => (string) $activity->getId()]),
+            metadata: new PageMetadata(
                 title: $activity->getName(),
                 description: implode(' · ', [
                     $activity->getSportType()->transSingular($this->translator),
@@ -135,11 +136,16 @@ final readonly class ActivityRequestHandler
         } catch (EntityNotFound) {
         }
 
+        $mediaItems = $this->mediaItemRepository->findByIds($activity->getMediaItemIds());
         $templateName = sprintf('html/activity/%s.html.twig', $activity->getSportType()->getTemplateName());
 
         return $this->twig->load($templateName)->render(context: [
             'activity' => $activity,
             'enrichedActivity' => $enrichedActivity,
+            'mediaItems' => $mediaItems,
+            'geotaggedMediaItems' => $mediaItems->filter(
+                fn (MediaItem $mediaItem): bool => $activity->allowsPhotoMarkerAt($mediaItem->getCoordinate()),
+            ),
             'leaflet' => $leafletMap instanceof LeafletMap ? [
                 'polylineUrl' => $this->urlGenerator->generate('activity_polylines', ['activityId' => (string) $activityId]),
                 'map' => $leafletMap,
@@ -161,6 +167,7 @@ final readonly class ActivityRequestHandler
             'hasProfileChart' => $numberOfProfileChartLanes > 0,
             'heartRateZones' => $timeInHeartRateZones,
             'showStartTime' => $this->visitor->isTrusted(),
+            'activityCollections' => $this->activityCollectionRepository->findForActivity($activityId),
             'drivetrainUsages' => $activity->getSportType()->supportsShiftingStats()
                 ? $this->activityDrivetrainUsageRepository->findByActivity($activityId)
                 : ActivityDrivetrainUsages::empty(),

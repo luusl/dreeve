@@ -85,7 +85,10 @@ class AddCustomSegmentCommandHandlerTest extends ContainerTestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideUnprocessableCommands')]
+    /**
+     * @param list<StreamType> $streamTypes
+     */
+    #[DataProvider('provideUnprocessableCommands')]
     public function testHandleThrows(array $streamTypes, int $startIndex, int $endIndex, string $expectedReason): void
     {
         $streams = Json::decode(file_get_contents(self::FIXTURES.'exact-pass.json') ?: '');
@@ -113,6 +116,9 @@ class AddCustomSegmentCommandHandlerTest extends ContainerTestCase
         ]));
     }
 
+    /**
+     * @return iterable<string, array{list<StreamType>, int, int, string}>
+     */
     public static function provideUnprocessableCommands(): iterable
     {
         yield 'no GPS data' => [[StreamType::DISTANCE], 37, 162, 'The selected activity has no GPS data.'];

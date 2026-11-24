@@ -1,21 +1,11 @@
 {% extends "html/admin/page/template.html.twig" %}
 {% block main %}
-    {% autoescape false %}
     {% set gearMaintenanceLog = gearMaintenanceLog is defined ? gearMaintenanceLog : null %}
     {% set overviewUrl = redirectUrl(relativeUrl(path('admin_manage_gear_maintenance_logs_overview'))) %}
-    <div class="modal-like-form">
-        <div class="w-full max-w-lg overflow-y-auto p-6 bg-white border border-gray-200 rounded-lg shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">
-                    {{ gearMaintenanceLog ? "Edit maintenance log"|trans({}, 'admin') : "Register maintenance"|trans({}, 'admin') }}
-                </h3>
-                <a href="{{ overviewUrl }}" aria-label="{{ "Close"|trans({}, 'admin') }}"
-                   class="grid place-items-center size-8 rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                    <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/>
-                    </svg>
-                </a>
-            </div>
+    {% embed 'html/admin/component/modal.html.twig' with {closeUrl: overviewUrl} %}
+        {% block title %}{{ gearMaintenanceLog ? "Edit maintenance log"|trans({}, 'admin') : "Register maintenance"|trans({}, 'admin') }}{% endblock %}
+        {% block body %}
+            {% autoescape false %}
             <form data-dispatch-command="{{ dispatchCommand }}"
                   data-redirect="{{ overviewUrl }}"
                   class="flex flex-col gap-4">
@@ -25,15 +15,15 @@
                     <div class="grid grid-cols-2 gap-4 rounded-lg bg-gray-50 p-3 text-sm">
                         <div>
                             <span class="block text-xs font-medium text-gray-500">{{ "Gear"|trans }}</span>
-                            <span class="font-medium text-gray-800">{{ gearName }}</span>
+                            <span class="font-medium text-gray-800">{{ gearMaintenanceLog.getGearName() }}</span>
                         </div>
                         <div>
                             <span class="block text-xs font-medium text-gray-500">{{ "Component"|trans({}, 'admin') }}</span>
-                            <span class="font-medium text-gray-800">{{ componentLabel }}</span>
+                            <span class="font-medium text-gray-800">{{ gearMaintenanceLog.getComponentLabel() }}</span>
                         </div>
                         <div>
                             <span class="block text-xs font-medium text-gray-500">{{ "Task"|trans({}, 'admin') }}</span>
-                            <span class="font-medium text-gray-800">{{ taskLabel }}</span>
+                            <span class="font-medium text-gray-800">{{ gearMaintenanceLog.getTaskLabel() }}</span>
                         </div>
                     </div>
                     <div>
@@ -89,7 +79,7 @@
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-    {% endautoescape %}
+            {% endautoescape %}
+        {% endblock %}
+    {% endembed %}
 {% endblock main %}

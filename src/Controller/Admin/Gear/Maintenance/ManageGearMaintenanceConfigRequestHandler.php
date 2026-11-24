@@ -11,11 +11,11 @@ use App\Domain\Gear\GearRepository;
 use App\Domain\Gear\Maintenance\GearComponentRepository;
 use App\Domain\Gear\Maintenance\GearMaintenanceRepository;
 use App\Domain\Gear\Maintenance\UpdateGearMaintenanceConfig\UpdateGearMaintenanceConfig;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Time\Clock\Clock;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
-use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Component\Translation\TranslatableMessage;
 use Twig\Environment;
 
 #[AsController]
@@ -26,7 +26,6 @@ final readonly class ManageGearMaintenanceConfigRequestHandler
         private GearMaintenanceRepository $gearMaintenanceRepository,
         private GearComponentRepository $gearComponentRepository,
         private GearRepository $gearRepository,
-        private TranslatorInterface $translator,
         private Clock $clock,
     ) {
     }
@@ -47,14 +46,14 @@ final readonly class ManageGearMaintenanceConfigRequestHandler
                 continue;
             }
 
-            $warnings[] = $this->translator->trans(
+            $warnings[] = new TranslatableMessage(
                 'Gear "{gearId}" is attached to one of your components, but does not exist. It will be ignored.',
                 ['{gearId}' => $referencedGearId->toUnprefixedString()],
-                'admin'
+                'admin',
             );
         }
 
-        $now = $this->clock->getCurrentDateTimeImmutable();
+        $now = $this->clock->now();
         $componentsWithCurrentGears = [];
         foreach ($gearComponents as $gearComponent) {
             $currentGearIds = $gearComponents->getGearIdsCurrentlyUsing($gearComponent, $now);

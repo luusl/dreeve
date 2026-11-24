@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\SportType;
 
-use App\Infrastructure\ValueObject\Collection;
+use App\Infrastructure\ValueObject\BackedEnumCollection;
 
-final class SportTypesToImport extends Collection
+/**
+ * @extends BackedEnumCollection<SportType>
+ */
+final class SportTypesToImport extends BackedEnumCollection
 {
     public function getItemClassName(): string
     {
@@ -23,9 +26,6 @@ final class SportTypesToImport extends Collection
             return self::fromArray(SportType::cases());
         }
 
-        return self::fromArray(array_map(
-            SportType::from(...),
-            $types
-        ));
+        return self::fromValues($types);
     }
 }

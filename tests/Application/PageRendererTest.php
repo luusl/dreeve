@@ -2,6 +2,7 @@
 
 namespace App\Tests\Application;
 
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\Context\AuthenticatedCacheContext;
@@ -10,6 +11,8 @@ use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Tests\ContainerTestCase;
 use App\Tests\ProvideTestData;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
 
 class PageRendererTest extends ContainerTestCase
 {
@@ -18,11 +21,13 @@ class PageRendererTest extends ContainerTestCase
     public function testItWrapsTheRenderInTheAppShell(): void
     {
         $this->provideFullTestSet();
+        $this->getContainer()->get(RequestStack::class)->push(new Request(attributes: ['_route' => 'dashboard']));
 
         $response = $this->getContainer()->get(PageRenderer::class)->render(
             cacheability: Cacheability::for('page', CacheTags::of(RootCacheTag::ACTIVITIES)),
             render: fn (): string => '<p>The page content</p>',
             navigationSection: null,
+            metadata: new PageMetadata(title: 'Page', description: 'The page'),
         );
 
         $this->assertStringContainsString('<p>The page content</p>', (string) $response->getContent());
@@ -33,11 +38,13 @@ class PageRendererTest extends ContainerTestCase
     public function testItLetsTheBrowserStoreAPageWithoutCacheContexts(): void
     {
         $this->provideFullTestSet();
+        $this->getContainer()->get(RequestStack::class)->push(new Request(attributes: ['_route' => 'dashboard']));
 
         $response = $this->getContainer()->get(PageRenderer::class)->render(
             cacheability: Cacheability::for('page', CacheTags::of(RootCacheTag::ACTIVITIES)),
             render: fn (): string => '',
             navigationSection: null,
+            metadata: new PageMetadata(title: 'Page', description: 'The page'),
         );
 
         $this->assertStringNotContainsString('no-store', (string) $response->headers->get('Cache-Control'));
@@ -46,6 +53,7 @@ class PageRendererTest extends ContainerTestCase
     public function testItNeverLetsTheBrowserStoreAPageWithCacheContexts(): void
     {
         $this->provideFullTestSet();
+        $this->getContainer()->get(RequestStack::class)->push(new Request(attributes: ['_route' => 'dashboard']));
 
         $response = $this->getContainer()->get(PageRenderer::class)->render(
             cacheability: Cacheability::for(
@@ -55,6 +63,7 @@ class PageRendererTest extends ContainerTestCase
             ),
             render: fn (): string => '',
             navigationSection: null,
+            metadata: new PageMetadata(title: 'Page', description: 'The page'),
         );
 
         $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));

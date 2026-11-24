@@ -3,10 +3,13 @@
 namespace App\Tests\Application;
 
 use App\Application\AppShell;
-use App\Application\OpenGraph\OpenGraph;
+use App\Application\PageMetadata\PageMetadata;
 use App\Tests\ContainerTestCase;
 use App\Tests\ProvideTestData;
 use Spatie\Snapshots\MatchesSnapshots;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\Translation\TranslatableMessage;
 
 class AppShellTest extends ContainerTestCase
 {
@@ -18,35 +21,31 @@ class AppShellTest extends ContainerTestCase
     public function testRender(): void
     {
         $this->provideFullTestSet();
-
-        $this->assertMatchesHtmlSnapshot($this->appShell->render(
-            content: '<p>The page content</p>',
-            navigationSection: null,
-            openGraph: null,
-        ));
-    }
-
-    public function testRenderWithAnOpenGraph(): void
-    {
-        $this->provideFullTestSet();
+        $this->getContainer()->get(RequestStack::class)->push(new Request(attributes: [
+            '_route' => 'activity',
+            '_route_params' => ['activityId' => 'activity-1'],
+        ]));
 
         $render = $this->appShell->render(
-            content: '',
+            content: '<p>The page content</p>',
             navigationSection: null,
-            openGraph: new OpenGraph(
-                path: 'activities/activity-1',
+            metadata: new PageMetadata(
                 title: 'Morning Run',
-                description: 'Run · 10.00 km · 50:00 · 120 m',
-                imagePath: 'activities/activity-1/og-image.png',
+                description: new TranslatableMessage('{numberOfActivities} activities', ['{numberOfActivities}' => '15']),
+                imagePath: '/activities/activity-1/og-image.png',
             ),
         );
 
+        $this->assertStringContainsString('<html lang="en-US">', $render);
+        $this->assertStringContainsString('<meta property="og:locale" content="en_US">', $render);
         $this->assertStringContainsString('<title>Morning Run | Dreeve</title>', $render);
         $this->assertStringContainsString('<meta property="og:title" content="Morning Run">', $render);
-        $this->assertStringContainsString('<meta property="og:description" content="Run · 10.00 km · 50:00 · 120 m">', $render);
+        $this->assertStringContainsString('<meta property="og:description" content="15 activities">', $render);
         $this->assertStringContainsString('<meta property="og:url" content="http://localhost:8080/activities/activity-1">', $render);
+        $this->assertStringContainsString('<link rel="canonical" href="http://localhost:8080/activities/activity-1">', $render);
         $this->assertStringContainsString('<meta property="og:image" content="http://localhost:8080/activities/activity-1/og-image.png">', $render);
         $this->assertStringContainsString('<meta name="twitter:card" content="summary_large_image">', $render);
+        $this->assertMatchesHtmlSnapshot($render);
     }
 
     #[\Override]

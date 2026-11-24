@@ -15,8 +15,13 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Gear\GearId;
-use App\Domain\Image\ImageStorage;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
+use App\Domain\Media\MediaItemPath;
+use App\Domain\Media\MediaItemRepository;
+use App\Domain\Media\MediaItems;
+use App\Domain\Media\MediaItemStorage;
 use App\Domain\Settings\DbalSettingsRepository;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
@@ -25,6 +30,7 @@ use App\Infrastructure\CQRS\Command\CouldNotProcessCommand;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
+use App\Tests\Domain\Media\MediaItemBuilder;
 use League\Flysystem\FilesystemOperator;
 
 class ManuallyCreateActivityCommandHandlerTest extends ContainerTestCase
@@ -53,6 +59,7 @@ class ManuallyCreateActivityCommandHandlerTest extends ContainerTestCase
         ]));
 
         $activity = $this->activityRepository->findAll()->getFirst();
+        $this->assertNotNull($activity);
 
         $this->assertSame('My manual activity', $activity->getOriginalName());
         $this->assertSame('A nice run', $activity->getDescription());
@@ -76,8 +83,7 @@ class ManuallyCreateActivityCommandHandlerTest extends ContainerTestCase
         $this->assertTrue($activity->isGroupActivity());
         $this->assertNull($activity->getEncodedPolyline());
         $this->assertNull($activity->getStartingCoordinate());
-        $this->assertSame([], $activity->getLocalImagePaths());
-        $this->assertSame(0, $activity->getTotalImageCount());
+        $this->assertTrue($activity->getMediaItemIds()->isEmpty());
         $this->assertTrue($this->getContainer()->get(ActivityScanRepository::class)->isScanned(
             activityId: $activity->getId(),
             type: ActivityScanType::STREAMS,
@@ -94,6 +100,7 @@ class ManuallyCreateActivityCommandHandlerTest extends ContainerTestCase
         ]));
 
         $activity = $this->activityRepository->findAll()->getFirst();
+        $this->assertNotNull($activity);
 
         $this->assertSame('', $activity->getDescription());
         $this->assertNull($activity->getCalories());
@@ -123,6 +130,7 @@ class ManuallyCreateActivityCommandHandlerTest extends ContainerTestCase
         ]));
 
         $activity = $this->activityRepository->findAll()->getFirst();
+        $this->assertNotNull($activity);
 
         $this->assertSame(16.093, round($activity->getDistance()->toFloat(), 3));
         $this->assertSame(30.0, round($activity->getElevation()->toFloat(), 1));
@@ -136,17 +144,25 @@ class ManuallyCreateActivityCommandHandlerTest extends ContainerTestCase
             'sportType' => 'Run',
             'startDateTime' => '2023-10-17T16:15',
             'duration' => ['minutes' => 30],
-            'images' => Json::encode([
+            'mediaItems' => Json::encode([
                 ['status' => 'new', 'filename' => 'photo.jpg', 'content' => base64_encode('binary-content')],
             ]),
         ]));
 
         $activity = $this->activityRepository->findAll()->getFirst();
+        $this->assertNotNull($activity);
 
-        $localImagePaths = $activity->getLocalImagePaths();
-        $this->assertCount(1, $localImagePaths);
-        $this->assertSame(1, $activity->getTotalImageCount());
-        $this->assertTrue($this->fileStorage->fileExists(str_replace('files/', '', $localImagePaths[0])));
+        $this->assertEquals(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5')]), $activity->getMediaItemIds());
+        $this->assertTrue($this->fileStorage->fileExists('activities/0025176c-5652-11ee-923d-02424dd627d5.jpg'));
+        $this->assertEquals(
+            MediaItems::fromArray([
+                MediaItemBuilder::fromDefaults()
+                    ->withMediaItemId(MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'))
+                    ->withPath(MediaItemPath::fromString('activities/0025176c-5652-11ee-923d-02424dd627d5.jpg'))
+                    ->build(),
+            ]),
+            $this->getContainer()->get(MediaItemRepository::class)->findByIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5')])),
+        );
     }
 
     public function testHandleThrowsWhenNotRunningInFileImportMode(): void
@@ -156,7 +172,7 @@ class ManuallyCreateActivityCommandHandlerTest extends ContainerTestCase
             activityScanRepository: $this->getContainer()->get(ActivityScanRepository::class),
             activityIdFactory: $this->getContainer()->get(ActivityIdFactory::class),
             settingsRepository: $this->getContainer()->get(SettingsRepository::class),
-            imageStorage: $this->getContainer()->get(ImageStorage::class),
+            mediaItemStorage: $this->getContainer()->get(MediaItemStorage::class),
             importMode: ImportMode::STRAVA_API,
         );
 

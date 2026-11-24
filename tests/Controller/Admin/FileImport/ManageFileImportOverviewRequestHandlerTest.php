@@ -172,6 +172,9 @@ class ManageFileImportOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertSame($expectedActivityValue, $crawler->filter('input[name="filters[activity]"]')->attr('value'));
     }
 
+    /**
+     * @return iterable<string, array{string, string, string}>
+     */
     public static function provideTextFilterScenarios(): iterable
     {
         yield 'a filename filter keeps its value' => [
@@ -263,7 +266,7 @@ class ManageFileImportOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(2, $detailLinks);
         $this->assertStringContainsString(
             '/activities/'.ActivityId::fromUnprefixed('1'),
-            $detailLinks->first()->attr('href')
+            (string) $detailLinks->first()->attr('href')
         );
         $this->assertSame('Activity 1', trim($detailLinks->first()->text()));
         $this->assertSame('01-05-26', trim($detailLinks->first()->siblings()->filter('span')->text()));

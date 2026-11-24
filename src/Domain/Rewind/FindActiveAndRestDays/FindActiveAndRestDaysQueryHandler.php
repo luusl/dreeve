@@ -20,6 +20,9 @@ final readonly class FindActiveAndRestDaysQueryHandler implements QueryHandler
     ) {
     }
 
+    /**
+     * @param Query<Response> $query
+     */
     public function handle(Query $query): Response
     {
         assert($query instanceof FindActiveAndRestDays);
@@ -52,7 +55,7 @@ final readonly class FindActiveAndRestDaysQueryHandler implements QueryHandler
         $mostRecentYearToQuery = $query->getYears()->getFirst();
         /** @var \App\Infrastructure\ValueObject\Time\Year $oldestYearToQuery */
         $oldestYearToQuery = $query->getYears()->getLast();
-        $today = $this->clock->getCurrentDateTimeImmutable();
+        $today = $this->clock->now();
 
         $startDate = $oldestYearToQuery->toInt() === $firstActivityStartDate->getYear() ? $firstActivityStartDate : SerializableDateTime::fromString(sprintf('%s-01-01 00:00:00', $oldestYearToQuery->toInt()));
         $endDate = $mostRecentYearToQuery->toInt() === $today->getYear() ? SerializableDateTime::fromString($today->format('Y-m-d 23:59:59')) : SerializableDateTime::fromString(sprintf('%s-12-31 23:59:59', $mostRecentYearToQuery->toInt()));

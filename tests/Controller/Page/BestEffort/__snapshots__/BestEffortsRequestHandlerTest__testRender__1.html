@@ -1,33 +1,39 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-US">
 <head>
-    <title>Robin Ingelbrecht | Dreeve</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <meta property="og:site_name" content="Dreeve">
-    <meta property="og:type" content="website">
-        <meta property="og:title" content="Robin Ingelbrecht">
-        <meta name="theme-color" content="#F26822">
+    <title>Best efforts | Dreeve</title>
+<meta property="og:site_name" content="Dreeve">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Best efforts">
+<meta property="og:url" content="http://localhost:8080/best-efforts">
+<link rel="canonical" href="http://localhost:8080/best-efforts">
+<meta property="og:description" content="Robin Ingelbrecht &middot; 16 activities &middot; 322 km &middot; 11 h">
+<meta name="description" content="Robin Ingelbrecht &middot; 16 activities &middot; 322 km &middot; 11 h">
+<meta name="twitter:card" content="summary">
+
+    <meta name="theme-color" content="#F26822">
     <meta name="mobile-web-app-title" content="Robin Ingelbrecht | Dreeve">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Dreeve">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="js-dist-url" content="/js/dist/">
-    <meta name="js-dist-version" content="v5.7.0">
+    <meta name="js-dist-version" content="v5.9.1">
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/images/manifest/icon-apple-180.maskable.png">
     <link href="/manifest.json" rel="manifest" crossorigin="use-credentials">
     <link rel="icon" type="image/x-icon" href="/assets/images/logo.svg">
     <script>
-        document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+        const themePreference = localStorage.getItem('theme') || 'system';
+        document.documentElement.setAttribute('data-theme', themePreference === 'system' ? (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : themePreference);
         if (localStorage.getItem('sideNavCollapsed') === 'true') {
             document.documentElement.setAttribute('data-sidebar-collapsed', '');
         }
     </script>
-    <link href="/css/dist/tailwind.min.css?v5.7.0" rel="stylesheet">
-    <link rel="preload" href="/libraries/leaflet/leaflet.min.css?v5.7.0" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" href="/libraries/leaflet/leaflet-gesture-handling.min.css?v5.7.0" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" href="/libraries/clusterize/clusterize.min.css?v5.7.0" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <link rel="preload" href="/libraries/lightgallery/lightgallery-bundle.min.css?v5.7.0" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link href="/css/dist/tailwind.min.css?v5.9.1" rel="stylesheet">
+    <link rel="preload" href="/libraries/leaflet/leaflet.min.css?v5.9.1" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="/libraries/clusterize/clusterize.min.css?v5.9.1" as="style" onload="this.onload=null;this.rel='stylesheet'">
 </head>
 <body class="bg-gray-50">
 <div class="antialiased">
@@ -43,7 +49,7 @@
                     </svg>
                     <span class="sr-only">Toggle sidebar</span>
                 </button>
-                <button data-drawer-target="drawer-navigation" data-drawer-toggle="drawer-navigation" aria-controls="drawer-navigation" class="md:hidden mr-3 inline-flex items-center justify-center text-gray-600 cursor-pointer select-none">
+                <button data-drawer-toggle="drawer-navigation" aria-controls="drawer-navigation" class="md:hidden mr-3 inline-flex items-center justify-center text-gray-600 cursor-pointer select-none">
                     <span aria-hidden="true" class="relative block w-3.5 h-5">
                         <span class="absolute inset-x-0 top-1 h-0.5 rounded-full bg-current transition-all duration-300 ease-in-out drawer-open:top-1/2 drawer-open:-translate-y-1/2 drawer-open:rotate-45"></span>
                         <span class="absolute inset-x-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-current transition-all duration-300 ease-in-out drawer-open:opacity-0"></span>
@@ -95,7 +101,7 @@
                             R
                         </div>
                                     </button>
-                <div id="profileDropdownMenu" class="z-10 hidden bg-white border border-gray-200 rounded-lg shadow-lg w-72">
+                <div id="profileDropdownMenu" popover="auto" data-dropdown-panel class="bg-white border border-gray-200 rounded-lg shadow-lg w-72">
                     <div class="p-2">
                         <div class="flex items-center px-2.5 p-2 space-x-1.5 text-sm bg-gray-50 rounded-sm">
                                                             <div class="size-8 shrink-0 rounded-full border flex items-center justify-center bg-primary text-white text-xs p-1">
@@ -114,14 +120,32 @@
                             </a>
                         </li>
                         <li class="border-t border-gray-200 pt-1.5">
-                            <label for="darkModeToggle" class="dark-mode-toggle hover:bg-gray-50 rounded p-2 flex cursor-pointer items-center">
+                            <div class="dark-mode-toggle p-2 flex items-center">
                                 <div class="inline-flex items-center">
                                     <svg class="size-4 me-1.5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewbox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 0 1-.5-17.986V3c-.354.966-.5 1.911-.5 3a9 9 0 0 0 9 9c.239 0 .254.018.488 0A9.004 9.004 0 0 1 12 21Z"></path></svg>
-                                    <span class="text-sm font-medium text-heading">Dark mode</span>
+                                    <span class="text-sm font-medium text-heading">Theme</span>
                                 </div>
-                                <input id="darkModeToggle" type="checkbox" value="" class="peer sr-only">
-                                <div class="ms-auto peer peer-checked:after:border-buffer relative h-5 w-9 rounded-full bg-gray-200 peer-checked:bg-gray-100 peer-focus:outline-none after:absolute after:start-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full"></div>
-                            </label>
+                                <div class="ms-auto inline-flex shadow-xs" role="radiogroup" aria-label="Theme">
+                                                                            <div class="flex">
+                                            <input type="radio" id="theme-light" value="light" name="theme" class="hidden peer">
+                                            <label for="theme-light" title="Light" aria-label="Light" class="rounded-s-lg inline-flex items-center cursor-pointer p-1 bg-white border border-gray-200 hover:text-primary hover:bg-gray-50 peer-checked:relative peer-checked:text-primary peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:hover:text-primary peer-checked:hover:bg-primary/20 transition-colors">
+                                                <svg class="size-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewbox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5V3m0 18v-2M7.05 7.05 5.636 5.636m12.728 12.728L16.95 16.95M5 12H3m18 0h-2M7.05 16.95l-1.414 1.414M18.364 5.636 16.95 7.05M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z"></path></svg>
+                                            </label>
+                                        </div>
+                                                                            <div class="flex">
+                                            <input type="radio" id="theme-system" value="system" name="theme" class="hidden peer">
+                                            <label for="theme-system" title="System" aria-label="System" class="-ms-px inline-flex items-center cursor-pointer p-1 bg-white border border-gray-200 hover:text-primary hover:bg-gray-50 peer-checked:relative peer-checked:text-primary peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:hover:text-primary peer-checked:hover:bg-primary/20 transition-colors">
+                                                <svg class="size-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewbox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5Zm8 11v4m-4 0h8"></path></svg>
+                                            </label>
+                                        </div>
+                                                                            <div class="flex">
+                                            <input type="radio" id="theme-dark" value="dark" name="theme" class="hidden peer">
+                                            <label for="theme-dark" title="Dark" aria-label="Dark" class="-ms-px rounded-e-lg inline-flex items-center cursor-pointer p-1 bg-white border border-gray-200 hover:text-primary hover:bg-gray-50 peer-checked:relative peer-checked:text-primary peer-checked:border-primary peer-checked:bg-primary-soft peer-checked:hover:text-primary peer-checked:hover:bg-primary/20 transition-colors">
+                                                <svg class="size-4" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewbox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21a9 9 0 0 1-.5-17.986V3c-.354.966-.5 1.911-.5 3a9 9 0 0 0 9 9c.239 0 .254.018.488 0A9.004 9.004 0 0 1 12 21Z"></path></svg>
+                                            </label>
+                                        </div>
+                                                                    </div>
+                            </div>
                         </li>
                         <li>
                             <a href="/admin" class="inline-flex items-center w-full p-2 hover:bg-gray-50 rounded">
@@ -136,7 +160,8 @@
                     </div>
     </div>
 </nav>        <!-- SIDEBAR -->
-    <aside class="-translate-x-full md:translate-x-0" aria-label="Sidenav" id="drawer-navigation">
+    <div data-drawer-hide="drawer-navigation" class="hidden max-md:drawer-open:block fixed inset-0 z-30 bg-gray-900/50 dark:bg-gray-900/80"></div>
+<aside class="-translate-x-full md:translate-x-0 drawer-open:translate-x-0 transition-transform" aria-label="Sidenav" id="drawer-navigation">
     <div>
         <ul class="space-y-1 pb-2">
             <li>
@@ -152,10 +177,10 @@
             <li>
                 <a title="Activities" href="/activities" aria-selected="false">
                     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 9h6m-6 3h6m-6 3h6M6.996 9h.01m-.01 3h.01m-.01 3h.01M4 5h16a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z"></path>
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 7h10M10 12h10M10 17h10M5 7.5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Zm0 5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Zm0 5a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1Z"></path>
                     </svg>
                     <span>Activities</span>
-                    <span class="badge">15</span>
+                    <span class="badge">16</span>
                 </a>
             </li>
                             <li>
@@ -178,7 +203,7 @@
             <li>
                 <a title="Monthly stats" href="/monthly-stats" aria-selected="false">
                     <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewbox="0 0 24 24">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Zm3-7h.01v.01H8V13Zm4 0h.01v.01H12V13Zm4 0h.01v.01H16V13Zm-8 4h.01v.01H8V17Zm4 0h.01v.01H12V17Zm4 0h.01v.01H16V17Z"></path>
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 10h16m-8-3V4M7 7V4m10 3V4M5 20h14a1 1 0 0 0 1-1V7a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1Z"></path>
                     </svg>
                     <span>Monthly stats</span>
                 </a>
@@ -237,7 +262,7 @@
                                 <path stroke="currentColor" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"></path>
                             </svg>
                             <span>Photos</span>
-                            <span class="badge">32</span>
+                            <span class="badge">20</span>
                         </a>
                     </li>
                             </ul>
@@ -245,7 +270,7 @@
     <div>
         <div class="sidebar-collapsed:hidden">
             <div class="flex items-center justify-center gap-x-1">
-                <span class="bg-gray-100 text-gray-600 font-medium px-2.5 py-0.5 rounded-sm">v5.7.0</span>
+                <span class="bg-gray-100 text-gray-600 font-medium px-2.5 py-0.5 rounded-sm">v5.9.1</span>
                 <span class="hidden" data-latest-version>
                 (latest: <a class="underline" href="https://github.com/dreeveapp/dreeve/releases/tag/%5BLATEST_VERSION%5D">[LATEST_VERSION]</a>)
             </span>
@@ -256,7 +281,7 @@
 
     <!-- MAIN -->
     <main class="p-4 md:ml-64 sidebar-collapsed:md:ml-16 h-auto min-h-screen pt-20 text-gray-900">
-                    <nav class="flex min-w-0 max-w-full overflow-hidden mb-4" aria-label="Breadcrumb">
+        <nav class="flex min-w-0 max-w-full overflow-hidden mb-4" aria-label="Breadcrumb">
     <ol class="flex min-w-0 items-center gap-x-1 text-xs font-medium">
         <li class="inline-flex items-center shrink-0">
                             <a href="/dashboard" class="inline-flex items-center whitespace-nowrap text-gray-700 hover:text-primary hover:underline">    <svg class="size-4 shrink-0 mr-1.5" fill="currentColor" viewbox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
@@ -271,12 +296,31 @@
             </li>
             </ol>
 </nav>
-                <div id="bestEffortsActivityTypeTabContent">
+                    <div class="tabs tabs--default">
+            <ul id="bestEffortsActivityTypeTab" data-tabs="#bestEffortsActivityTypeTabContent" role="tablist">
+                                    <li role="presentation">
+                        <a href="#" data-tabs-target="#bestEffortsRide" role="tab" aria-controls="bestEffortsRide">
+                            Cycling
+                        </a>
+                    </li>
+                                    <li role="presentation">
+                        <a href="#" data-tabs-target="#bestEffortsRun" role="tab" aria-controls="bestEffortsRun">
+                            Running
+                        </a>
+                    </li>
+                            </ul>
+        </div>
+        <div id="bestEffortsActivityTypeTabContent">
                     <div id="bestEffortsRide" role="tabpanel" aria-labelledby="bestEffortsRide-tab">
                 <ul class="tabs tabs--menu-item" id="bestEffortsPeriodTabRide" data-tabs="#bestEffortsPeriodTabContentRide" role="tablist">
                                             <li role="presentation">
                             <a href="#" data-tabs-target="#bestEffortsPeriodRideallTime" role="tab" aria-controls="bestEffortsPeriodRideallTime">
                                 All time
+                            </a>
+                        </li>
+                                            <li role="presentation">
+                            <a href="#" data-tabs-target="#bestEffortsPeriodRidefourWeeks" role="tab" aria-controls="bestEffortsPeriodRidefourWeeks">
+                                4 weeks
                             </a>
                         </li>
                                             <li role="presentation">
@@ -298,7 +342,7 @@
                 <div id="bestEffortsPeriodTabContentRide">
                                                                                             <div id="bestEffortsPeriodRideallTime" role="tabpanel" aria-labelledby="bestEffortsPeriodRideallTime-tab">
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
-                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"30px","left":"2px","right":"0","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"none"},"valueFormatter":{"callback":"formatSeconds"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"log","axisLabel":{"formatter":{"callback":"formatSeconds"},"showMaxLabel":false}},"series":[{"name":"Rides","type":"bar","cursor":"default","barGap":0,"emphasis":{"focus":"none"},"label":{"show":false},"itemStyle":{"color":"#5470c6"},"data":[5,10,10,20,30,40,50,80,50,90,100,100]},{"name":"Virtual Rides","type":"bar","cursor":"default","barGap":0,"emphasis":{"focus":"none"},"label":{"show":false},"itemStyle":{"color":"#3ba272"},"data":[5,10,10,20,30,40,50,80,50,90,100,100]}]}'></div>
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"km\/h"},"series":[{"name":"Rides","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#5470c6"},"data":[{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:05&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 5793.6 km\/h"}]},{"name":"Virtual Rides","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#3ba272"},"data":[{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:05&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 5793.6 km\/h"}]}]}'></div>
                             </div>
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
                                 <h3 class="mb-4 text-lg font-semibold">
@@ -553,9 +597,140 @@
                                 </div>
                             </div>
                         </div>
+                                                                                            <div id="bestEffortsPeriodRidefourWeeks" role="tabpanel" aria-labelledby="bestEffortsPeriodRidefourWeeks-tab">
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":null},"series":[]}'></div>
+                            </div>
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <h3 class="mb-4 text-lg font-semibold">
+                                    Details
+                                </h3>
+                                <div class="relative overflow-x-auto">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col" class="sticky left-0 bg-gray-50">
+                                                Dist.
+                                            </th>
+                                                                                    </tr>
+                                        </thead>
+                                        <tbody>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/8046" class="font-medium text-blue-600 hover:underline">
+                                                            5 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/10000" class="font-medium text-blue-600 hover:underline">
+                                                            10 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/16093" class="font-medium text-blue-600 hover:underline">
+                                                            10 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/20000" class="font-medium text-blue-600 hover:underline">
+                                                            20 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/30000" class="font-medium text-blue-600 hover:underline">
+                                                            30 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/40000" class="font-medium text-blue-600 hover:underline">
+                                                            40 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/50000" class="font-medium text-blue-600 hover:underline">
+                                                            50 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/80000" class="font-medium text-blue-600 hover:underline">
+                                                            80 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/80467" class="font-medium text-blue-600 hover:underline">
+                                                            50 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/90000" class="font-medium text-blue-600 hover:underline">
+                                                            90 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/100000" class="font-medium text-blue-600 hover:underline">
+                                                            100 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Ride/160934" class="font-medium text-blue-600 hover:underline">
+                                                            100 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                            </tr>
+                                                                                </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                                                                                             <div id="bestEffortsPeriodRidetwelveWeeks" role="tabpanel" aria-labelledby="bestEffortsPeriodRidetwelveWeeks-tab">
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
-                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"30px","left":"2px","right":"0","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"none"},"valueFormatter":{"callback":"formatSeconds"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"log","axisLabel":{"formatter":{"callback":"formatSeconds"},"showMaxLabel":false}},"series":[{"name":"Rides","type":"bar","cursor":"default","barGap":0,"emphasis":{"focus":"none"},"label":{"show":false},"itemStyle":{"color":"#5470c6"},"data":[5,10,10,20,30,40,50,80,50,90,100,100]},{"name":"Virtual Rides","type":"bar","cursor":"default","barGap":0,"emphasis":{"focus":"none"},"label":{"show":false},"itemStyle":{"color":"#3ba272"},"data":[5,10,10,20,30,40,50,80,50,90,100,100]}]}'></div>
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"km\/h"},"series":[{"name":"Rides","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#5470c6"},"data":[{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:05&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 5793.6 km\/h"}]},{"name":"Virtual Rides","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#3ba272"},"data":[{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:05&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 5793.6 km\/h"}]}]}'></div>
                             </div>
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
                                 <h3 class="mb-4 text-lg font-semibold">
@@ -812,7 +987,7 @@
                         </div>
                                                                                             <div id="bestEffortsPeriodRidesixMonths" role="tabpanel" aria-labelledby="bestEffortsPeriodRidesixMonths-tab">
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
-                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"30px","left":"2px","right":"0","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"none"},"valueFormatter":{"callback":"formatSeconds"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"log","axisLabel":{"formatter":{"callback":"formatSeconds"},"showMaxLabel":false}},"series":[{"name":"Rides","type":"bar","cursor":"default","barGap":0,"emphasis":{"focus":"none"},"label":{"show":false},"itemStyle":{"color":"#5470c6"},"data":[5,10,10,20,30,40,50,80,50,90,100,100]},{"name":"Virtual Rides","type":"bar","cursor":"default","barGap":0,"emphasis":{"focus":"none"},"label":{"show":false},"itemStyle":{"color":"#3ba272"},"data":[5,10,10,20,30,40,50,80,50,90,100,100]}]}'></div>
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"km\/h"},"series":[{"name":"Rides","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#5470c6"},"data":[{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:05&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 5793.6 km\/h"}]},{"name":"Virtual Rides","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#3ba272"},"data":[{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:05&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 5793.6 km\/h"}]}]}'></div>
                             </div>
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
                                 <h3 class="mb-4 text-lg font-semibold">
@@ -1069,7 +1244,7 @@
                         </div>
                                                                                             <div id="bestEffortsPeriodRideyear" role="tabpanel" aria-labelledby="bestEffortsPeriodRideyear-tab">
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
-                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"30px","left":"2px","right":"0","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"none"},"valueFormatter":{"callback":"formatSeconds"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"log","axisLabel":{"formatter":{"callback":"formatSeconds"},"showMaxLabel":false}},"series":[{"name":"Rides","type":"bar","cursor":"default","barGap":0,"emphasis":{"focus":"none"},"label":{"show":false},"itemStyle":{"color":"#5470c6"},"data":[5,10,10,20,30,40,50,80,50,90,100,100]},{"name":"Virtual Rides","type":"bar","cursor":"default","barGap":0,"emphasis":{"focus":"none"},"label":{"show":false},"itemStyle":{"color":"#3ba272"},"data":[5,10,10,20,30,40,50,80,50,90,100,100]}]}'></div>
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["5mi","10km","10mi","20km","30km","40km","50km","80km","50mi","90km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"km\/h"},"series":[{"name":"Rides","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#5470c6"},"data":[{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:05&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 5793.6 km\/h"}]},{"name":"Virtual Rides","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#3ba272"},"data":[{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:05&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:10&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:20&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;00:50&lt;\/strong&gt; \u00b7 5793.6 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:30&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":3600,"tooltip":"Virtual Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 3600 km\/h"},{"value":5793.6,"tooltip":"Virtual Rides: &lt;strong&gt;01:40&lt;\/strong&gt; \u00b7 5793.6 km\/h"}]}]}'></div>
                             </div>
                             <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
                                 <h3 class="mb-4 text-lg font-semibold">
@@ -1326,18 +1501,999 @@
                         </div>
                                     </div>
             </div>
+                    <div id="bestEffortsRun" role="tabpanel" aria-labelledby="bestEffortsRun-tab">
+                <ul class="tabs tabs--menu-item" id="bestEffortsPeriodTabRun" data-tabs="#bestEffortsPeriodTabContentRun" role="tablist">
+                                            <li role="presentation">
+                            <a href="#" data-tabs-target="#bestEffortsPeriodRunallTime" role="tab" aria-controls="bestEffortsPeriodRunallTime">
+                                All time
+                            </a>
+                        </li>
+                                            <li role="presentation">
+                            <a href="#" data-tabs-target="#bestEffortsPeriodRunfourWeeks" role="tab" aria-controls="bestEffortsPeriodRunfourWeeks">
+                                4 weeks
+                            </a>
+                        </li>
+                                            <li role="presentation">
+                            <a href="#" data-tabs-target="#bestEffortsPeriodRuntwelveWeeks" role="tab" aria-controls="bestEffortsPeriodRuntwelveWeeks">
+                                12 weeks
+                            </a>
+                        </li>
+                                            <li role="presentation">
+                            <a href="#" data-tabs-target="#bestEffortsPeriodRunsixMonths" role="tab" aria-controls="bestEffortsPeriodRunsixMonths">
+                                6 months
+                            </a>
+                        </li>
+                                            <li role="presentation">
+                            <a href="#" data-tabs-target="#bestEffortsPeriodRunyear" role="tab" aria-controls="bestEffortsPeriodRunyear">
+                                Year
+                            </a>
+                        </li>
+                                    </ul>
+                <div id="bestEffortsPeriodTabContentRun">
+                                                                                            <div id="bestEffortsPeriodRunallTime" role="tabpanel" aria-labelledby="bestEffortsPeriodRunallTime-tab">
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["400m","0.5mi","1km","1mi","2mi","5km","10km","15km","10mi","20km","21km","30km","42km","50km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"\/km","inverse":true,"axisLabel":{"formatter":{"callback":"formatSecondsTrimZero"}}},"series":[{"name":"Runs","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#9a60b4"},"data":[null,null,null,null,null,{"value":300,"tooltip":"Runs: &lt;strong&gt;25:00&lt;\/strong&gt; \u00b7 05:00 \/km"},null,null,null,null,null,null,null,null,null,null]}]}'></div>
+                            </div>
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <h3 class="mb-4 text-lg font-semibold">
+                                    Details
+                                </h3>
+                                <div class="relative overflow-x-auto">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col" class="sticky left-0 bg-gray-50">
+                                                Dist.
+                                            </th>
+                                                                                            <th scope="col">
+                                                    Runs
+                                                </th>
+                                                                                    </tr>
+                                        </thead>
+                                        <tbody>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/400" class="font-medium text-blue-600 hover:underline">
+                                                            400 m
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/804" class="font-medium text-blue-600 hover:underline">
+                                                            0.5 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1000" class="font-medium text-blue-600 hover:underline">
+                                                            1 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1609" class="font-medium text-blue-600 hover:underline">
+                                                            1 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/3218" class="font-medium text-blue-600 hover:underline">
+                                                            2 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/5000" class="font-medium text-blue-600 hover:underline">
+                                                            5 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                                                                        <td class="truncate">
+                                                            <div class="font-semibold text-gray-700">25:00</div>
+                                                            <div class="text-xs">01-10-23</div>
+                                                            <div class="text-xs inline-flex"><a href="/activities/activity-run-1" class="flex items-center gap-x-1 font-medium text-blue-600 hover:underline"><svg class="h-4 shrink-0" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#F26722"><path d="M8.688 0C8.025 0 7.38.215 6.85.613l-3.32 2.49-2.845.948A1 1 0 000 5c0 1.579.197 2.772.567 3.734.376.978.907 1.654 1.476 2.223.305.305.6.567.886.82.785.697 1.5 1.33 2.159 2.634 1.032 2.57 2.37 4.748 4.446 6.27C11.629 22.218 14.356 23 18 23c2.128 0 3.587-.553 4.549-1.411a4.378 4.378 0 001.408-2.628c.152-.987-.389-1.787-.967-2.25l-3.892-3.114a1 1 0 01-.329-.477l-3.094-9.726A2 2 0 0013.769 2h-1.436a2 2 0 00-1.2.4l-.57.428-.516-1.803A1.413 1.413 0 008.688 0zM8.05 2.213c.069-.051.143-.094.221-.127l1.168 4.086L12.333 4h1.436l.954 3H12v2h3.36l.318 1H13v2h3.314l.55 1.726a3 3 0 00.984 1.433l3.106 2.485c-.77.19-1.778.356-2.954.356-1.97 0-3.178-.431-4.046-1.087-.895-.677-1.546-1.675-2.251-3.056-.224-.437-.45-.907-.688-1.403C9.875 10.08 8.444 7.1 5.531 4.102zM3.743 5.14c2.902 2.858 4.254 5.664 5.441 8.126.25.517.49 1.018.738 1.502.732 1.432 1.55 2.777 2.827 3.74C14.053 19.495 15.72 20 18 20c1.492 0 2.754-.23 3.684-.479a2.285 2.285 0 01-.467.575c-.5.446-1.435.904-3.217.904-3.356 0-5.629-.718-7.284-1.931-1.663-1.22-2.823-3.028-3.788-5.44a1.012 1.012 0 00-.034-.076c-.853-1.708-1.947-2.673-2.79-3.417a14.61 14.61 0 01-.647-.593c-.431-.431-.775-.88-1.024-1.527-.21-.545-.367-1.271-.417-2.3z" fill=""></path></svg><span class="">Test activity</span></a></div>
+                                                        </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/10000" class="font-medium text-blue-600 hover:underline">
+                                                            10 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/15000" class="font-medium text-blue-600 hover:underline">
+                                                            15 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/16093" class="font-medium text-blue-600 hover:underline">
+                                                            10 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/20000" class="font-medium text-blue-600 hover:underline">
+                                                            20 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/21097" class="font-medium text-blue-600 hover:underline">
+                                                            21 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/30000" class="font-medium text-blue-600 hover:underline">
+                                                            30 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/42194" class="font-medium text-blue-600 hover:underline">
+                                                            42 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/50000" class="font-medium text-blue-600 hover:underline">
+                                                            50 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/100000" class="font-medium text-blue-600 hover:underline">
+                                                            100 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/160934" class="font-medium text-blue-600 hover:underline">
+                                                            100 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                                                                                            <div id="bestEffortsPeriodRunfourWeeks" role="tabpanel" aria-labelledby="bestEffortsPeriodRunfourWeeks-tab">
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["400m","0.5mi","1km","1mi","2mi","5km","10km","15km","10mi","20km","21km","30km","42km","50km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"\/km","inverse":true,"axisLabel":{"formatter":{"callback":"formatSecondsTrimZero"}}},"series":[{"name":"Runs","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#9a60b4"},"data":[null,null,null,null,null,{"value":300,"tooltip":"Runs: &lt;strong&gt;25:00&lt;\/strong&gt; \u00b7 05:00 \/km"},null,null,null,null,null,null,null,null,null,null]}]}'></div>
+                            </div>
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <h3 class="mb-4 text-lg font-semibold">
+                                    Details
+                                </h3>
+                                <div class="relative overflow-x-auto">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col" class="sticky left-0 bg-gray-50">
+                                                Dist.
+                                            </th>
+                                                                                            <th scope="col">
+                                                    Runs
+                                                </th>
+                                                                                    </tr>
+                                        </thead>
+                                        <tbody>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/400" class="font-medium text-blue-600 hover:underline">
+                                                            400 m
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/804" class="font-medium text-blue-600 hover:underline">
+                                                            0.5 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1000" class="font-medium text-blue-600 hover:underline">
+                                                            1 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1609" class="font-medium text-blue-600 hover:underline">
+                                                            1 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/3218" class="font-medium text-blue-600 hover:underline">
+                                                            2 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/5000" class="font-medium text-blue-600 hover:underline">
+                                                            5 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                                                                        <td class="truncate">
+                                                            <div class="font-semibold text-gray-700">25:00</div>
+                                                            <div class="text-xs">01-10-23</div>
+                                                            <div class="text-xs inline-flex"><a href="/activities/activity-run-1" class="flex items-center gap-x-1 font-medium text-blue-600 hover:underline"><svg class="h-4 shrink-0" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#F26722"><path d="M8.688 0C8.025 0 7.38.215 6.85.613l-3.32 2.49-2.845.948A1 1 0 000 5c0 1.579.197 2.772.567 3.734.376.978.907 1.654 1.476 2.223.305.305.6.567.886.82.785.697 1.5 1.33 2.159 2.634 1.032 2.57 2.37 4.748 4.446 6.27C11.629 22.218 14.356 23 18 23c2.128 0 3.587-.553 4.549-1.411a4.378 4.378 0 001.408-2.628c.152-.987-.389-1.787-.967-2.25l-3.892-3.114a1 1 0 01-.329-.477l-3.094-9.726A2 2 0 0013.769 2h-1.436a2 2 0 00-1.2.4l-.57.428-.516-1.803A1.413 1.413 0 008.688 0zM8.05 2.213c.069-.051.143-.094.221-.127l1.168 4.086L12.333 4h1.436l.954 3H12v2h3.36l.318 1H13v2h3.314l.55 1.726a3 3 0 00.984 1.433l3.106 2.485c-.77.19-1.778.356-2.954.356-1.97 0-3.178-.431-4.046-1.087-.895-.677-1.546-1.675-2.251-3.056-.224-.437-.45-.907-.688-1.403C9.875 10.08 8.444 7.1 5.531 4.102zM3.743 5.14c2.902 2.858 4.254 5.664 5.441 8.126.25.517.49 1.018.738 1.502.732 1.432 1.55 2.777 2.827 3.74C14.053 19.495 15.72 20 18 20c1.492 0 2.754-.23 3.684-.479a2.285 2.285 0 01-.467.575c-.5.446-1.435.904-3.217.904-3.356 0-5.629-.718-7.284-1.931-1.663-1.22-2.823-3.028-3.788-5.44a1.012 1.012 0 00-.034-.076c-.853-1.708-1.947-2.673-2.79-3.417a14.61 14.61 0 01-.647-.593c-.431-.431-.775-.88-1.024-1.527-.21-.545-.367-1.271-.417-2.3z" fill=""></path></svg><span class="">Test activity</span></a></div>
+                                                        </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/10000" class="font-medium text-blue-600 hover:underline">
+                                                            10 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/15000" class="font-medium text-blue-600 hover:underline">
+                                                            15 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/16093" class="font-medium text-blue-600 hover:underline">
+                                                            10 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/20000" class="font-medium text-blue-600 hover:underline">
+                                                            20 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/21097" class="font-medium text-blue-600 hover:underline">
+                                                            21 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/30000" class="font-medium text-blue-600 hover:underline">
+                                                            30 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/42194" class="font-medium text-blue-600 hover:underline">
+                                                            42 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/50000" class="font-medium text-blue-600 hover:underline">
+                                                            50 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/100000" class="font-medium text-blue-600 hover:underline">
+                                                            100 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/160934" class="font-medium text-blue-600 hover:underline">
+                                                            100 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                                                                                            <div id="bestEffortsPeriodRuntwelveWeeks" role="tabpanel" aria-labelledby="bestEffortsPeriodRuntwelveWeeks-tab">
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["400m","0.5mi","1km","1mi","2mi","5km","10km","15km","10mi","20km","21km","30km","42km","50km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"\/km","inverse":true,"axisLabel":{"formatter":{"callback":"formatSecondsTrimZero"}}},"series":[{"name":"Runs","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#9a60b4"},"data":[null,null,null,null,null,{"value":300,"tooltip":"Runs: &lt;strong&gt;25:00&lt;\/strong&gt; \u00b7 05:00 \/km"},null,null,null,null,null,null,null,null,null,null]}]}'></div>
+                            </div>
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <h3 class="mb-4 text-lg font-semibold">
+                                    Details
+                                </h3>
+                                <div class="relative overflow-x-auto">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col" class="sticky left-0 bg-gray-50">
+                                                Dist.
+                                            </th>
+                                                                                            <th scope="col">
+                                                    Runs
+                                                </th>
+                                                                                    </tr>
+                                        </thead>
+                                        <tbody>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/400" class="font-medium text-blue-600 hover:underline">
+                                                            400 m
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/804" class="font-medium text-blue-600 hover:underline">
+                                                            0.5 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1000" class="font-medium text-blue-600 hover:underline">
+                                                            1 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1609" class="font-medium text-blue-600 hover:underline">
+                                                            1 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/3218" class="font-medium text-blue-600 hover:underline">
+                                                            2 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/5000" class="font-medium text-blue-600 hover:underline">
+                                                            5 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                                                                        <td class="truncate">
+                                                            <div class="font-semibold text-gray-700">25:00</div>
+                                                            <div class="text-xs">01-10-23</div>
+                                                            <div class="text-xs inline-flex"><a href="/activities/activity-run-1" class="flex items-center gap-x-1 font-medium text-blue-600 hover:underline"><svg class="h-4 shrink-0" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#F26722"><path d="M8.688 0C8.025 0 7.38.215 6.85.613l-3.32 2.49-2.845.948A1 1 0 000 5c0 1.579.197 2.772.567 3.734.376.978.907 1.654 1.476 2.223.305.305.6.567.886.82.785.697 1.5 1.33 2.159 2.634 1.032 2.57 2.37 4.748 4.446 6.27C11.629 22.218 14.356 23 18 23c2.128 0 3.587-.553 4.549-1.411a4.378 4.378 0 001.408-2.628c.152-.987-.389-1.787-.967-2.25l-3.892-3.114a1 1 0 01-.329-.477l-3.094-9.726A2 2 0 0013.769 2h-1.436a2 2 0 00-1.2.4l-.57.428-.516-1.803A1.413 1.413 0 008.688 0zM8.05 2.213c.069-.051.143-.094.221-.127l1.168 4.086L12.333 4h1.436l.954 3H12v2h3.36l.318 1H13v2h3.314l.55 1.726a3 3 0 00.984 1.433l3.106 2.485c-.77.19-1.778.356-2.954.356-1.97 0-3.178-.431-4.046-1.087-.895-.677-1.546-1.675-2.251-3.056-.224-.437-.45-.907-.688-1.403C9.875 10.08 8.444 7.1 5.531 4.102zM3.743 5.14c2.902 2.858 4.254 5.664 5.441 8.126.25.517.49 1.018.738 1.502.732 1.432 1.55 2.777 2.827 3.74C14.053 19.495 15.72 20 18 20c1.492 0 2.754-.23 3.684-.479a2.285 2.285 0 01-.467.575c-.5.446-1.435.904-3.217.904-3.356 0-5.629-.718-7.284-1.931-1.663-1.22-2.823-3.028-3.788-5.44a1.012 1.012 0 00-.034-.076c-.853-1.708-1.947-2.673-2.79-3.417a14.61 14.61 0 01-.647-.593c-.431-.431-.775-.88-1.024-1.527-.21-.545-.367-1.271-.417-2.3z" fill=""></path></svg><span class="">Test activity</span></a></div>
+                                                        </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/10000" class="font-medium text-blue-600 hover:underline">
+                                                            10 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/15000" class="font-medium text-blue-600 hover:underline">
+                                                            15 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/16093" class="font-medium text-blue-600 hover:underline">
+                                                            10 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/20000" class="font-medium text-blue-600 hover:underline">
+                                                            20 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/21097" class="font-medium text-blue-600 hover:underline">
+                                                            21 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/30000" class="font-medium text-blue-600 hover:underline">
+                                                            30 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/42194" class="font-medium text-blue-600 hover:underline">
+                                                            42 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/50000" class="font-medium text-blue-600 hover:underline">
+                                                            50 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/100000" class="font-medium text-blue-600 hover:underline">
+                                                            100 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/160934" class="font-medium text-blue-600 hover:underline">
+                                                            100 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                                                                                            <div id="bestEffortsPeriodRunsixMonths" role="tabpanel" aria-labelledby="bestEffortsPeriodRunsixMonths-tab">
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["400m","0.5mi","1km","1mi","2mi","5km","10km","15km","10mi","20km","21km","30km","42km","50km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"\/km","inverse":true,"axisLabel":{"formatter":{"callback":"formatSecondsTrimZero"}}},"series":[{"name":"Runs","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#9a60b4"},"data":[null,null,null,null,null,{"value":300,"tooltip":"Runs: &lt;strong&gt;25:00&lt;\/strong&gt; \u00b7 05:00 \/km"},null,null,null,null,null,null,null,null,null,null]}]}'></div>
+                            </div>
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <h3 class="mb-4 text-lg font-semibold">
+                                    Details
+                                </h3>
+                                <div class="relative overflow-x-auto">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col" class="sticky left-0 bg-gray-50">
+                                                Dist.
+                                            </th>
+                                                                                            <th scope="col">
+                                                    Runs
+                                                </th>
+                                                                                    </tr>
+                                        </thead>
+                                        <tbody>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/400" class="font-medium text-blue-600 hover:underline">
+                                                            400 m
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/804" class="font-medium text-blue-600 hover:underline">
+                                                            0.5 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1000" class="font-medium text-blue-600 hover:underline">
+                                                            1 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1609" class="font-medium text-blue-600 hover:underline">
+                                                            1 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/3218" class="font-medium text-blue-600 hover:underline">
+                                                            2 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/5000" class="font-medium text-blue-600 hover:underline">
+                                                            5 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                                                                        <td class="truncate">
+                                                            <div class="font-semibold text-gray-700">25:00</div>
+                                                            <div class="text-xs">01-10-23</div>
+                                                            <div class="text-xs inline-flex"><a href="/activities/activity-run-1" class="flex items-center gap-x-1 font-medium text-blue-600 hover:underline"><svg class="h-4 shrink-0" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#F26722"><path d="M8.688 0C8.025 0 7.38.215 6.85.613l-3.32 2.49-2.845.948A1 1 0 000 5c0 1.579.197 2.772.567 3.734.376.978.907 1.654 1.476 2.223.305.305.6.567.886.82.785.697 1.5 1.33 2.159 2.634 1.032 2.57 2.37 4.748 4.446 6.27C11.629 22.218 14.356 23 18 23c2.128 0 3.587-.553 4.549-1.411a4.378 4.378 0 001.408-2.628c.152-.987-.389-1.787-.967-2.25l-3.892-3.114a1 1 0 01-.329-.477l-3.094-9.726A2 2 0 0013.769 2h-1.436a2 2 0 00-1.2.4l-.57.428-.516-1.803A1.413 1.413 0 008.688 0zM8.05 2.213c.069-.051.143-.094.221-.127l1.168 4.086L12.333 4h1.436l.954 3H12v2h3.36l.318 1H13v2h3.314l.55 1.726a3 3 0 00.984 1.433l3.106 2.485c-.77.19-1.778.356-2.954.356-1.97 0-3.178-.431-4.046-1.087-.895-.677-1.546-1.675-2.251-3.056-.224-.437-.45-.907-.688-1.403C9.875 10.08 8.444 7.1 5.531 4.102zM3.743 5.14c2.902 2.858 4.254 5.664 5.441 8.126.25.517.49 1.018.738 1.502.732 1.432 1.55 2.777 2.827 3.74C14.053 19.495 15.72 20 18 20c1.492 0 2.754-.23 3.684-.479a2.285 2.285 0 01-.467.575c-.5.446-1.435.904-3.217.904-3.356 0-5.629-.718-7.284-1.931-1.663-1.22-2.823-3.028-3.788-5.44a1.012 1.012 0 00-.034-.076c-.853-1.708-1.947-2.673-2.79-3.417a14.61 14.61 0 01-.647-.593c-.431-.431-.775-.88-1.024-1.527-.21-.545-.367-1.271-.417-2.3z" fill=""></path></svg><span class="">Test activity</span></a></div>
+                                                        </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/10000" class="font-medium text-blue-600 hover:underline">
+                                                            10 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/15000" class="font-medium text-blue-600 hover:underline">
+                                                            15 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/16093" class="font-medium text-blue-600 hover:underline">
+                                                            10 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/20000" class="font-medium text-blue-600 hover:underline">
+                                                            20 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/21097" class="font-medium text-blue-600 hover:underline">
+                                                            21 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/30000" class="font-medium text-blue-600 hover:underline">
+                                                            30 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/42194" class="font-medium text-blue-600 hover:underline">
+                                                            42 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/50000" class="font-medium text-blue-600 hover:underline">
+                                                            50 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/100000" class="font-medium text-blue-600 hover:underline">
+                                                            100 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/160934" class="font-medium text-blue-600 hover:underline">
+                                                            100 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                                                                                            <div id="bestEffortsPeriodRunyear" role="tabpanel" aria-labelledby="bestEffortsPeriodRunyear-tab">
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <div class="mb-4 h-80" data-echarts-options='{"animation":true,"color":["#91cc75","#fac858","#ee6666","#73c0de","#3ba272","#fc8452","#9a60b4","#ea7ccc"],"grid":{"top":"40px","left":"2px","right":"10px","bottom":"2%","containLabel":true},"tooltip":{"trigger":"axis","axisPointer":{"type":"shadow"},"formatter":{"callback":"formatDataTooltip"}},"legend":{"show":true},"xAxis":[{"type":"category","axisTick":{"show":false},"data":["400m","0.5mi","1km","1mi","2mi","5km","10km","15km","10mi","20km","21km","30km","42km","50km","100km","100mi"]}],"yAxis":{"type":"value","scale":true,"name":"\/km","inverse":true,"axisLabel":{"formatter":{"callback":"formatSecondsTrimZero"}}},"series":[{"name":"Runs","type":"line","symbolSize":8,"emphasis":{"focus":"none"},"itemStyle":{"color":"#9a60b4"},"data":[null,null,null,null,null,{"value":300,"tooltip":"Runs: &lt;strong&gt;25:00&lt;\/strong&gt; \u00b7 05:00 \/km"},null,null,null,null,null,null,null,null,null,null]}]}'></div>
+                            </div>
+                            <div class="mb-4 p-4 bg-white border border-gray-200 rounded-lg shadow-xs">
+                                <h3 class="mb-4 text-lg font-semibold">
+                                    Details
+                                </h3>
+                                <div class="relative overflow-x-auto">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th scope="col" class="sticky left-0 bg-gray-50">
+                                                Dist.
+                                            </th>
+                                                                                            <th scope="col">
+                                                    Runs
+                                                </th>
+                                                                                    </tr>
+                                        </thead>
+                                        <tbody>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/400" class="font-medium text-blue-600 hover:underline">
+                                                            400 m
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/804" class="font-medium text-blue-600 hover:underline">
+                                                            0.5 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1000" class="font-medium text-blue-600 hover:underline">
+                                                            1 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/1609" class="font-medium text-blue-600 hover:underline">
+                                                            1 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/3218" class="font-medium text-blue-600 hover:underline">
+                                                            2 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/5000" class="font-medium text-blue-600 hover:underline">
+                                                            5 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                                                                        <td class="truncate">
+                                                            <div class="font-semibold text-gray-700">25:00</div>
+                                                            <div class="text-xs">01-10-23</div>
+                                                            <div class="text-xs inline-flex"><a href="/activities/activity-run-1" class="flex items-center gap-x-1 font-medium text-blue-600 hover:underline"><svg class="h-4 shrink-0" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#F26722"><path d="M8.688 0C8.025 0 7.38.215 6.85.613l-3.32 2.49-2.845.948A1 1 0 000 5c0 1.579.197 2.772.567 3.734.376.978.907 1.654 1.476 2.223.305.305.6.567.886.82.785.697 1.5 1.33 2.159 2.634 1.032 2.57 2.37 4.748 4.446 6.27C11.629 22.218 14.356 23 18 23c2.128 0 3.587-.553 4.549-1.411a4.378 4.378 0 001.408-2.628c.152-.987-.389-1.787-.967-2.25l-3.892-3.114a1 1 0 01-.329-.477l-3.094-9.726A2 2 0 0013.769 2h-1.436a2 2 0 00-1.2.4l-.57.428-.516-1.803A1.413 1.413 0 008.688 0zM8.05 2.213c.069-.051.143-.094.221-.127l1.168 4.086L12.333 4h1.436l.954 3H12v2h3.36l.318 1H13v2h3.314l.55 1.726a3 3 0 00.984 1.433l3.106 2.485c-.77.19-1.778.356-2.954.356-1.97 0-3.178-.431-4.046-1.087-.895-.677-1.546-1.675-2.251-3.056-.224-.437-.45-.907-.688-1.403C9.875 10.08 8.444 7.1 5.531 4.102zM3.743 5.14c2.902 2.858 4.254 5.664 5.441 8.126.25.517.49 1.018.738 1.502.732 1.432 1.55 2.777 2.827 3.74C14.053 19.495 15.72 20 18 20c1.492 0 2.754-.23 3.684-.479a2.285 2.285 0 01-.467.575c-.5.446-1.435.904-3.217.904-3.356 0-5.629-.718-7.284-1.931-1.663-1.22-2.823-3.028-3.788-5.44a1.012 1.012 0 00-.034-.076c-.853-1.708-1.947-2.673-2.79-3.417a14.61 14.61 0 01-.647-.593c-.431-.431-.775-.88-1.024-1.527-.21-.545-.367-1.271-.417-2.3z" fill=""></path></svg><span class="">Test activity</span></a></div>
+                                                        </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/10000" class="font-medium text-blue-600 hover:underline">
+                                                            10 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/15000" class="font-medium text-blue-600 hover:underline">
+                                                            15 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/16093" class="font-medium text-blue-600 hover:underline">
+                                                            10 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/20000" class="font-medium text-blue-600 hover:underline">
+                                                            20 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/21097" class="font-medium text-blue-600 hover:underline">
+                                                            21 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/30000" class="font-medium text-blue-600 hover:underline">
+                                                            30 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/42194" class="font-medium text-blue-600 hover:underline">
+                                                            42 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/50000" class="font-medium text-blue-600 hover:underline">
+                                                            50 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/100000" class="font-medium text-blue-600 hover:underline">
+                                                            100 km
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                    <tr class="group/row">
+                                                <th scope="row" class="sticky left-0 bg-white font-medium whitespace-nowrap">
+                                                    <div>
+                                                        <a href="/best-efforts/Run/160934" class="font-medium text-blue-600 hover:underline">
+                                                            100 mi
+                                                        </a>
+                                                    </div>
+                                                </th>
+                                                                                                                                                                                                                <td class="truncate"> - </td>
+                                                                                                                                                </tr>
+                                                                                </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                                    </div>
+            </div>
             </div>
 
-            </main>
+    </main>
 </div>
 <script>
-    window.dreeve = {"countries":{"AF":"Afghanistan","AX":"\u00c5land Islands","AL":"Albania","DZ":"Algeria","AS":"American Samoa","AD":"Andorra","AO":"Angola","AI":"Anguilla","AQ":"Antarctica","AG":"Antigua & Barbuda","AR":"Argentina","AM":"Armenia","AW":"Aruba","AU":"Australia","AT":"Austria","AZ":"Azerbaijan","BS":"Bahamas","BH":"Bahrain","BD":"Bangladesh","BB":"Barbados","BY":"Belarus","BE":"Belgium","BZ":"Belize","BJ":"Benin","BM":"Bermuda","BT":"Bhutan","BO":"Bolivia","BA":"Bosnia & Herzegovina","BW":"Botswana","BV":"Bouvet Island","BR":"Brazil","IO":"British Indian Ocean Territory","VG":"British Virgin Islands","BN":"Brunei","BG":"Bulgaria","BF":"Burkina Faso","BI":"Burundi","KH":"Cambodia","CM":"Cameroon","CA":"Canada","CV":"Cape Verde","BQ":"Caribbean Netherlands","KY":"Cayman Islands","CF":"Central African Republic","TD":"Chad","CL":"Chile","CN":"China","CX":"Christmas Island","CC":"Cocos (Keeling) Islands","CO":"Colombia","KM":"Comoros","CG":"Congo - Brazzaville","CD":"Congo - Kinshasa","CK":"Cook Islands","CR":"Costa Rica","CI":"C\u00f4te d\u2019Ivoire","HR":"Croatia","CU":"Cuba","CW":"Cura\u00e7ao","CY":"Cyprus","CZ":"Czechia","DK":"Denmark","DJ":"Djibouti","DM":"Dominica","DO":"Dominican Republic","EC":"Ecuador","EG":"Egypt","SV":"El Salvador","GQ":"Equatorial Guinea","ER":"Eritrea","EE":"Estonia","SZ":"Eswatini","ET":"Ethiopia","FK":"Falkland Islands","FO":"Faroe Islands","FJ":"Fiji","FI":"Finland","FR":"France","GF":"French Guiana","PF":"French Polynesia","TF":"French Southern Territories","GA":"Gabon","GM":"Gambia","GE":"Georgia","DE":"Germany","GH":"Ghana","GI":"Gibraltar","GR":"Greece","GL":"Greenland","GD":"Grenada","GP":"Guadeloupe","GU":"Guam","GT":"Guatemala","GG":"Guernsey","GN":"Guinea","GW":"Guinea-Bissau","GY":"Guyana","HT":"Haiti","HM":"Heard & McDonald Islands","HN":"Honduras","HK":"Hong Kong SAR China","HU":"Hungary","IS":"Iceland","IN":"India","ID":"Indonesia","IR":"Iran","IQ":"Iraq","IE":"Ireland","IM":"Isle of Man","IL":"Israel","IT":"Italy","JM":"Jamaica","JP":"Japan","JE":"Jersey","JO":"Jordan","KZ":"Kazakhstan","KE":"Kenya","KI":"Kiribati","KW":"Kuwait","KG":"Kyrgyzstan","LA":"Laos","LV":"Latvia","LB":"Lebanon","LS":"Lesotho","LR":"Liberia","LY":"Libya","LI":"Liechtenstein","LT":"Lithuania","LU":"Luxembourg","MO":"Macao SAR China","MG":"Madagascar","MW":"Malawi","MY":"Malaysia","MV":"Maldives","ML":"Mali","MT":"Malta","MH":"Marshall Islands","MQ":"Martinique","MR":"Mauritania","MU":"Mauritius","YT":"Mayotte","MX":"Mexico","FM":"Micronesia","MD":"Moldova","MC":"Monaco","MN":"Mongolia","ME":"Montenegro","MS":"Montserrat","MA":"Morocco","MZ":"Mozambique","MM":"Myanmar (Burma)","NA":"Namibia","NR":"Nauru","NP":"Nepal","NL":"Netherlands","NC":"New Caledonia","NZ":"New Zealand","NI":"Nicaragua","NE":"Niger","NG":"Nigeria","NU":"Niue","NF":"Norfolk Island","KP":"North Korea","MK":"North Macedonia","MP":"Northern Mariana Islands","NO":"Norway","OM":"Oman","PK":"Pakistan","PW":"Palau","PS":"Palestinian Territories","PA":"Panama","PG":"Papua New Guinea","PY":"Paraguay","PE":"Peru","PH":"Philippines","PN":"Pitcairn Islands","PL":"Poland","PT":"Portugal","PR":"Puerto Rico","QA":"Qatar","RE":"R\u00e9union","RO":"Romania","RU":"Russia","RW":"Rwanda","WS":"Samoa","SM":"San Marino","ST":"S\u00e3o Tom\u00e9 & Pr\u00edncipe","SA":"Saudi Arabia","SN":"Senegal","RS":"Serbia","SC":"Seychelles","SL":"Sierra Leone","SG":"Singapore","SX":"Sint Maarten","SK":"Slovakia","SI":"Slovenia","SB":"Solomon Islands","SO":"Somalia","ZA":"South Africa","GS":"South Georgia & South Sandwich Islands","KR":"South Korea","SS":"South Sudan","ES":"Spain","LK":"Sri Lanka","BL":"St. Barth\u00e9lemy","SH":"St. Helena","KN":"St. Kitts & Nevis","LC":"St. Lucia","MF":"St. Martin","PM":"St. Pierre & Miquelon","VC":"St. Vincent & Grenadines","SD":"Sudan","SR":"Suriname","SJ":"Svalbard & Jan Mayen","SE":"Sweden","CH":"Switzerland","SY":"Syria","TW":"Taiwan","TJ":"Tajikistan","TZ":"Tanzania","TH":"Thailand","TL":"Timor-Leste","TG":"Togo","TK":"Tokelau","TO":"Tonga","TT":"Trinidad & Tobago","TN":"Tunisia","TR":"T\u00fcrkiye","TM":"Turkmenistan","TC":"Turks & Caicos Islands","TV":"Tuvalu","UM":"U.S. Outlying Islands","VI":"U.S. Virgin Islands","UG":"Uganda","UA":"Ukraine","AE":"United Arab Emirates","GB":"United Kingdom","US":"United States","UY":"Uruguay","UZ":"Uzbekistan","VU":"Vanuatu","VA":"Vatican City","VE":"Venezuela","VN":"Vietnam","WF":"Wallis & Futuna","EH":"Western Sahara","YE":"Yemen","ZM":"Zambia","ZW":"Zimbabwe"},"appVersion":"v5.7.0","appUrl":{"basePath":""},"leafletConfig":{"polylineColor":"#fc6719","tileLayerUrls":["https:\/\/tile.openstreetmap.org\/{z}\/{x}\/{y}.png"],"enableGreyScale":true,"requireCtrlToZoom":true}};
+    window.dreeve = {"countries":{"AF":"Afghanistan","AX":"\u00c5land Islands","AL":"Albania","DZ":"Algeria","AS":"American Samoa","AD":"Andorra","AO":"Angola","AI":"Anguilla","AQ":"Antarctica","AG":"Antigua & Barbuda","AR":"Argentina","AM":"Armenia","AW":"Aruba","AU":"Australia","AT":"Austria","AZ":"Azerbaijan","BS":"Bahamas","BH":"Bahrain","BD":"Bangladesh","BB":"Barbados","BY":"Belarus","BE":"Belgium","BZ":"Belize","BJ":"Benin","BM":"Bermuda","BT":"Bhutan","BO":"Bolivia","BA":"Bosnia & Herzegovina","BW":"Botswana","BV":"Bouvet Island","BR":"Brazil","IO":"British Indian Ocean Territory","VG":"British Virgin Islands","BN":"Brunei","BG":"Bulgaria","BF":"Burkina Faso","BI":"Burundi","KH":"Cambodia","CM":"Cameroon","CA":"Canada","CV":"Cape Verde","BQ":"Caribbean Netherlands","KY":"Cayman Islands","CF":"Central African Republic","TD":"Chad","CL":"Chile","CN":"China","CX":"Christmas Island","CC":"Cocos (Keeling) Islands","CO":"Colombia","KM":"Comoros","CG":"Congo - Brazzaville","CD":"Congo - Kinshasa","CK":"Cook Islands","CR":"Costa Rica","CI":"C\u00f4te d\u2019Ivoire","HR":"Croatia","CU":"Cuba","CW":"Cura\u00e7ao","CY":"Cyprus","CZ":"Czechia","DK":"Denmark","DJ":"Djibouti","DM":"Dominica","DO":"Dominican Republic","EC":"Ecuador","EG":"Egypt","SV":"El Salvador","GQ":"Equatorial Guinea","ER":"Eritrea","EE":"Estonia","SZ":"Eswatini","ET":"Ethiopia","FK":"Falkland Islands","FO":"Faroe Islands","FJ":"Fiji","FI":"Finland","FR":"France","GF":"French Guiana","PF":"French Polynesia","TF":"French Southern and Antarctic Lands","GA":"Gabon","GM":"Gambia","GE":"Georgia","DE":"Germany","GH":"Ghana","GI":"Gibraltar","GR":"Greece","GL":"Greenland","GD":"Grenada","GP":"Guadeloupe","GU":"Guam","GT":"Guatemala","GG":"Guernsey","GN":"Guinea","GW":"Guinea-Bissau","GY":"Guyana","HT":"Haiti","HM":"Heard Island & McDonald Islands","HN":"Honduras","HK":"Hong Kong SAR China","HU":"Hungary","IS":"Iceland","IN":"India","ID":"Indonesia","IR":"Iran","IQ":"Iraq","IE":"Ireland","IM":"Isle of Man","IL":"Israel","IT":"Italy","JM":"Jamaica","JP":"Japan","JE":"Jersey","JO":"Jordan","KZ":"Kazakhstan","KE":"Kenya","KI":"Kiribati","KW":"Kuwait","KG":"Kyrgyzstan","LA":"Laos","LV":"Latvia","LB":"Lebanon","LS":"Lesotho","LR":"Liberia","LY":"Libya","LI":"Liechtenstein","LT":"Lithuania","LU":"Luxembourg","MO":"Macao SAR China","MG":"Madagascar","MW":"Malawi","MY":"Malaysia","MV":"Maldives","ML":"Mali","MT":"Malta","MH":"Marshall Islands","MQ":"Martinique","MR":"Mauritania","MU":"Mauritius","YT":"Mayotte","MX":"Mexico","FM":"Micronesia","MD":"Moldova","MC":"Monaco","MN":"Mongolia","ME":"Montenegro","MS":"Montserrat","MA":"Morocco","MZ":"Mozambique","MM":"Myanmar (Burma)","NA":"Namibia","NR":"Nauru","NP":"Nepal","NL":"Netherlands","NC":"New Caledonia","NZ":"New Zealand","NI":"Nicaragua","NE":"Niger","NG":"Nigeria","NU":"Niue","NF":"Norfolk Island","KP":"North Korea","MK":"North Macedonia","MP":"Northern Mariana Islands","NO":"Norway","OM":"Oman","PK":"Pakistan","PW":"Palau","PS":"Palestinian Territories","PA":"Panama","PG":"Papua New Guinea","PY":"Paraguay","PE":"Peru","PH":"Philippines","PN":"Pitcairn Islands","PL":"Poland","PT":"Portugal","PR":"Puerto Rico","QA":"Qatar","RE":"R\u00e9union","RO":"Romania","RU":"Russia","RW":"Rwanda","WS":"Samoa","SM":"San Marino","ST":"S\u00e3o Tom\u00e9 & Pr\u00edncipe","SA":"Saudi Arabia","SN":"Senegal","RS":"Serbia","SC":"Seychelles","SL":"Sierra Leone","SG":"Singapore","SX":"Sint Maarten","SK":"Slovakia","SI":"Slovenia","SB":"Solomon Islands","SO":"Somalia","ZA":"South Africa","GS":"South Georgia & South Sandwich Islands","KR":"South Korea","SS":"South Sudan","ES":"Spain","LK":"Sri Lanka","BL":"St. Barth\u00e9lemy","SH":"St. Helena, Ascension & Tristan da Cunha","KN":"St. Kitts & Nevis","LC":"St. Lucia","MF":"St. Martin","PM":"St. Pierre & Miquelon","VC":"St. Vincent & Grenadines","SD":"Sudan","SR":"Suriname","SJ":"Svalbard & Jan Mayen","SE":"Sweden","CH":"Switzerland","SY":"Syria","TW":"Taiwan","TJ":"Tajikistan","TZ":"Tanzania","TH":"Thailand","TL":"Timor-Leste","TG":"Togo","TK":"Tokelau","TO":"Tonga","TT":"Trinidad & Tobago","TN":"Tunisia","TR":"T\u00fcrkiye","TM":"Turkmenistan","TC":"Turks & Caicos Islands","TV":"Tuvalu","UM":"U.S. Outlying Islands","VI":"U.S. Virgin Islands","UG":"Uganda","UA":"Ukraine","AE":"United Arab Emirates","GB":"United Kingdom","US":"United States","UY":"Uruguay","UZ":"Uzbekistan","VU":"Vanuatu","VA":"Vatican City","VE":"Venezuela","VN":"Vietnam","WF":"Wallis & Futuna","EH":"Western Sahara","YE":"Yemen","ZM":"Zambia","ZW":"Zimbabwe"},"appVersion":"v5.9.1","appUrl":{"basePath":""},"leafletConfig":{"polylineColor":"#fc6719","tileLayerUrls":["https:\/\/tile.openstreetmap.org\/{z}\/{x}\/{y}.png"],"enableGreyScale":true,"requireCtrlToZoom":true}};
     window.dreeve.placeholderBrokenImage = "/assets/placeholder-broken.webp";
     window.dreeve.echartsUrls = [
-        "/libraries/echarts/echarts.min.js?v5.7.0",
-        "/libraries/echarts/echarts.world.min.js?v5.7.0",
+        "/libraries/echarts/echarts.min.js?v5.9.1",
+        "/libraries/echarts/echarts.world.min.js?v5.9.1",
     ];
 </script>
-<script src="/js/dist/app.min.js?v5.7.0" type="module"></script>
+<script src="/js/dist/app.min.js?v5.9.1" type="module"></script>
 </body>
 </html>

@@ -14,10 +14,12 @@ use App\Domain\Activity\Scan\ActivityScan;
 use App\Domain\Activity\Scan\ActivityScanRepository;
 use App\Domain\Activity\Scan\ActivityScanType;
 use App\Domain\Activity\WorldType;
-use App\Domain\Image\ImageDirectory;
-use App\Domain\Image\ImageStorage;
-use App\Domain\Image\NewImage;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\MediaItemDirectory;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
+use App\Domain\Media\MediaItemStorage;
+use App\Domain\Media\NewMediaItem;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\CQRS\Command\Command;
 use App\Infrastructure\CQRS\Command\CommandHandler;
@@ -31,7 +33,7 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
         private ActivityScanRepository $activityScanRepository,
         private ActivityIdFactory $activityIdFactory,
         private SettingsRepository $settingsRepository,
-        private ImageStorage $imageStorage,
+        private MediaItemStorage $mediaItemStorage,
         private ImportMode $importMode,
     ) {
     }
@@ -62,6 +64,7 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
             description: $command->getDescription(),
             distance: $distance,
             elevation: $elevation,
+            descent: null,
             startingCoordinate: null,
             calories: $command->getCalories(),
             kilojoules: null,
@@ -76,8 +79,7 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
             elapsedTimeInSeconds: $durationInSeconds,
             deviceName: null,
             connectedSensors: null,
-            totalImageCount: 0,
-            localImagePaths: [],
+            mediaItemIds: MediaItemIds::empty(),
             polyline: null,
             routeGeography: RouteGeography::create([]),
             weather: null,
@@ -85,6 +87,8 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
             isCommute: $command->isCommute(),
             isGroupActivity: $command->isGroupActivity(),
             workoutType: $command->getWorkoutType(),
+            workoutRpe: null,
+            workoutFeel: null,
         );
 
         $this->activityRepository->add(ActivityWithRawData::fromState(
@@ -93,20 +97,20 @@ final readonly class ManuallyCreateActivityCommandHandler implements CommandHand
         ));
         $this->activityScanRepository->add(ActivityScan::create(activityId: $activityId, type: ActivityScanType::STREAMS));
 
-        $localImagePaths = array_map(
-            fn (NewImage $newImage): string => $this->imageStorage->store(
-                newImage: $newImage,
-                directory: ImageDirectory::ACTIVITIES
-            )->toLocalImagePath(),
-            $command->getNewImages()
-        );
+        $mediaItemIds = MediaItemIds::fromArray(array_map(
+            fn (NewMediaItem $newMediaItem): MediaItemId => $this->mediaItemStorage->store(
+                newMediaItem: $newMediaItem,
+                directory: MediaItemDirectory::ACTIVITIES,
+            )->getId(),
+            $command->getNewMediaItems()
+        ));
 
-        if ([] === $localImagePaths) {
+        if ($mediaItemIds->isEmpty()) {
             return;
         }
 
         $this->activityRepository->update(ActivityWithRawData::fromState(
-            activity: $activity->withLocalImagePaths($localImagePaths),
+            activity: $activity->withMediaItemIds($mediaItemIds),
             rawData: [],
         ));
     }

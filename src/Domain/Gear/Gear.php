@@ -2,9 +2,12 @@
 
 namespace App\Domain\Gear;
 
+use App\Domain\Activity\ActivityType;
 use App\Domain\Activity\ActivityTypes;
 use App\Domain\Import\ImportMode;
 use App\Domain\Integration\AI\SupportsAITooling;
+use App\Domain\Media\MediaItem;
+use App\Domain\Media\MediaItemId;
 use App\Infrastructure\Eventing\RecordsEvents;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
@@ -25,6 +28,8 @@ final class Gear implements SupportsAITooling
     use ProvideTimeFormats;
     use RecordsEvents;
 
+    private ?MediaItem $mediaItem = null;
+
     private function __construct(
         #[ORM\Id, ORM\Column(type: 'string', unique: true)]
         private readonly GearId $gearId,
@@ -38,14 +43,17 @@ final class Gear implements SupportsAITooling
         #[ORM\Column(type: 'string', enumType: GearType::class, options: ['default' => GearType::IMPORTED->value])]
         private readonly GearType $type,
         #[ORM\Column(type: 'string', nullable: true)]
-        private readonly ?string $localImagePath,
+        private readonly ?MediaItemId $mediaItemId,
         private readonly Seconds $movingTime,
         private readonly Meter $elevation,
         private readonly int $numberOfActivities,
         private readonly int $totalCalories,
         private readonly ActivityTypes $activityTypes,
+        private readonly ?ActivityType $mainActivityType,
         #[ORM\Embedded(class: Money::class)]
         private readonly ?Money $purchasePrice,
+        #[ORM\Column(type: 'text', nullable: true)]
+        private readonly ?string $notes,
     ) {
     }
 
@@ -55,7 +63,8 @@ final class Gear implements SupportsAITooling
         string $name,
         bool $isRetired,
         GearType $type,
-        ?string $localImagePath = null,
+        ?string $notes,
+        ?MediaItemId $mediaItemId = null,
     ): self {
         $gear = new self(
             gearId: $gearId,
@@ -64,13 +73,15 @@ final class Gear implements SupportsAITooling
             name: $name,
             isRetired: $isRetired,
             type: $type,
-            localImagePath: $localImagePath,
+            mediaItemId: $mediaItemId,
             movingTime: Seconds::zero(),
             elevation: Meter::zero(),
             numberOfActivities: 0,
             totalCalories: 0,
             activityTypes: ActivityTypes::empty(),
+            mainActivityType: null,
             purchasePrice: null,
+            notes: $notes,
         );
         $gear->recordThat(new GearWasAdded());
 
@@ -84,12 +95,13 @@ final class Gear implements SupportsAITooling
         string $name,
         bool $isRetired,
         GearType $type,
-        ?string $localImagePath,
+        ?MediaItemId $mediaItemId,
         Seconds $movingTime,
         Meter $elevation,
         int $numberOfActivities,
         int $totalCalories,
         ?Money $purchasePrice,
+        ?string $notes,
     ): self {
         return new self(
             gearId: $gearId,
@@ -98,13 +110,15 @@ final class Gear implements SupportsAITooling
             name: $name,
             isRetired: $isRetired,
             type: $type,
-            localImagePath: $localImagePath,
+            mediaItemId: $mediaItemId,
             movingTime: $movingTime,
             elevation: $elevation,
             numberOfActivities: $numberOfActivities,
             totalCalories: $totalCalories,
             activityTypes: ActivityTypes::empty(),
+            mainActivityType: null,
             purchasePrice: $purchasePrice,
+            notes: $notes,
         );
     }
 
@@ -250,25 +264,33 @@ final class Gear implements SupportsAITooling
         return $this->createdOn;
     }
 
-    public function getLocalImagePath(): ?string
+    public function getMediaItemId(): ?MediaItemId
     {
-        if (!isset($this->localImagePath)) {
-            return null;
-        }
-
-        return str_starts_with($this->localImagePath, '/') ? $this->localImagePath : '/'.$this->localImagePath;
+        return $this->mediaItemId;
     }
 
-    public function withLocalImagePath(?string $localImagePath): self
+    public function withMediaItemId(?MediaItemId $mediaItemId): self
     {
         $clone = clone ($this, [
-            'localImagePath' => $localImagePath,
+            'mediaItemId' => $mediaItemId,
         ]);
-        if ($this->getLocalImagePath() !== $clone->getLocalImagePath()) {
+        if ((string) $this->mediaItemId !== (string) $mediaItemId) {
             $clone->recordThat(new GearWasUpdated());
         }
 
         return $clone;
+    }
+
+    public function getMediaItem(): ?MediaItem
+    {
+        return $this->mediaItem;
+    }
+
+    public function withMediaItem(?MediaItem $mediaItem): self
+    {
+        return clone ($this, [
+            'mediaItem' => $mediaItem,
+        ]);
     }
 
     public function getActivityTypes(): ActivityTypes
@@ -283,6 +305,18 @@ final class Gear implements SupportsAITooling
         ]);
     }
 
+    public function getMainActivityType(): ?ActivityType
+    {
+        return $this->mainActivityType;
+    }
+
+    public function withMainActivityType(?ActivityType $mainActivityType): self
+    {
+        return clone ($this, [
+            'mainActivityType' => $mainActivityType,
+        ]);
+    }
+
     public function getPurchasePrice(): ?Money
     {
         return $this->purchasePrice;
@@ -294,6 +328,23 @@ final class Gear implements SupportsAITooling
             'purchasePrice' => $purchasePrice,
         ]);
         if (!$this->purchasePrice?->equals($purchasePrice)) {
+            $clone->recordThat(new GearWasUpdated());
+        }
+
+        return $clone;
+    }
+
+    public function getNotes(): ?string
+    {
+        return $this->notes;
+    }
+
+    public function withNotes(?string $notes): self
+    {
+        $clone = clone ($this, [
+            'notes' => $notes,
+        ]);
+        if ($this->notes !== $notes) {
             $clone->recordThat(new GearWasUpdated());
         }
 

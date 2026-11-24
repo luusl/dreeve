@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Domain\Settings;
 
 use App\Domain\Settings\AppearanceSettings;
+use App\Domain\Settings\AthleteFtpSettings;
 use App\Domain\Settings\AthleteHasNotBeenConfigured;
 use App\Domain\Settings\AthleteWeightSettings;
 use App\Domain\Settings\CachingSettingsRepository;
@@ -23,6 +24,9 @@ use PHPUnit\Framework\TestCase;
 
 class CachingSettingsRepositoryTest extends TestCase
 {
+    /**
+     * @param non-empty-string $method
+     */
     #[DataProvider('cachedAccessorProvider')]
     public function testAccessorIsReadFromInnerOnlyOnce(string $method, object $value, callable $act): void
     {
@@ -36,17 +40,21 @@ class CachingSettingsRepositoryTest extends TestCase
         $this->assertSame($act($repository), $act($repository));
     }
 
+    /**
+     * @return iterable<string, array{non-empty-string, object, callable}>
+     */
     public static function cachedAccessorProvider(): iterable
     {
-        yield 'general' => ['general', GeneralSettings::fromArray(['birthday' => '1989-08-14', 'firstName' => 'Robin', 'lastName' => 'Ingelbrecht', 'maxHeartRateFormula' => 'fox']), fn (SettingsRepository $r) => $r->general()];
-        yield 'appearance' => ['appearance', AppearanceSettings::fromArray(null), fn (SettingsRepository $r) => $r->appearance()];
-        yield 'maps' => ['maps', MapsSettings::fromArray(null), fn (SettingsRepository $r) => $r->maps()];
-        yield 'import' => ['import', ImportSettings::fromArray(null), fn (SettingsRepository $r) => $r->import()];
-        yield 'metrics' => ['metrics', MetricsSettings::fromArray(null), fn (SettingsRepository $r) => $r->metrics()];
-        yield 'zwift' => ['zwift', ZwiftSettings::fromArray(null), fn (SettingsRepository $r) => $r->zwift()];
-        yield 'integrations' => ['integrations', IntegrationsSettings::fromArray(null), fn (SettingsRepository $r) => $r->integrations()];
-        yield 'daemon' => ['daemon', DaemonSettings::fromArray(null), fn (SettingsRepository $r) => $r->daemon()];
-        yield 'athleteWeight' => ['athleteWeight', AthleteWeightSettings::fromArray(null), fn (SettingsRepository $r) => $r->athleteWeight()];
+        yield 'general' => ['general', GeneralSettings::fromArray(['birthday' => '1989-08-14', 'firstName' => 'Robin', 'lastName' => 'Ingelbrecht', 'maxHeartRateFormula' => 'fox']), fn (SettingsRepository $r): GeneralSettings => $r->general()];
+        yield 'appearance' => ['appearance', AppearanceSettings::fromArray(null), fn (SettingsRepository $r): AppearanceSettings => $r->appearance()];
+        yield 'maps' => ['maps', MapsSettings::fromArray(null), fn (SettingsRepository $r): MapsSettings => $r->maps()];
+        yield 'import' => ['import', ImportSettings::fromArray(null), fn (SettingsRepository $r): ImportSettings => $r->import()];
+        yield 'metrics' => ['metrics', MetricsSettings::fromArray(null), fn (SettingsRepository $r): MetricsSettings => $r->metrics()];
+        yield 'zwift' => ['zwift', ZwiftSettings::fromArray(null), fn (SettingsRepository $r): ZwiftSettings => $r->zwift()];
+        yield 'integrations' => ['integrations', IntegrationsSettings::fromArray(null), fn (SettingsRepository $r): IntegrationsSettings => $r->integrations()];
+        yield 'daemon' => ['daemon', DaemonSettings::fromArray(null), fn (SettingsRepository $r): DaemonSettings => $r->daemon()];
+        yield 'athleteWeight' => ['athleteWeight', AthleteWeightSettings::fromArray(null), fn (SettingsRepository $r): AthleteWeightSettings => $r->athleteWeight()];
+        yield 'athleteFtp' => ['athleteFtp', AthleteFtpSettings::fromArray(null), fn (SettingsRepository $r): AthleteFtpSettings => $r->athleteFtp()];
     }
 
     public function testFindGroupIsReadFromInnerOncePerGroup(): void

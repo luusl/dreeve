@@ -64,7 +64,10 @@ class IntegrationsSettingsTest extends TestCase
         $this->assertFalse($settings->isAIIntegrationEnabled());
     }
 
-    #[DataProvider(methodName: 'provideInvalidAIConfig')]
+    /**
+     * @param array<string, mixed> $config
+     */
+    #[DataProvider('provideInvalidAIConfig')]
     public function testItGuardsValidAIConfiguration(array $config, string $expectedExceptionMessage): void
     {
         $this->expectExceptionObject(new InvalidAIConfiguration($expectedExceptionMessage));
@@ -153,6 +156,9 @@ class IntegrationsSettingsTest extends TestCase
         ]);
     }
 
+    /**
+     * @return iterable<string, array{array<string, mixed>, string}>
+     */
     public static function provideInvalidAIConfig(): iterable
     {
         yield 'Empty provider name' => [

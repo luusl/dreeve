@@ -165,7 +165,7 @@ final readonly class ActivitySplit implements SupportsAITooling
         $averageSpeed = $this->getAverageSpeed()->toFloat();
 
         $relative = ($averageSpeed - $min) / ($max - $min) * 100;
-        $relative = max(0, min(100, $relative));
+        $relative = clamp($relative, 0, 100);
 
         return round($relative, 2);
     }
@@ -210,7 +210,6 @@ final readonly class ActivitySplit implements SupportsAITooling
     public function exportForAITooling(): array
     {
         return [
-            'activityId' => $this->getActivityId()->toUnprefixedString(),
             'unitSystem' => $this->getUnitSystem()->value,
             'splitNumber' => $this->getSplitNumber(),
             'elapsedTimeInSeconds' => $this->getElapsedTimeInSeconds(),

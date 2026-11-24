@@ -7,6 +7,7 @@ use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\Route\RouteGeography;
+use App\Domain\Media\MediaItemId;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 
@@ -31,7 +32,7 @@ class CountriesTest extends ContainerTestCase
                 ->withActivityId(ActivityId::fromUnprefixed('2'))
                 ->withRouteGeography(RouteGeography::create([
                     'country_code' => 'be',
-                    RouteGeography::PASSED_TROUGH_COUNTRIES => ['BE'],
+                    RouteGeography::PASSED_TROUGH_COUNTRIES => ['BE', 'XK'],
                 ]))
                 ->build(),
             []
@@ -44,9 +45,10 @@ class CountriesTest extends ContainerTestCase
         ));
 
         $this->assertEqualsCanonicalizing(
-            ['pl', 'cz', 'be'],
+            ['pl', 'cz', 'be', 'xk'],
             array_keys($this->countries->getUsedInActivities())
         );
+        $this->assertSame('Kosovo', $this->countries->getUsedInActivities()['xk']);
     }
 
     public function testGetUsedInPhotos(): void
@@ -54,7 +56,7 @@ class CountriesTest extends ContainerTestCase
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
-                ->withTotalImageCount(3)
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('1'))
                 ->withRouteGeography(RouteGeography::create([
                     'country_code' => 'pl',
                     RouteGeography::PASSED_TROUGH_COUNTRIES => ['PL', 'CZ'],
@@ -65,7 +67,6 @@ class CountriesTest extends ContainerTestCase
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('2'))
-                ->withTotalImageCount(0)
                 ->withRouteGeography(RouteGeography::create([
                     'country_code' => 'be',
                     RouteGeography::PASSED_TROUGH_COUNTRIES => ['BE', 'NL'],

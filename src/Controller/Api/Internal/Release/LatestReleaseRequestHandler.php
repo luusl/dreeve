@@ -9,44 +9,48 @@ use App\Domain\Integration\GitHub\GitHub;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\CacheableRenderer;
 use App\Infrastructure\Cache\Tag\CacheTags;
+use App\Infrastructure\Config\ManagedMode;
 use App\Infrastructure\Exception\CorruptedData;
+use App\Infrastructure\Http\Response\CachePolicy;
 use App\Infrastructure\Serialization\Json;
 use GuzzleHttp\Exception\GuzzleException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Time\Duration;
 
 #[AsController]
 final readonly class LatestReleaseRequestHandler
 {
-    private const int SIX_HOURS_IN_SECONDS = 6 * 3600;
-
     public function __construct(
         private GitHub $gitHub,
         private CacheableRenderer $cacheableRenderer,
+        private ManagedMode $managedMode,
     ) {
     }
 
     #[Route(path: '/api/internal/latest-release', name: 'latest_release', methods: ['GET'])]
     public function handle(): JsonResponse
     {
+        if ($this->managedMode->isEnabled()) {
+            return new JsonResponse(['latestVersion' => null, 'updateAvailable' => false]);
+        }
+
+        $ttl = Duration::fromHours(6);
         $render = $this->cacheableRenderer->render(
             cacheability: Cacheability::for(
                 cacheKey: 'app.latest-release',
                 cacheTags: CacheTags::empty(),
-                ttlInSeconds: self::SIX_HOURS_IN_SECONDS,
+                ttl: $ttl,
             ),
             render: fn (): string => $this->renderFor(),
         );
 
-        return new JsonResponse(
+        return CachePolicy::private()->maxAge($render->getTtl() ?? $ttl)->applyTo(new JsonResponse(
             $render->getContent() ?? '{}',
-            headers: [
-                ...$render->getCacheHeaders(),
-                'Cache-Control' => sprintf('private, max-age=%d', $render->getTtlInSeconds() ?? self::SIX_HOURS_IN_SECONDS),
-            ],
+            headers: $render->getCacheHeaders(),
             json: true,
-        );
+        ));
     }
 
     private function renderFor(): string

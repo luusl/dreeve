@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Domain\Settings;
 
-use App\Domain\Activity\ActivityType;
 use App\Domain\Settings\AthleteHasNotBeenConfigured;
 use App\Domain\Settings\GeneralSettings;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
@@ -13,23 +12,24 @@ use PHPUnit\Framework\TestCase;
 
 class GeneralSettingsTest extends TestCase
 {
-    private static function validData(): array
+    /**
+     * @return array<string, mixed>
+     */
+    private function validData(): array
     {
         return [
-            'appSubTitle' => 'The King',
             'profilePictureUrl' => 'https://example.com/me.png',
             'birthday' => '1989-08-14',
             'firstName' => 'Robin',
             'lastName' => 'Ingelbrecht',
             'gender' => 'M',
             'maxHeartRateFormula' => 'fox',
-            'ftpHistory' => [['on' => '2023-01-01', 'ftp' => 250]],
         ];
     }
 
     public function testItBuildsTheAthleteFromTheSettings(): void
     {
-        $athlete = GeneralSettings::fromArray(self::validData())->getAthlete();
+        $athlete = GeneralSettings::fromArray($this->validData())->getAthlete();
 
         $this->assertSame('Robin Ingelbrecht', (string) $athlete->getName());
         $this->assertSame('R', $athlete->getFirstLetterOfFirstName());
@@ -41,8 +41,8 @@ class GeneralSettingsTest extends TestCase
 
     public function testTheAthleteIdIsDeterministic(): void
     {
-        $first = GeneralSettings::fromArray(self::validData())->getAthlete()->getAthleteId();
-        $second = GeneralSettings::fromArray(self::validData())->getAthlete()->getAthleteId();
+        $first = GeneralSettings::fromArray($this->validData())->getAthlete()->getAthleteId();
+        $second = GeneralSettings::fromArray($this->validData())->getAthlete()->getAthleteId();
 
         $this->assertNotEmpty($first);
         $this->assertSame($first, $second);
@@ -50,11 +50,9 @@ class GeneralSettingsTest extends TestCase
 
     public function testItExposesTheOtherSettings(): void
     {
-        $settings = GeneralSettings::fromArray(self::validData());
+        $settings = GeneralSettings::fromArray($this->validData());
 
-        $this->assertSame('The King', (string) $settings->getAppSubTitle());
         $this->assertSame('https://example.com/me.png', (string) $settings->getProfilePictureUrl());
-        $this->assertNotEmpty($settings->getFtpHistory()->findAll(ActivityType::RIDE));
     }
 
     public function testItAppliesDefaultsForOptionalSettings(): void
@@ -66,23 +64,25 @@ class GeneralSettingsTest extends TestCase
             'maxHeartRateFormula' => 'fox',
         ]);
 
-        $this->assertNull($settings->getAppSubTitle());
         $this->assertNull($settings->getProfilePictureUrl());
         // Resting heart rate defaults to the heuristic age-based formula.
         $this->assertGreaterThan(0, $settings->getAthlete()->getRestingHeartRate(SerializableDateTime::fromString('2024-01-01')));
     }
 
-    #[DataProvider(methodName: 'provideUnconfiguredNames')]
+    #[DataProvider('provideUnconfiguredNames')]
     public function testItThrowsWhenTheNameIsNotConfigured(string $key, mixed $value): void
     {
         $this->expectExceptionObject(new AthleteHasNotBeenConfigured(sprintf('A "%s" is required for the athlete in the general settings', $key)));
 
-        $data = self::validData();
+        $data = $this->validData();
         $data[$key] = $value;
 
         GeneralSettings::fromArray($data);
     }
 
+    /**
+     * @return iterable<string, array{string, mixed}>
+     */
     public static function provideUnconfiguredNames(): iterable
     {
         foreach (['firstName', 'lastName'] as $key) {
@@ -95,7 +95,7 @@ class GeneralSettingsTest extends TestCase
 
     public function testItTrimsTheName(): void
     {
-        $data = self::validData();
+        $data = $this->validData();
         $data['firstName'] = '  Robin  ';
         $data['lastName'] = "\tIngelbrecht\n";
 

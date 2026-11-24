@@ -6,6 +6,7 @@ namespace App\Controller\Page\Activity;
 
 use App\Application\Countries;
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\FindActivityTotals\FindActivityTotals;
 use App\Domain\Activity\SportType\SportTypeRepository;
@@ -18,9 +19,10 @@ use App\Infrastructure\Cache\Context\CacheContexts;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Twig\Environment;
 
 #[AsController]
@@ -52,6 +54,9 @@ final readonly class ActivitiesRequestHandler
             ),
             render: fn (): string => $this->renderFor(),
             navigationSection: NavigationSection::ACTIVITIES,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Activities'),
+            ),
         );
     }
 

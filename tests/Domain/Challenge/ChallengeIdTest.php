@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Challenge;
 
 use App\Domain\Challenge\ChallengeId;
@@ -9,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class ChallengeIdTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideData')]
+    #[DataProvider('provideData')]
     public function testFromDateAndName(SerializableDateTime $date, string $name, ChallengeId $expectedChallengeId): void
     {
         $this->assertEquals(
@@ -18,7 +20,7 @@ class ChallengeIdTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideDataOldVersion')]
+    #[DataProvider('provideDataOldVersion')]
     public function testToOldVersion(SerializableDateTime $date, string $name, ChallengeId $expectedChallengeId): void
     {
         $this->assertEquals(
@@ -41,6 +43,9 @@ class ChallengeIdTest extends TestCase
         );
     }
 
+    /**
+     * @return list<array{SerializableDateTime, string, ChallengeId}>
+     */
     public static function provideData(): array
     {
         return [
@@ -67,6 +72,9 @@ class ChallengeIdTest extends TestCase
         ];
     }
 
+    /**
+     * @return list<array{SerializableDateTime, string, ChallengeId}>
+     */
     public static function provideDataOldVersion(): array
     {
         return [

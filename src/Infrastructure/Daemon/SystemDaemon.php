@@ -5,14 +5,16 @@ declare(strict_types=1);
 namespace App\Infrastructure\Daemon;
 
 use App\Console\Cache\PruneRenderCacheConsoleCommand;
+use App\Console\Import\RefreshActivitiesFromFilesConsoleCommand;
 use App\Console\Import\RunAutomationRulesBackfillConsoleCommand;
 use App\Console\Import\RunFileImportConsoleCommand;
 use App\Console\Strava\ProcessStravaWebhooksConsoleCommand;
 use App\Domain\Import\ImportMode;
 use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Config\ManagedMode;
 use App\Infrastructure\Console\ConsoleOutputAware;
-use App\Infrastructure\Daemon\Cron\CronAction;
-use App\Infrastructure\Daemon\Cron\CronProcess;
+use App\Infrastructure\Daemon\Process\DaemonProcess;
+use App\Infrastructure\Daemon\Process\DaemonProcessType;
 use App\Infrastructure\Mutex\LockName;
 use App\Infrastructure\Mutex\Mutex;
 use App\Infrastructure\Time\Clock\Clock;
@@ -37,6 +39,7 @@ final class SystemDaemon implements Daemon
         private readonly Clock $clock,
         private readonly SettingsRepository $settingsRepository,
         private readonly ImportMode $importMode,
+        private readonly ManagedMode $managedMode,
         private readonly Connection $connection,
     ) {
     }
@@ -46,7 +49,7 @@ final class SystemDaemon implements Daemon
         Loop::addPeriodicTimer(1.0, function (): void {
             $this->getConsoleOutput()->writeln(sprintf(
                 '[%s] Periodic debug timer',
-                $this->clock->getCurrentDateTimeImmutable()->format('H:i:s'),
+                $this->clock->now()->format('H:i:s'),
             ));
         });
     }
@@ -68,11 +71,10 @@ final class SystemDaemon implements Daemon
     {
         /** @var list<array{key: string, mutexTtl: int, expression: string, command: string}> $jobs */
         $jobs = [];
-        /** @var CronAction $cronAction */
-        foreach ($this->settingsRepository->daemon()->getConfiguredCronActions() as $cronAction) {
-            if (!$cronAction->supportsImportMode($this->importMode)) {
-                continue;
-            }
+        foreach ($this->settingsRepository->daemon()->getConfiguredCronActions()->forDaemon(
+            importMode: $this->importMode,
+            managedMode: $this->managedMode,
+        ) as $cronAction) {
             $jobs[] = [
                 'key' => $cronAction->getId()->value,
                 'mutexTtl' => 1200,
@@ -121,8 +123,9 @@ final class SystemDaemon implements Daemon
                 mutexTtl: $job['mutexTtl'],
                 expression: $job['expression'],
                 performer: function () use ($job): PromiseInterface {
-                    new CronProcess(
-                        cronActionId: $job['key'],
+                    new DaemonProcess(
+                        type: DaemonProcessType::CRON_ACTION,
+                        name: $job['key'],
                         clock: $this->clock,
                         output: $this->getConsoleOutput(),
                         command: $job['command'],
@@ -140,5 +143,18 @@ final class SystemDaemon implements Daemon
 
         $this->getConsoleOutput()->writeln(sprintf('<info>%s</info>', 'Cron configured'));
         $this->getConsoleOutput()->writeln($output);
+    }
+
+    public function runStartupTasks(): void
+    {
+        if ($this->importMode->isFiles()) {
+            new DaemonProcess(
+                type: DaemonProcessType::STARTUP_TASK,
+                name: 'refreshActivitiesFromFiles',
+                clock: $this->clock,
+                output: $this->getConsoleOutput(),
+                command: sprintf('bin/console %s', RefreshActivitiesFromFilesConsoleCommand::NAME),
+            )->start();
+        }
     }
 }

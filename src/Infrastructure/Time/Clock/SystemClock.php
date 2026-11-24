@@ -5,17 +5,23 @@ declare(strict_types=1);
 namespace App\Infrastructure\Time\Clock;
 
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
-use App\Infrastructure\ValueObject\Time\SerializableTimezone;
+use Symfony\Component\Clock\ClockInterface;
+use Time\Duration;
 
 readonly class SystemClock implements Clock
 {
     public function __construct(
-        private ?SerializableTimezone $timezone,
+        private ClockInterface $clock,
     ) {
     }
 
-    public function getCurrentDateTimeImmutable(): SerializableDateTime
+    public function now(): SerializableDateTime
     {
-        return new SerializableDateTime('now', $this->timezone);
+        return SerializableDateTime::createFromInterface($this->clock->now());
+    }
+
+    public function sleep(Duration $duration): void
+    {
+        $this->clock->sleep($duration->seconds);
     }
 }

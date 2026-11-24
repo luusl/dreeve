@@ -7,6 +7,9 @@ namespace App\Controller\Api\V1\Activity;
 use App\Application\AppUrl;
 use App\Domain\Activity\Search\ActivitySearchFilters;
 use App\Domain\Activity\Search\ActivitySearchRepository;
+use App\Domain\Activity\Search\ActivitySearchResult;
+use App\Domain\Media\MediaItemIds;
+use App\Domain\Media\MediaItemRepository;
 use App\Infrastructure\Http\Request\PaginationFromRequest;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Attribute\AsController;
@@ -19,6 +22,7 @@ final readonly class ActivitySearchRequestHandler
 
     public function __construct(
         private ActivitySearchRepository $activitySearchRepository,
+        private MediaItemRepository $mediaItemRepository,
         private AppUrl $appUrl,
     ) {
     }
@@ -27,11 +31,16 @@ final readonly class ActivitySearchRequestHandler
     public function handle(Request $request): ActivityResponse
     {
         $pagination = $this->paginationFromRequest($request);
+        $overview = $this->activitySearchRepository->find($pagination, ActivitySearchFilters::fromRequest($request));
 
         return ActivityResponse::list(
-            $this->activitySearchRepository->find($pagination, ActivitySearchFilters::fromRequest($request)),
-            $pagination,
-            $this->appUrl,
+            overview: $overview,
+            pagination: $pagination,
+            mediaItems: $this->mediaItemRepository->findByIds(MediaItemIds::fromArray(array_merge(...array_map(
+                static fn (ActivitySearchResult $result): array => $result->getActivity()->getMediaItemIds()->toArray(),
+                $overview->getItems(),
+            )))),
+            appUrl: $this->appUrl,
         );
     }
 }

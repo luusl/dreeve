@@ -13,10 +13,16 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\UpdateActivity\UpdateActivity;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Gear\GearId;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
+use App\Domain\Media\MediaItemPath;
+use App\Domain\Media\MediaItemRepository;
+use App\Domain\Media\MediaItems;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\Exception\EntityNotFound;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
+use App\Tests\Domain\Media\MediaItemBuilder;
 use League\Flysystem\FilesystemOperator;
 
 class UpdateActivityCommandHandlerTest extends ContainerTestCase
@@ -115,7 +121,7 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
-                ->withLocalImagePaths('files/activities/existing.png')
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('existing'))
                 ->build(),
             rawData: [],
         ));
@@ -127,17 +133,22 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
-        $this->assertSame(['/files/activities/existing.png'], $activity->getLocalImagePaths());
+        $this->assertEquals(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('existing')]), $activity->getMediaItemIds());
         $this->assertTrue($this->fileStorage->fileExists('activities/existing.png'));
     }
 
     public function testHandleRemovesImages(): void
     {
         $this->fileStorage->write('activities/existing.png', 'binary');
+        $mediaItemRepository = $this->getContainer()->get(MediaItemRepository::class);
+        $mediaItemRepository->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('existing'))
+            ->withPath(MediaItemPath::fromString('activities/existing.png'))
+            ->build());
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
-                ->withLocalImagePaths('files/activities/existing.png')
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('existing'))
                 ->build(),
             rawData: [],
         ));
@@ -146,14 +157,15 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
             'activityId' => 'activity-1',
             'name' => 'Updated activity',
             'sportType' => 'Ride',
-            'images' => json_encode([
-                ['status' => 'removed', 'path' => '/files/activities/existing.png'],
+            'mediaItems' => json_encode([
+                ['status' => 'removed', 'id' => 'mediaItem-existing'],
             ]),
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
-        $this->assertSame([], $activity->getLocalImagePaths());
+        $this->assertTrue($activity->getMediaItemIds()->isEmpty());
         $this->assertFalse($this->fileStorage->fileExists('activities/existing.png'));
+        $this->assertTrue($mediaItemRepository->findByIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('existing')]))->isEmpty());
     }
 
     public function testHandleLeavesImagesUntouchedWhenNothingChanged(): void
@@ -162,7 +174,7 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
-                ->withLocalImagePaths('files/activities/existing.png')
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('existing'))
                 ->build(),
             rawData: [],
         ));
@@ -172,11 +184,11 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
             'activityId' => 'activity-1',
             'name' => 'Updated activity',
             'sportType' => 'Ride',
-            'images' => '[]',
+            'mediaItems' => '[]',
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
-        $this->assertSame(['/files/activities/existing.png'], $activity->getLocalImagePaths());
+        $this->assertEquals(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('existing')]), $activity->getMediaItemIds());
         $this->assertTrue($this->fileStorage->fileExists('activities/existing.png'));
     }
 
@@ -184,10 +196,14 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
     {
         $this->fileStorage->write('activities/keep.png', 'keep');
         $this->fileStorage->write('activities/drop.png', 'drop');
+        $this->getContainer()->get(MediaItemRepository::class)->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('drop'))
+            ->withPath(MediaItemPath::fromString('activities/drop.png'))
+            ->build());
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
-                ->withLocalImagePaths('files/activities/keep.png', 'files/activities/drop.png')
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('keep'), MediaItemId::fromUnprefixed('drop'))
                 ->build(),
             rawData: [],
         ));
@@ -196,23 +212,34 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
             'activityId' => 'activity-1',
             'name' => 'Updated activity',
             'sportType' => 'Ride',
-            'images' => json_encode([
-                ['status' => 'removed', 'path' => '/files/activities/drop.png'],
+            'mediaItems' => json_encode([
+                ['status' => 'removed', 'id' => 'mediaItem-drop'],
                 ['status' => 'new', 'filename' => 'new.jpg', 'content' => base64_encode('new-content')],
             ]),
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
-        $localImagePaths = $activity->getLocalImagePaths();
-        $this->assertCount(2, $localImagePaths);
-        $this->assertSame('/files/activities/keep.png', $localImagePaths[0]);
-        $this->assertStringEndsWith('.jpg', $localImagePaths[1]);
+        $this->assertEquals(
+            MediaItemIds::fromArray([MediaItemId::fromUnprefixed('keep'), MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5')]),
+            $activity->getMediaItemIds(),
+        );
 
         // The dropped image was deleted, the kept one is untouched and the new one was written.
         $this->assertFalse($this->fileStorage->fileExists('activities/drop.png'));
         $this->assertTrue($this->fileStorage->fileExists('activities/keep.png'));
-        $newRelativePath = ltrim((string) preg_replace('#^/files/#', '', $localImagePaths[1]), '/');
-        $this->assertSame('new-content', $this->fileStorage->read($newRelativePath));
+        $this->assertSame('new-content', $this->fileStorage->read('activities/0025176c-5652-11ee-923d-02424dd627d5.jpg'));
+        $this->assertEquals(
+            MediaItems::fromArray([
+                MediaItemBuilder::fromDefaults()
+                    ->withMediaItemId(MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'))
+                    ->withPath(MediaItemPath::fromString('activities/0025176c-5652-11ee-923d-02424dd627d5.jpg'))
+                    ->build(),
+            ]),
+            $this->getContainer()->get(MediaItemRepository::class)->findByIds(MediaItemIds::fromArray([
+                MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'),
+                MediaItemId::fromUnprefixed('drop'),
+            ])),
+        );
     }
 
     public function testHandleDoesNotDeleteFilesThatDoNotBelongToTheActivity(): void
@@ -229,13 +256,13 @@ class UpdateActivityCommandHandlerTest extends ContainerTestCase
             'activityId' => 'activity-1',
             'name' => 'Updated activity',
             'sportType' => 'Ride',
-            'images' => json_encode([
-                ['status' => 'removed', 'path' => '/files/activities/someone-else.png'],
+            'mediaItems' => json_encode([
+                ['status' => 'removed', 'id' => 'mediaItem-someone-else'],
             ]),
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
-        $this->assertSame([], $activity->getLocalImagePaths());
+        $this->assertTrue($activity->getMediaItemIds()->isEmpty());
         // A removed path that was never attached to this activity may not delete the file from disk.
         $this->assertTrue($this->fileStorage->fileExists('activities/someone-else.png'));
     }

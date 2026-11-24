@@ -10,7 +10,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ZoneDistributionTrendTest extends ContainerTestCase
 {
-    #[DataProvider(methodName: 'fromPercentagesProvider')]
+    #[DataProvider('fromPercentagesProvider')]
     public function testFromPercentages(float $current, float $previous, ZoneDistributionTrend $expected): void
     {
         self::assertSame($expected, ZoneDistributionTrend::fromPercentages(current: $current, previous: $previous));
@@ -59,6 +59,9 @@ class ZoneDistributionTrendTest extends ContainerTestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{float, float, ZoneDistributionTrend}>
+     */
     public static function fromPercentagesProvider(): iterable
     {
         yield 'increased' => [76.81, 74.02, ZoneDistributionTrend::UP];

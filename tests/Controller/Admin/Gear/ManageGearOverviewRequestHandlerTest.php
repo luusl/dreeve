@@ -6,9 +6,14 @@ use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Gear\GearType;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemPath;
+use App\Domain\Media\MediaItemRepository;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Gear\GearBuilder;
+use App\Tests\Domain\Media\MediaItemBuilder;
+use Symfony\Component\DomCrawler\Crawler;
 
 class ManageGearOverviewRequestHandlerTest extends AdminWebTestCase
 {
@@ -52,7 +57,7 @@ class ManageGearOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(3, $editLinks);
         $this->assertStringContainsString(
             '/admin/gear/'.GearId::fromUnprefixed('1').'/edit',
-            $editLinks->first()->attr('href')
+            (string) $editLinks->first()->attr('href')
         );
     }
 
@@ -81,7 +86,7 @@ class ManageGearOverviewRequestHandlerTest extends AdminWebTestCase
         $this->assertResponseIsSuccessful();
         $this->assertSame(
             ['/admin/gear/gear-2/delete'],
-            $crawler->filter('table.data-table tbody a[title="Delete"]')->each(fn ($link): ?string => $link->attr('href')),
+            $crawler->filter('table.data-table tbody a[title="Delete"]')->each(fn (Crawler $link): ?string => $link->attr('href')),
         );
     }
 
@@ -113,12 +118,16 @@ class ManageGearOverviewRequestHandlerTest extends AdminWebTestCase
 
     public function testRendersTheGearImageWithPlaceholderFallback(): void
     {
+        static::getContainer()->get(MediaItemRepository::class)->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('image'))
+            ->withPath(MediaItemPath::fromString('gear/image.jpg'))
+            ->build());
         $gearRepository = static::getContainer()->get(GearRepository::class);
         $gearRepository->add(
             GearBuilder::fromDefaults()
                 ->withGearId(GearId::fromUnprefixed('1'))
                 ->withName('Gear with image')
-                ->withLocalImagePath('files/gear/image.jpg')
+                ->withMediaItemId(MediaItemId::fromUnprefixed('image'))
                 ->build()
         );
         $gearRepository->add(
@@ -136,7 +145,7 @@ class ManageGearOverviewRequestHandlerTest extends AdminWebTestCase
         $images = $crawler->filter('table.data-table tbody tr td:first-child img');
         $this->assertCount(2, $images);
 
-        $sources = $images->each(fn ($img): ?string => $img->attr('src'));
+        $sources = $images->each(fn (Crawler $img): ?string => $img->attr('src'));
         $this->assertContains('/files/gear/image.jpg', $sources);
         $placeholderSources = array_filter($sources, fn (?string $src): bool => str_contains((string) $src, 'placeholder'));
         $this->assertCount(1, $placeholderSources);

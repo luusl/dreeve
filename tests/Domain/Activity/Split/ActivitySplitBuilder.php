@@ -17,27 +17,23 @@ final class ActivitySplitBuilder
     private UnitSystem $unitSystem = UnitSystem::METRIC;
     private int $splitNumber = 1;
     private Meter $distance;
-    private readonly int $elapsedTimeInSeconds;
-    private int $movingTimeInSeconds;
+    private readonly int $elapsedTimeInSeconds = 120;
+    private int $movingTimeInSeconds = 110;
     private Meter $elevationDifference;
     private MetersPerSecond $averageSpeed;
     private MetersPerSecond $minAverageSpeed;
     private MetersPerSecond $maxAverageSpeed;
-    private readonly int $paceZone;
+    private readonly int $paceZone = 0;
     private ?SecPerKm $gapPaceInSecondsPerKm = null;
-    private ?int $averageHeartRate = null;
 
     private function __construct()
     {
         $this->activityId = ActivityId::fromUnprefixed('test');
         $this->distance = Meter::from(100);
-        $this->elapsedTimeInSeconds = 120;
-        $this->movingTimeInSeconds = 110;
         $this->elevationDifference = Meter::from(2);
         $this->averageSpeed = MetersPerSecond::from(3);
         $this->minAverageSpeed = MetersPerSecond::from(1);
         $this->maxAverageSpeed = MetersPerSecond::from(8);
-        $this->paceZone = 0;
     }
 
     public static function fromDefaults(): self
@@ -129,13 +125,6 @@ final class ActivitySplitBuilder
     public function withGapPace(SecPerKm $gapPace): self
     {
         $this->gapPaceInSecondsPerKm = $gapPace;
-
-        return $this;
-    }
-
-    public function withAverageHeartRate(int $averageHeartRate): self
-    {
-        $this->averageHeartRate = $averageHeartRate;
 
         return $this;
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller\Admin;
 
 use App\Tests\Controller\ControllerWebTestCase;
@@ -20,7 +22,7 @@ abstract class AdminWebTestCase extends ControllerWebTestCase
             ['cost' => 4],
         );
 
-        foreach (['OIDC_ISSUER_URL', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET', 'OIDC_ALLOWED_USERS'] as $envVar) {
+        foreach (['OIDC_ISSUER_URL', 'OIDC_CLIENT_ID', 'OIDC_CLIENT_SECRET', 'OIDC_ALLOWED_USERS', 'OIDC_CA_FILE'] as $envVar) {
             $_SERVER[$envVar] = $_ENV[$envVar] = '';
         }
     }

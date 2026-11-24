@@ -9,7 +9,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class TSBStatusTest extends ContainerTestCase
 {
-    #[DataProvider(methodName: 'fromFloatProvider')]
+    #[DataProvider('fromFloatProvider')]
     public function testFromFloat(float $value, TSBStatus $expected): void
     {
         self::assertSame($expected, TSBStatus::fromFloat($value));
@@ -53,7 +53,7 @@ class TSBStatusTest extends ContainerTestCase
         );
     }
 
-    #[DataProvider(methodName: 'presentationProvider')]
+    #[DataProvider('presentationProvider')]
     public function testPresentation(TSBStatus $status, string $expectedRange, string $expectedTextColor, string $expectedPillColors): void
     {
         self::assertSame($expectedRange, $status->getRange());
@@ -61,6 +61,9 @@ class TSBStatusTest extends ContainerTestCase
         self::assertSame($expectedPillColors, $status->getPillColors());
     }
 
+    /**
+     * @return iterable<string, array{TSBStatus, string, string, string}>
+     */
     public static function presentationProvider(): iterable
     {
         yield 'POSSIBLE_DETRAINING' => [TSBStatus::POSSIBLE_DETRAINING, '> 25', 'text-orange-500', 'bg-orange-100 text-orange-800'];
@@ -71,6 +74,9 @@ class TSBStatusTest extends ContainerTestCase
         yield 'OVER_FATIGUED' => [TSBStatus::OVER_FATIGUED, '< -30', 'text-red-600', 'bg-red-100 text-red-800'];
     }
 
+    /**
+     * @return iterable<string, array{float, TSBStatus}>
+     */
     public static function fromFloatProvider(): iterable
     {
         // POSSIBLE_DETRAINING (> 25)

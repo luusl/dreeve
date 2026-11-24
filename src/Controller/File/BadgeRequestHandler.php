@@ -18,7 +18,8 @@ use App\Infrastructure\Cache\CacheableRenderer;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\SvgResponse;
+use App\Infrastructure\Http\Response\CachePolicy;
+use App\Infrastructure\Http\Response\SvgResponse;
 use App\Infrastructure\Time\Clock\Clock;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -57,16 +58,15 @@ final readonly class BadgeRequestHandler
                 'activities' => $this->activityRepository->findMostRecent(self::NUMBER_OF_MOST_RECENT_ACTIVITIES),
                 'activityTotals' => ActivityTotals::create(
                     totals: $this->queryBus->ask(new FindActivityTotals()),
-                    now: $this->clock->getCurrentDateTimeImmutable(),
+                    now: $this->clock->now(),
                     translator: $this->translator,
                 ),
                 'challengesCompleted' => $this->challengeRepository->count(),
             ]),
         );
 
-        return new SvgResponse(
-            $render->getContent() ?? '',
-            headers: [...$render->getCacheHeaders(), 'Cache-Control' => 'no-cache, no-store, must-revalidate'],
+        return CachePolicy::private()->noStore()->applyTo(
+            new SvgResponse($render->getContent() ?? '', headers: $render->getCacheHeaders()),
         );
     }
 
@@ -90,9 +90,8 @@ final readonly class BadgeRequestHandler
             ]),
         );
 
-        return new SvgResponse(
-            $render->getContent() ?? '',
-            headers: [...$render->getCacheHeaders(), 'Cache-Control' => 'no-cache, no-store, must-revalidate'],
+        return CachePolicy::private()->noStore()->applyTo(
+            new SvgResponse($render->getContent() ?? '', headers: $render->getCacheHeaders()),
         );
     }
 
@@ -120,9 +119,8 @@ final readonly class BadgeRequestHandler
             ]),
         );
 
-        return new SvgResponse(
-            $render->getContent() ?? '',
-            headers: [...$render->getCacheHeaders(), 'Cache-Control' => 'no-cache, no-store, must-revalidate'],
+        return CachePolicy::private()->noStore()->applyTo(
+            new SvgResponse($render->getContent() ?? '', headers: $render->getCacheHeaders()),
         );
     }
 }

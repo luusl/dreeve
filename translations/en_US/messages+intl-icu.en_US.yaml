@@ -1,0 +1,728 @@
+'# completed': '# completed'
+'42-day fitness trend': '42-day fitness trend'
+'7-day fatigue level': '7-day fatigue level'
+'< 1.5: Good variety in training': '< 1.5: Good variety in training'
+'> 2.0: High monotony, increased risk': '> 2.0: High monotony, increased risk'
+'A 6-hour week scores higher than a 5-hour week.': 'A 6-hour week scores higher than a 5-hour week.'
+'A cluster tile is a visited tile whose four neighbours are visited too': 'A cluster tile is a visited tile whose four neighbours are visited too'
+'A high intensity score means a larger share of your training is hard rather than easy.': 'A high intensity score means a larger share of your training is hard rather than easy.'
+'A high score means you concentrate more training into fewer, heavier days.': 'A high score means you concentrate more training into fewer, heavier days.'
+'A:C Ratio': 'A:C Ratio'
+'A:C optimal in': 'A:C optimal in'
+'AI integration settings': 'AI integration settings'
+'ATL (Fatigue)': 'ATL (Fatigue)'
+'Accumulated fatigue': 'Accumulated fatigue'
+'Active days': 'Active days'
+'Active gear': 'Active gear'
+Activities: Activities
+Activity: Activity
+'Activity collections': 'Activity collections'
+'Activity count': 'Activity count'
+'Activity heatmap': 'Activity heatmap'
+'Activity locations': 'Activity locations'
+'Activity start times': 'Activity start times'
+'Acute Training Load (Fatigue) - 7-day exponentially weighted average of your daily training load. Represents short-term fatigue.': 'Acute Training Load (Fatigue) - 7-day exponentially weighted average of your daily training load. Represents short-term fatigue.'
+'Acute:Chronic Ratio - Ratio of ATL to CTL. Indicates injury risk.': 'Acute:Chronic Ratio - Ratio of ATL to CTL. Indicates injury risk.'
+'Adaptive & Inclusive Sports': 'Adaptive & Inclusive Sports'
+'Admin panel': 'Admin panel'
+'Aero sensor': 'Aero sensor'
+Afternoon: Afternoon
+All: All
+'All time': 'All time'
+'Alpine Ski': 'Alpine Ski'
+'Analyze with WindAhead': 'Analyze with WindAhead'
+Apr: Apr
+'Ask Mark something...': 'Ask Mark something...'
+'Athlete profile': 'Athlete profile'
+Aug: Aug
+Average: Average
+'Average gradient': 'Average gradient'
+'Avg distance': 'Avg distance'
+'Avg gradient': 'Avg gradient'
+'Avg pace': 'Avg pace'
+'Avg speed': 'Avg speed'
+'Back Country Ski': 'Back Country Ski'
+'Back to app': 'Back to app'
+Badges: Badges
+Badminton: Badminton
+Bananas: Bananas
+Basketball: Basketball
+'Become a sponsor': 'Become a sponsor'
+'Below zone 1': 'Below zone 1'
+Best: Best
+'Best effort': 'Best effort'
+'Best efforts': 'Best efforts'
+'Best efforts for {sportType}': 'Best efforts for {sportType}'
+'Bike light': 'Bike light'
+'Bike radar': 'Bike radar'
+Boxing: Boxing
+'Build zone (–10)': 'Build zone (–10)'
+'Buy me a coffee': 'Buy me a coffee'
+'CTL (Fitness)': 'CTL (Fitness)'
+Cadence: Cadence
+'Cadence sensor': 'Cadence sensor'
+Cal.: Cal.
+Calories: Calories
+'Calories burned': 'Calories burned'
+'Calories burnt': 'Calories burnt'
+Canoeing: Canoeing
+'Carbon saved': 'Carbon saved'
+'Challenge consistency': 'Challenge consistency'
+Challenges: Challenges
+'Chronic Training Load (Fitness) - 42-day exponentially weighted average of your daily training load. Represents long-term training adaptation.': 'Chronic Training Load (Fitness) - 42-day exponentially weighted average of your daily training load. Represents long-term training adaptation.'
+'Clear all filters': 'Clear all filters'
+'Clear chat': 'Clear chat'
+Close: Close
+'Cluster tiles': 'Cluster tiles'
+Collections: Collections
+Columns: Columns
+Commute: Commute
+Commutes: Commutes
+'Commutes only': 'Commutes only'
+Compare: Compare
+'Compare to': 'Compare to'
+'Completed {threshold} activities': 'Completed {threshold} activities'
+Components: Components
+'Configure gear maintenance': 'Configure gear maintenance'
+'Congrats! You achieved {numberOfPRs} PRs in this activity.': 'Congrats! You achieved {numberOfPRs} PRs in this activity.'
+'Consider reducing load': 'Consider reducing load'
+Consistency: Consistency
+Cost: Cost
+'Could not determine your location': 'Could not determine your location'
+Country: Country
+Cricket: Cricket
+Crossfit: Crossfit
+'Crunching the numbers...': 'Crunching the numbers...'
+'Current Status': 'Current Status'
+Cycling: Cycling
+'Daily TRIMP': 'Daily TRIMP'
+'Daily activities': 'Daily activities'
+Dance: Dance
+Dark: Dark
+Dashboard: Dashboard
+Date: Date
+Day: Day
+'Days away': 'Days away'
+'Days completed': 'Days completed'
+'Days needed': 'Days needed'
+'Days to go': 'Days to go'
+'Daytime stats': 'Daytime stats'
+Dec: Dec
+'Decreased compared to yesterday': 'Decreased compared to yesterday'
+Density: Density
+Descent: Descent
+Details: Details
+Device: Device
+Disc Golf: Disc Golf
+Dist.: Dist.
+Distance: Distance
+'Distance & Elevation': 'Distance & Elevation'
+'Distance (single activity)': 'Distance (single activity)'
+'Distance breakdown': 'Distance breakdown'
+'Distance distribution': 'Distance distribution'
+'Distance in {unit}': 'Distance in {unit}'
+'Distance over time per gear': 'Distance over time per gear'
+'Distance per month per gear': 'Distance per month per gear'
+'Doing a mix of cycling, running, swimming, and strength work increases your variety score.': 'Doing a mix of cycling, running, swimming, and strength work increases your variety score.'
+Download: Download
+Duration: Duration
+'Dusting off the record books...': 'Dusting off the record books...'
+'E-Bike Ride': 'E-Bike Ride'
+'E-Bike Rides': 'E-Bike Rides'
+'E-Mountain Bike Ride': 'E-Mountain Bike Ride'
+'E-Mountain Bike Rides': 'E-Mountain Bike Rides'
+Eddington: Eddington
+'Eddington number': 'Eddington number'
+'Eddington over time': 'Eddington over time'
+'Edit dashboard': 'Edit dashboard'
+'Edit this activity': 'Edit this activity'
+'Edit this activity collection': 'Edit this activity collection'
+'Edit this segment': 'Edit this segment'
+'Effort vs heart rate': 'Effort vs heart rate'
+'Elapsed time': 'Elapsed time'
+'Electronic shifting': 'Electronic shifting'
+Elev: Elev
+Elev.: Elev.
+Elevation: Elevation
+'Elevation (single activity)': 'Elevation (single activity)'
+'Elevation gain': 'Elevation gain'
+'Elevation in {unit}': 'Elevation in {unit}'
+Elliptical: Elliptical
+Energy: Energy
+'Energy burned across your activities': 'Energy burned across your activities'
+'Enjoying Dreeve? Support its development': 'Enjoying Dreeve? Support its development'
+'Enter fullscreen mode': 'Enter fullscreen mode'
+Evening: Evening
+Event: Event
+'Excludes commutes': 'Excludes commutes'
+'Excludes group activities': 'Excludes group activities'
+'Explorer tiles': 'Explorer tiles'
+'Explorer tiles include all your activities': 'Explorer tiles include all your activities'
+'FTP history': 'FTP history'
+Fastest: Fastest
+Favourite: Favourite
+Feb: Feb
+Feel: Feel
+'Filling up the bottles...': 'Filling up the bottles...'
+'Filter on KOM segments': 'Filter on KOM segments'
+'Filter on country': 'Filter on country'
+'Filter on sport type': 'Filter on sport type'
+'Filter on starred segments': 'Filter on starred segments'
+'First activity in {countryName}': 'First activity in {countryName}'
+'First-ever activity recorded': 'First-ever activity recorded'
+Firsts: Firsts
+Fitness: Fitness
+'Fitness may be declining due to low recent training load': 'Fitness may be declining due to low recent training load'
+'Fitness may decline': 'Fitness may decline'
+'Foot pod': 'Foot pod'
+'For example, an Eddington number of 70 would imply that a cyclist has cycled at least 70 km or miles in a day on at least 70 occasions. Achieving a high Eddington number is difficult, since moving from, say, 70 to 75 will (probably) require more than five new long-distance workouts, since any workout shorter than 75 km or miles will no longer be included in the reckoning.': 'For example, an Eddington number of 70 would imply that a cyclist has cycled at least 70 km or miles in a day on at least 70 occasions. Achieving a high Eddington number is difficult, since moving from, say, 70 to 75 will (probably) require more than five new long-distance workouts, since any workout shorter than 75 km or miles will no longer be included in the reckoning.'
+'Form (TSB)': 'Form (TSB)'
+Fri: Fri
+Fri.: Fri.
+'Front rings': 'Front rings'
+'Front shifts': 'Front shifts'
+GAP: GAP
+Gear: Gear
+'Gear maintenance': 'Gear maintenance'
+'Gear that is retired is disabled by default.': 'Gear that is retired is disabled by default.'
+'Go to activity': 'Go to activity'
+Goal: Goal
+Golf: Golf
+'Good training variety': 'Good training variety'
+'Google searches': 'Google searches'
+Grad.: Grad.
+Gradient: Gradient
+'Gravel Ride': 'Gravel Ride'
+'Gravel Rides': 'Gravel Rides'
+'Group activities': 'Group activities'
+'Group activities only': 'Group activities only'
+'Group activity': 'Group activity'
+"Guidelines vary by individual; for more information see Joe Friel's 'The Cyclist's Training Bible' or TrainingPeaks' research documentation.": "Guidelines vary by individual; for more information see Joe Friel's 'The Cyclist's Training Bible' or TrainingPeaks' research documentation."
+HIIT: HIIT
+HR: HR
+'Hand Cycle': 'Hand Cycle'
+'Heart rate': 'Heart rate'
+'Heart rate monitor': 'Heart rate monitor'
+'Heart rate zone distribution over the past month. For effective polarized training, your workouts should primarily fall within the following zones': 'Heart rate zone distribution over the past month. For effective polarized training, your workouts should primarily fall within the following zones'
+'Heart rate zones': 'Heart rate zones'
+Heatmap: Heatmap
+High: High
+'High fatigue levels may increase injury or burnout risk. Consider reducing load and prioritizing recovery': 'High fatigue levels may increase injury or burnout risk. Consider reducing load and prioritizing recovery'
+'High monotony - increase variety': 'High monotony - increase variety'
+'High risk': 'High risk'
+'Highlight explorer tiles': 'Highlight explorer tiles'
+'Highlight visited countries': 'Highlight visited countries'
+'Highly recovered and ready to perform': 'Highly recovered and ready to perform'
+Hike: Hike
+Hikes: Hikes
+History: History
+'History (6 weeks)': 'History (6 weeks)'
+'How diverse is your training': 'How diverse is your training'
+'How hard is your typical training session': 'How hard is your typical training session'
+'How long is your typical training session': 'How long is your typical training session'
+'How much do you train on average per week': 'How much do you train on average per week'
+'How much training you do in total on days you train.': 'How much training you do in total on days you train.'
+'How often do you train': 'How often do you train'
+'Ice Skate': 'Ice Skate'
+Imperial: Imperial
+"In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉.": "In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉."
+'Increased compared to yesterday': 'Increased compared to yesterday'
+'Individual thresholds vary based on fitness level.': 'Individual thresholds vary based on fitness level.'
+'Inline Skate': 'Inline Skate'
+'Installed on {component}': 'Installed on {component}'
+Intensity: Intensity
+Jan: Jan
+Jul: Jul
+Jun: Jun
+KOM: KOM
+Kayaking: Kayaking
+'Kite Surf': 'Kite Surf'
+Lap: Lap
+'Last 12 months': 'Last 12 months'
+'Last 30 days': 'Last 30 days'
+'Last 7 days training load': 'Last 7 days training load'
+'Last activity': 'Last activity'
+'Last effort': 'Last effort'
+'Last effort date': 'Last effort date'
+'Last maintenance': 'Last maintenance'
+'Last month': 'Last month'
+'Last used': 'Last used'
+'Last week': 'Last week'
+'Last {numberOfDays} days': 'Last {numberOfDays} days'
+Lifetime: Lifetime
+Light: Light
+'Light fatigue with good readiness. A great balance for quality training or longer efforts': 'Light fatigue with good readiness. A great balance for quality training or longer efforts'
+Load: Load
+'Load (CTL/ATL)': 'Load (CTL/ATL)'
+Loading...: Loading...
+'Location access is blocked. Allow it in your browser settings to see your location.': 'Location access is blocked. Allow it in your browser settings to see your location.'
+'Locations over the globe': 'Locations over the globe'
+'Long run': 'Long run'
+'Longest activity': 'Longest activity'
+'Longest activity (h)': 'Longest activity (h)'
+'Longest day': 'Longest day'
+'Longest distance': 'Longest distance'
+'Longest streak': 'Longest streak'
+'Longest streaks': 'Longest streaks'
+'Love Dreeve? Get a free sticker': 'Love Dreeve? Get a free sticker'
+Low: Low
+'Low risk': 'Low risk'
+'Low training load': 'Low training load'
+Maintenance: Maintenance
+'Manage activities': 'Manage activities'
+'Manage activity collections': 'Manage activity collections'
+'Manage gear': 'Manage gear'
+'Manage recording devices': 'Manage recording devices'
+'Manage segments': 'Manage segments'
+'Map settings': 'Map settings'
+'Map tiles at zoom level 14 that your activities passed through': 'Map tiles at zoom level 14 that your activities passed through'
+Mar: Mar
+Max: Max
+'Max cluster': 'Max cluster'
+'Max gradient': 'Max gradient'
+'Max square': 'Max square'
+May: May
+Medium: Medium
+Message: Message
+Metric: Metric
+'Metrics settings': 'Metrics settings'
+Milestones: Milestones
+'Mind & Body Sports': 'Mind & Body Sports'
+'Moderate fatigue with stable fitness. Well suited for consistent day-to-day training': 'Moderate fatigue with stable fitness. Well suited for consistent day-to-day training'
+'Moderate monotony': 'Moderate monotony'
+Mon: Mon
+Mon.: Mon.
+Monotony: Monotony
+Month: Month
+Monthly: Monthly
+'Monthly stats': 'Monthly stats'
+Morning: Morning
+'Most elevation': 'Most elevation'
+'Most recent activities': 'Most recent activities'
+'Most recent challenges': 'Most recent challenges'
+'Most recent milestones': 'Most recent milestones'
+'Mountain Bike Ride': 'Mountain Bike Ride'
+'Mountain Bike Rides': 'Mountain Bike Rides'
+'Moving time': 'Moving time'
+'Moving time by sport': 'Moving time by sport'
+'Moving time in hours': 'Moving time in hours'
+'Muscle oxygen sensor': 'Muscle oxygen sensor'
+Name: Name
+Neutral: Neutral
+'New personal best for': 'New personal best for'
+'New version available': 'New version available'
+'Newer activity: {name}': 'Newer activity: {name}'
+'Next milestone': 'Next milestone'
+Night: Night
+'No activities': 'No activities'
+'No data available': 'No data available'
+'No maintenance tasks': 'No maintenance tasks'
+'No milestones achieved yet': 'No milestones achieved yet'
+'No other options to compare with': 'No other options to compare with'
+'No purchase price set': 'No purchase price set'
+None: None
+'Nordic Ski': 'Nordic Ski'
+Normal: Normal
+'Normalized power': 'Normalized power'
+'Not fitted': 'Not fitted'
+'Not supported': 'Not supported'
+Nov: Nov
+Now: Now
+'Number of activities': 'Number of activities'
+'Number of activities per month': 'Number of activities per month'
+'Number of times completed': 'Number of times completed'
+Oct: Oct
+'Older activity: {name}': 'Older activity: {name}'
+'Older effort': 'Older effort'
+'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.': 'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.'
+'On your own': 'On your own'
+'One of your gear maintenance tasks is due': 'One of your gear maintenance tasks is due'
+"Oops, looks like you've wandered off the map! 🗺️": "Oops, looks like you've wandered off the map! 🗺️"
+'Open Water Swim': 'Open Water Swim'
+'Optimal training range': 'Optimal training range'
+'Original file': 'Original file'
+Other: Other
+'Outdoor Sports': 'Outdoor Sports'
+Over-fatigued: Over-fatigued
+'Over-fatigued (–30)': 'Over-fatigued (–30)'
+'Overall weekly training stress': 'Overall weekly training stress'
+'Overdue by {amount}': 'Overdue by {amount}'
+'PB badges': 'PB badges'
+'PET bottles produced': 'PET bottles produced'
+Pace: Pace
+Padel: Padel
+'Peak fresh': 'Peak fresh'
+'Peak power outputs': 'Peak power outputs'
+'Per {unit}': 'Per {unit}'
+'Perceived exertion': 'Perceived exertion'
+'Personal bests': 'Personal bests'
+Photo: Photo
+Photos: Photos
+'Physical Therapy': 'Physical Therapy'
+'Pickle Ball': 'Pickle Ball'
+Pilates: Pilates
+'Pizza slices': 'Pizza slices'
+'Polarised training (last 30 days)': 'Polarised training (last 30 days)'
+'Pool Swim': 'Pool Swim'
+Power: Power
+'Power meter': 'Power meter'
+'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.': 'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.'
+'Prev year': 'Prev year'
+Previous: Previous
+Progress: Progress
+'Purchase price': 'Purchase price'
+Race: Race
+'Racing Score': 'Racing Score'
+'Racquet & Paddle Sports': 'Racquet & Paddle Sports'
+'Racquet Ball': 'Racquet Ball'
+Rank: Rank
+Ranking: Ranking
+'Reached a max cluster of {tileCount} tiles': 'Reached a max cluster of {tileCount} tiles'
+'Reached a {size}×{size} max square': 'Reached a {size}×{size} max square'
+'Reached {threshold} hours total moving time': 'Reached {threshold} hours total moving time'
+'Reached {threshold} total distance': 'Reached {threshold} total distance'
+'Reached {threshold} total elevation': 'Reached {threshold} total elevation'
+'Rear cogs': 'Rear cogs'
+'Rear shifts': 'Rear shifts'
+'Recalculating your suffer score...': 'Recalculating your suffer score...'
+Recent: Recent
+'Recent effort': 'Recent effort'
+'Recording device': 'Recording device'
+'Recording devices': 'Recording devices'
+'Recovery Timeline': 'Recovery Timeline'
+'Recovery forecast': 'Recovery forecast'
+'Reduced carbon emission by commuting': 'Reduced carbon emission by commuting'
+'Register maintenance': 'Register maintenance'
+'Rest Days': 'Rest Days'
+'Rest days': 'Rest days'
+'Rest days in last 7 days': 'Rest days in last 7 days'
+'Rest days vs. active days': 'Rest days vs. active days'
+Retired: Retired
+Rewind: Rewind
+'Rewind comparisons are only available on larger screens.': 'Rewind comparisons are only available on larger screens.'
+Ride: Ride
+Rides: Rides
+'Risk of detraining': 'Risk of detraining'
+'Rock Climbing': 'Rock Climbing'
+'Roller Ski': 'Roller Ski'
+'Rolling stats': 'Rolling stats'
+Rowing: Rowing
+Run: Run
+Running: Running
+Runs: Runs
+Sail: Sail
+Sat: Sat
+Sat.: Sat.
+Search: Search
+'Search by name or place...': 'Search by name or place...'
+'Search segment...': 'Search segment...'
+"See what's new": "See what's new"
+Segments: Segments
+Sep: Sep
+Shifting: Shifting
+'Show all columns': 'Show all columns'
+'Show information': 'Show information'
+'Show my location': 'Show my location'
+'Show photos': 'Show photos'
+'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.': 'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.'
+'Similar activities': 'Similar activities'
+"Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": "Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure."
+Skateboard: Skateboard
+Skating: Skating
+'Slightly fresh': 'Slightly fresh'
+'Smart trainer': 'Smart trainer'
+Snowboard: Snowboard
+Snowshoe: Snowshoe
+Soccer: Soccer
+'Someone who regularly trains for 90 minutes will score higher than someone doing mostly short sessions.': 'Someone who regularly trains for 90 minutes will score higher than someone doing mostly short sessions.'
+Sort: Sort
+Speed: Speed
+'Speed & cadence sensor': 'Speed & cadence sensor'
+'Speed sensor': 'Speed sensor'
+Splits: Splits
+'Sport variety': 'Sport variety'
+Squash: Squash
+Stage: Stage
+Stages: Stages
+'Stair Stepper': 'Stair Stepper'
+'Stand Up Paddling': 'Stand Up Paddling'
+'Start times': 'Start times'
+'Stats per weekday': 'Stats per weekday'
+Status: Status
+'Streak started on {date}': 'Streak started on {date}'
+Streaks: Streaks
+Strong: Strong
+Sun: Sun
+Sun.: Sun.
+Surfing: Surfing
+System: System
+'TSB (Form)': 'TSB (Form)'
+'TSB positive in': 'TSB positive in'
+'Table Tennis': 'Table Tennis'
+'Taper sweet-spot (+15)': 'Taper sweet-spot (+15)'
+Target: Target
+'Team Sports': 'Team Sports'
+Temperature: Temperature
+'Temperature sensor': 'Temperature sensor'
+Tennis: Tennis
+"That's 1.5 times the distance to the edge of space": "That's 1.5 times the distance to the edge of space"
+"That's 100 days of commitment, triple digits!": "That's 100 days of commitment, triple digits!"
+"That's 2 activities per week for nearly 5 years": "That's 2 activities per week for nearly 5 years"
+"That's 2 full days of non-stop activity": "That's 2 full days of non-stop activity"
+"That's 2 full years of daily activity, incredible!": "That's 2 full years of daily activity, incredible!"
+"That's 2 months without missing a day": "That's 2 months without missing a day"
+"That's 2 months without stopping": "That's 2 months without stopping"
+"That's 250 days, over two thirds of a year": "That's 250 days, over two thirds of a year"
+"That's 3 activities per week for nearly 5 years": "That's 3 activities per week for nearly 5 years"
+"That's 3 weeks straight, they say it takes 21 days to build a habit": "That's 3 weeks straight, they say it takes 21 days to build a habit"
+"That's 4 months of unbroken daily activity": "That's 4 months of unbroken daily activity"
+"That's 45 days, halfway to a full quarter": "That's 45 days, halfway to a full quarter"
+"That's 5 months, nearly half a year without a rest day": "That's 5 months, nearly half a year without a rest day"
+"That's 500 days, well beyond a year of daily activity": "That's 500 days, well beyond a year of daily activity"
+"That's a full day of non-stop movement": "That's a full day of non-stop movement"
+"That's a full fortnight of daily activity": "That's a full fortnight of daily activity"
+"That's a full month of non-stop activity": "That's a full month of non-stop activity"
+"That's a full month without a rest day": "That's a full month without a rest day"
+"That's a full quarter of daily activity": "That's a full quarter of daily activity"
+"That's a full week of daily activity": "That's a full week of daily activity"
+"That's a full week of non-stop movement": "That's a full week of non-stop movement"
+"That's a full year of daily activity": "That's a full year of daily activity"
+"That's about 3.5 months of continuous movement": "That's about 3.5 months of continuous movement"
+"That's about one activity per week for a year": "That's about one activity per week for a year"
+"That's about one activity per week for half a year": "That's about one activity per week for half a year"
+"That's about one activity per week for two months": "That's about one activity per week for two months"
+"That's almost 2 activities per week for a year": "That's almost 2 activities per week for a year"
+"That's almost 21 days of continuous movement": "That's almost 21 days of continuous movement"
+"That's almost 3 activities per week for 7 years": "That's almost 3 activities per week for 7 years"
+"That's an activity almost every day for 27 years": "That's an activity almost every day for 27 years"
+"That's an activity every day for almost 7 years": "That's an activity every day for almost 7 years"
+"That's an activity every day for nearly 11 years": "That's an activity every day for nearly 11 years"
+"That's an activity every day for nearly 14 years": "That's an activity every day for nearly 14 years"
+"That's an activity every day for over 20 years": "That's an activity every day for over 20 years"
+"That's an activity every day for over 8 years": "That's an activity every day for over 8 years"
+"That's climbing Mount Everest twice": "That's climbing Mount Everest twice"
+"That's climbing to the edge of space and back 5 times": "That's climbing to the edge of space and back 5 times"
+"That's cruising altitude of a commercial airplane": "That's cruising altitude of a commercial airplane"
+"That's deeper than the deepest known cave on Earth": "That's deeper than the deepest known cave on Earth"
+"That's five times around the Earth": "That's five times around the Earth"
+"That's half a year without skipping a single day": "That's half a year without skipping a single day"
+"That's higher than Felix Baumgartner's space jump": "That's higher than Felix Baumgartner's space jump"
+"That's higher than the International Space Station's orbit": "That's higher than the International Space Station's orbit"
+"That's higher than the summit of Mont Blanc": "That's higher than the summit of Mont Blanc"
+"That's more than 10 days of non-stop movement": "That's more than 10 days of non-stop movement"
+"That's more than 10 months of continuous movement": "That's more than 10 months of continuous movement"
+"That's more than 2 Eiffel Towers stacked up": "That's more than 2 Eiffel Towers stacked up"
+"That's more than 2.5 times around the Earth": "That's more than 2.5 times around the Earth"
+"That's more than 4 days of continuous activity": "That's more than 4 days of continuous activity"
+"That's more than 4 months of non-stop activity": "That's more than 4 months of non-stop activity"
+"That's more than 41 days of non-stop movement": "That's more than 41 days of non-stop movement"
+"That's more than 5 activities per week for 7 years": "That's more than 5 activities per week for 7 years"
+"That's more than 8 times the height of Mount Everest": "That's more than 8 times the height of Mount Everest"
+"That's more than a full year of non-stop movement": "That's more than a full year of non-stop movement"
+"That's more than halfway around the Earth": "That's more than halfway around the Earth"
+"That's more than halfway to the ISS": "That's more than halfway to the ISS"
+"That's more than the circumference of Mars": "That's more than the circumference of Mars"
+"That's more than the distance from Earth to the Moon": "That's more than the distance from Earth to the Moon"
+"That's nearly 3 months of non-stop activity": "That's nearly 3 months of non-stop activity"
+"That's nearly 4 activities per week for 7 years": "That's nearly 4 activities per week for 7 years"
+"That's nearly 5 activities per week for a year": "That's nearly 5 activities per week for a year"
+"That's nearly 7 months of non-stop activity": "That's nearly 7 months of non-stop activity"
+"That's nearly climbing Mount Everest 3 times": "That's nearly climbing Mount Everest 3 times"
+"That's nearly the altitude of the International Space Station": "That's nearly the altitude of the International Space Station"
+"That's nearly twice around the Earth": "That's nearly twice around the Earth"
+"That's nearly twice the altitude of the International Space Station": "That's nearly twice the altitude of the International Space Station"
+"That's over 5.5 months of continuous movement": "That's over 5.5 months of continuous movement"
+"That's roughly a quarter of the way around the Earth": "That's roughly a quarter of the way around the Earth"
+"That's roughly the diameter of Jupiter": "That's roughly the diameter of Jupiter"
+"That's roughly the diameter of Neptune": "That's roughly the diameter of Neptune"
+"That's roughly the distance from London to Perth": "That's roughly the distance from London to Perth"
+"That's roughly the distance from Madrid to Barcelona": "That's roughly the distance from Madrid to Barcelona"
+"That's roughly the distance light travels in one second": "That's roughly the distance light travels in one second"
+"That's roughly the length of France": "That's roughly the length of France"
+"That's roughly the length of the Danube river": "That's roughly the length of the Danube river"
+"That's roughly the length of the island of Jamaica": "That's roughly the length of the island of Jamaica"
+"That's taller than the Empire State Building": "That's taller than the Empire State Building"
+"That's the altitude of a satellite in low Earth orbit": "That's the altitude of a satellite in low Earth orbit"
+"That's the circumference of the Earth": "That's the circumference of the Earth"
+"That's the distance from Earth to the Moon": "That's the distance from Earth to the Moon"
+"That's the distance to the edge of space, straight up": "That's the distance to the edge of space, straight up"
+"That's the edge of space, the Kármán line": "That's the edge of space, the Kármán line"
+"That's the height of Mount Everest": "That's the height of Mount Everest"
+"That's the height of the Eiffel Tower": "That's the height of the Eiffel Tower"
+"That's the length of the Great Wall of China": "That's the length of the Great Wall of China"
+"That's three quarters of the way around the Earth": "That's three quarters of the way around the Earth"
+"That's {number} days of at least {distance}": "That's {number} days of at least {distance}"
+"That's {percentage}% of all countries 🌍": "That's {percentage}% of all countries 🌍"
+'The Eddington number in the context of cycling or running is defined as the maximum number E such that the athlete has covered at least E km on at least E days.': 'The Eddington number in the context of cycling or running is defined as the maximum number E such that the athlete has covered at least E km on at least E days.'
+'The largest connected group of cluster tiles': 'The largest connected group of cluster tiles'
+'The largest square of visited tiles': 'The largest square of visited tiles'
+"The page you're looking for doesn't exist or may have been moved.": "The page you're looking for doesn't exist or may have been moved."
+Theme: Theme
+'These badges are dynamically created. You can use them in any &lt;img&gt; tag': 'These badges are dynamically created. You can use them in any &lt;img&gt; tag'
+'These components are not installed on any gear at the moment.': 'These components are not installed on any gear at the moment.'
+Thinking...: Thinking...
+'This chart summarizes how you train. Each axis reflects a different normalized training habit, so higher values mean stronger emphasis.': 'This chart summarizes how you train. Each axis reflects a different normalized training habit, so higher values mean stronger emphasis.'
+'This feature is currently disabled': 'This feature is currently disabled'
+'This month': 'This month'
+'This week': 'This week'
+Thu: Thu
+Thu.: Thu.
+'Tiles visited for the first time in this activity': 'Tiles visited for the first time in this activity'
+Time: Time
+'Time in gear': 'Time in gear'
+'Time in zone': 'Time in zone'
+'Times completed': 'Times completed'
+Title: Title
+'To enable it, configure this in the admin panel': 'To enable it, configure this in the admin panel'
+'Toggle sidebar': 'Toggle sidebar'
+'Top 10': 'Top 10'
+'Total distance per month': 'Total distance per month'
+'Total elevation per month': 'Total elevation per month'
+'Total hours spent per gear': 'Total hours spent per gear'
+'Total hours spent per sport type': 'Total hours spent per sport type'
+'Total moving time per month': 'Total moving time per month'
+'Total time': 'Total time'
+'Trail Run': 'Trail Run'
+'Trail Runs': 'Trail Runs'
+'Training 4–5 days every week scores higher than doing everything in one or two days.': 'Training 4–5 days every week scores higher than doing everything in one or two days.'
+'Training Impulse - Training load metric that accounts for intensity and duration.': 'Training Impulse - Training load metric that accounts for intensity and duration.'
+'Training Load Analysis': 'Training Load Analysis'
+'Training Monotony - Ratio of average daily load to standard deviation. Indicates training variety.': 'Training Monotony - Ratio of average daily load to standard deviation. Indicates training variety.'
+'Training Stress Balance (Form) – The difference between fitness (CTL) and fatigue (ATL). Reflects how ready you are to perform.': 'Training Stress Balance (Form) – The difference between fitness (CTL) and fatigue (ATL). Reflects how ready you are to perform.'
+'Training goals': 'Training goals'
+'Training load is accumulating, recovery days are important': 'Training load is accumulating, recovery days are important'
+Trip: Trip
+Tue: Tue
+Tue.: Tue.
+'Unchanged compared to yesterday': 'Unchanged compared to yesterday'
+Unspecified: Unspecified
+'Upcoming maintenance': 'Upcoming maintenance'
+'Upcoming numbers': 'Upcoming numbers'
+Usage: Usage
+'User badge': 'User badge'
+'Velo Mobile': 'Velo Mobile'
+'Velo Mobiles': 'Velo Mobiles'
+'Very high': 'Very high'
+'Very strong': 'Very strong'
+'Very weak': 'Very weak'
+'View all': 'View all'
+'View details': 'View details'
+'View this month': 'View this month'
+'Virtual Ride': 'Virtual Ride'
+'Virtual Rides': 'Virtual Rides'
+'Virtual Row': 'Virtual Row'
+'Virtual Run': 'Virtual Run'
+'Virtual Runs': 'Virtual Runs'
+'Virtual workout assistant': 'Virtual workout assistant'
+'Visited tiles': 'Visited tiles'
+Volleyball: Volleyball
+Volume: Volume
+Wakeboarding: Wakeboarding
+Walk: Walk
+Walking: Walking
+Walks: Walks
+'Water Sports': 'Water Sports'
+'Waxing the chain...': 'Waxing the chain...'
+'We detected following issues': 'We detected following issues'
+"We've been busy! Check out what's new and read about any breaking changes before you update.": "We've been busy! Check out what's new and read about any breaking changes before you update."
+Weak: Weak
+Weather: Weather
+Wed: Wed
+Wed.: Wed.
+Weekly: Weekly
+'Weekly Strain': 'Weekly Strain'
+'Weekly Strain - Product of weekly training load and monotony. Overall training stress.': 'Weekly Strain - Product of weekly training load and monotony. Overall training stress.'
+'Weekly TRIMP': 'Weekly TRIMP'
+'Weekly stats': 'Weekly stats'
+Weight: Weight
+'Weight Training': 'Weight Training'
+'Weight history': 'Weight history'
+Wheelchair: Wheelchair
+'Wind Surf': 'Wind Surf'
+'Winter Sports': 'Winter Sports'
+'With others': 'With others'
+Workout: Workout
+'Workout assistant': 'Workout assistant'
+'Workout type': 'Workout type'
+World: World
+Year: Year
+Yearly: Yearly
+'Yearly stats': 'Yearly stats'
+Yoga: Yoga
+"You weren't alone out there": "You weren't alone out there"
+'Your Dreeve badge': 'Your Dreeve badge'
+'Your PB badge': 'Your PB badge'
+'Your Zwift badge': 'Your Zwift badge'
+'Your badge(s)': 'Your badge(s)'
+Z1: Z1
+'Z1-2 (Low)': 'Z1-2 (Low)'
+Z2: Z2
+Z3: Z3
+'Z3 (Mod)': 'Z3 (Mod)'
+Z4: Z4
+'Z4-5 (High)': 'Z4-5 (High)'
+Z5: Z5
+'Zone 1': 'Zone 1'
+'Zone 2': 'Zone 2'
+'Zone 3': 'Zone 3'
+'Zone 4': 'Zone 4'
+'Zone 5': 'Zone 5'
+'Zwift Statistics': 'Zwift Statistics'
+'Zwift badge': 'Zwift badge'
+'Zwift stats': 'Zwift stats'
+'Zwift world': 'Zwift world'
+activities: activities
+and: and
+avg: avg
+bpm: bpm
+clear: clear
+compare: compare
+countries: countries
+day(s): day(s)
+days: days
+'days needed for next Eddington': 'days needed for next Eddington'
+'days to reach {n}': 'days to reach {n}'
+'every {interval}': 'every {interval}'
+hours: hours
+hrs: hrs
+humidity: humidity
+'last {numberOfDays} days': 'last {numberOfDays} days'
+max: max
+min: min
+months: months
+more: more
+n/a: n/a
+never: never
+'of your activities': 'of your activities'
+'on': 'on'
+per: per
+'per activity': 'per activity'
+'per hour': 'per hour'
+'reached Eddington number {number}': 'reached Eddington number {number}'
+rpm: rpm
+to: to
+total: total
+watts: watts
+weeks: weeks
+workouts: workouts
+'{amount} left': '{amount} left'
+'{daysSinceLastTagged} days': '{daysSinceLastTagged} days'
+'{days} consecutive days of activity': '{days} consecutive days of activity'
+'{hoursSinceLastTagged} hours': '{hoursSinceLastTagged} hours'
+'{left} vs {right}': '{left} vs {right}'
+'{maintenanceTaskLabel} every {interval}': '{maintenanceTaskLabel} every {interval}'
+'{numberOfActivities} activities': '{numberOfActivities} activities'
+'{numberOfActivities} activities in {year}': '{numberOfActivities} activities in {year}'
+'{numberOfDays} days': '{numberOfDays} days'
+'{numberOfDays}-day rolling window': '{numberOfDays}-day rolling window'
+'{numberOfMonths} months': '{numberOfMonths} months'
+'{numberOfRestDays} rest days': '{numberOfRestDays} rest days'
+'{numberOfResults} photos': '{numberOfResults} photos'
+'{numberOfResults} results': '{numberOfResults} results'
+'{numberOfResults} routes': '{numberOfResults} routes'
+'{numberOfRoutes} nearby route(s)': '{numberOfRoutes} nearby route(s)'
+'{numberOfTiles} new tile(s)': '{numberOfTiles} new tile(s)'
+'{numberOfWeeks} weeks': '{numberOfWeeks} weeks'
+'{threshold} hours using {gearName}': '{threshold} hours using {gearName}'
+'{threshold} total distance using {gearName}': '{threshold} total distance using {gearName}'
+'{threshold} total elevation using {gearName}': '{threshold} total elevation using {gearName}'

@@ -2,20 +2,18 @@
 
 namespace App\Tests\Infrastructure\Localisation;
 
+use App\Console\ExtractTranslationsConsoleCommand;
 use App\Infrastructure\Localisation\Locale;
 use App\Infrastructure\ValueObject\String\KernelProjectDir;
 use App\Tests\ContainerTestCase;
 use Symfony\Component\Translation\Extractor\ExtractorInterface;
 use Symfony\Component\Translation\MessageCatalogue;
-use Symfony\Component\Translation\MessageCatalogueInterface;
 use Symfony\Component\Yaml\Yaml;
 
 class TranslationsTest extends ContainerTestCase
 {
     private KernelProjectDir $kernelProjectDir;
     private ExtractorInterface $extractor;
-
-    private const array DOMAINS = ['messages', 'admin'];
 
     #[\PHPUnit\Framework\Attributes\DoesNotPerformAssertions]
     public function testAllTranslationsHaveBeenExtracted(): void
@@ -25,16 +23,16 @@ class TranslationsTest extends ContainerTestCase
         $this->extractor->extract($this->kernelProjectDir.'/src', $catalogue);
 
         $messages = [];
-        foreach (self::DOMAINS as $domain) {
+        foreach (ExtractTranslationsConsoleCommand::DOMAINS as $domain) {
             $translatableKeys = array_keys($catalogue->all()[$domain] ?? []);
 
             foreach (Locale::cases() as $locale) {
-                $translationFilePath = sprintf('%s/translations/%s%s.%s.yaml', $this->kernelProjectDir, $domain, MessageCatalogue::INTL_DOMAIN_SUFFIX, $locale->value);
+                $translationFilePath = ExtractTranslationsConsoleCommand::getTranslationFilePath($this->kernelProjectDir, $domain, $locale);
                 if (!file_exists($translationFilePath)) {
                     $this->fail(sprintf('Not all translations for locale %s have been exported. Please run "make translation-extract"', $locale->value));
                 }
 
-                $parsedTranslations = Yaml::parse(file_get_contents($translationFilePath)) ?? [];
+                $parsedTranslations = Yaml::parse((string) file_get_contents($translationFilePath)) ?? [];
 
                 $missingTranslationKeys = array_diff($translatableKeys, array_keys($parsedTranslations));
                 $extraTranslationKeys = array_diff(array_keys($parsedTranslations), $translatableKeys);
@@ -60,14 +58,14 @@ class TranslationsTest extends ContainerTestCase
 
     public function testTranslationsContainPlaceholders(): void
     {
-        foreach (self::DOMAINS as $domain) {
+        foreach (ExtractTranslationsConsoleCommand::DOMAINS as $domain) {
             foreach (Locale::cases() as $locale) {
-                $translationFilePath = sprintf('%s/translations/%s%s.%s.yaml', $this->kernelProjectDir, $domain, MessageCatalogueInterface::INTL_DOMAIN_SUFFIX, $locale->value);
+                $translationFilePath = ExtractTranslationsConsoleCommand::getTranslationFilePath($this->kernelProjectDir, $domain, $locale);
                 if (!file_exists($translationFilePath)) {
                     continue;
                 }
 
-                $parsedTranslations = Yaml::parse(file_get_contents($translationFilePath)) ?? [];
+                $parsedTranslations = Yaml::parse((string) file_get_contents($translationFilePath)) ?? [];
                 foreach ($parsedTranslations as $key => $translation) {
                     if (!preg_match_all('/[\s\S]*\{(?<matches>[\S]*)\}[\s\S]*/U', (string) $key, $translationPlaceholdersInKeys)) {
                         continue;

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller\Api\V1\Metrics;
 
 use App\Infrastructure\Security\Token\ApiToken;
@@ -28,6 +30,9 @@ class TrainingVolumeRequestHandlerTest extends ControllerWebTestCase
         $this->assertMatchesJsonSnapshot((string) $this->client->getResponse()->getContent());
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function provideQueryStrings(): iterable
     {
         yield 'a month' => ['?filters[from]=2023-09-01&filters[to]=2023-09-30'];
@@ -48,6 +53,9 @@ class TrainingVolumeRequestHandlerTest extends ControllerWebTestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function provideInvalidQueryStrings(): iterable
     {
         yield 'no dates' => [''];

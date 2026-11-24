@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Page\Calendar;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\SportType\SportTypeRepository;
 use App\Domain\Calendar\FindMonthlyStats\FindMonthlyStats;
@@ -14,11 +15,12 @@ use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Time\Clock\Clock;
 use App\Infrastructure\ValueObject\Time\Year;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Twig\Environment;
 
 #[AsController]
@@ -43,13 +45,16 @@ final readonly class MonthlyStatsRequestHandler
             ),
             render: fn (): string => $this->renderFor(),
             navigationSection: NavigationSection::MONTHLY_STATS,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Monthly stats'),
+            ),
         );
     }
 
     private function renderFor(): string
     {
         $monthlyStats = $this->queryBus->ask(new FindMonthlyStats());
-        $now = $this->clock->getCurrentDateTimeImmutable();
+        $now = $this->clock->now();
         $currentMonth = Month::fromDate($now);
         $today = $now->getDayOfTheMonth();
         $sportTypes = $this->sportTypeRepository->findAll();

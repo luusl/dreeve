@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Activity\SportType;
 
 use App\Domain\Activity\SportType\SportType;
@@ -20,7 +22,7 @@ class SportTypesSortingOrderTest extends TestCase
             if (in_array($sportType, [
                 SportType::POOL_SWIM,
                 SportType::RUN,
-            ])) {
+            ], true)) {
                 continue;
             }
 

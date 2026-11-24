@@ -6,6 +6,7 @@ namespace App\Domain\Activity\BestEffort\FindBestEfforts;
 
 use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
+use App\Domain\Activity\ActivityType;
 use App\Domain\Activity\BestEffort\ActivityBestEffort;
 use App\Domain\Activity\BestEffort\ActivityBestEfforts;
 use App\Domain\Activity\SportType\SportType;
@@ -25,9 +26,18 @@ final readonly class FindBestEffortsQueryHandler implements QueryHandler
     ) {
     }
 
+    /**
+     * @param Query<Response> $query
+     */
     public function handle(Query $query): Response
     {
         assert($query instanceof FindBestEfforts);
+        $activityType = $query->getActivityType();
+        $sportTypes = SportTypes::thatSupportsBestEfforts()->filter(
+            fn (SportType $sportType): bool => !$activityType instanceof ActivityType || $sportType->getActivityType() === $activityType
+        );
+        $distanceInMeter = $query->getDistance()?->toMeter()->toInt();
+
         $results = $this->connection->executeQuery(
             <<<SQL
                 SELECT ActivityBestEffort.activityId,
@@ -38,13 +48,15 @@ final readonly class FindBestEffortsQueryHandler implements QueryHandler
                 FROM ActivityBestEffort
                 INNER JOIN Activity ON ActivityBestEffort.activityId = Activity.activityId
                 WHERE ActivityBestEffort.sportType IN (:sportTypes)
+                AND (:distanceInMeter IS NULL OR ActivityBestEffort.distanceInMeter = :distanceInMeter)
                 AND NOT EXISTS (SELECT 1 FROM json_each(Activity.excludedFrom) WHERE json_each.value = :excludedFrom)
                 ORDER BY ActivityBestEffort.timeInSeconds ASC,
                          Activity.startDateTime ASC,
                          ActivityBestEffort.activityId ASC
             SQL,
             [
-                'sportTypes' => SportTypes::thatSupportsBestEfforts()->map(fn (SportType $sportType): string => $sportType->value),
+                'sportTypes' => $sportTypes->toValues(),
+                'distanceInMeter' => $distanceInMeter,
                 'excludedFrom' => ActivityExclusion::BEST_EFFORTS->value,
             ],
             [

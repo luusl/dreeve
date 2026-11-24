@@ -83,12 +83,11 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withActivityId(ActivityId::fromUnprefixed('4'))
                 ->withStartingCoordinate(Coordinate::createFromLatAndLng(
                     Latitude::fromString('51.2'),
                     Longitude::fromString('3.18')
                 ))
-                ->withTotalImageCount(0)
                 ->build(),
             [
                 'start_date_local' => '2024-01-01T02:58:29Z',
@@ -96,7 +95,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
             ]
         ));
         $this->getContainer()->get(ActivityScanRepository::class)->add(
-            ActivityScan::create(activityId: ActivityId::fromUnprefixed(4), type: ActivityScanType::STREAMS)
+            ActivityScan::create(activityId: ActivityId::fromUnprefixed('4'), type: ActivityScanType::STREAMS)
         );
 
         $importedActivities = ImportedActivities::empty();
@@ -160,14 +159,14 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withActivityId(ActivityId::fromUnprefixed('4'))
                 ->build(),
             []
         ));
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(1000))
+                ->withActivityId(ActivityId::fromUnprefixed('1000'))
                 ->withStartingCoordinate(Coordinate::createFromLatAndLng(
                     Latitude::fromString('51.2'),
                     Longitude::fromString('3.18')
@@ -181,51 +180,51 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         ));
 
         $segmentEffortOne = SegmentEffortBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1000))
+            ->withActivityId(ActivityId::fromUnprefixed('1000'))
             ->build();
         $this->getContainer()->get(SegmentEffortRepository::class)->add($segmentEffortOne);
 
         $stream = ActivityStreamBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1000))
+            ->withActivityId(ActivityId::fromUnprefixed('1000'))
             ->build();
         $this->getContainer()->get(ActivityStreamRepository::class)->add($stream);
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
                 ->withName('Delete this one as well')
-                ->withActivityId(ActivityId::fromUnprefixed(1001))
+                ->withActivityId(ActivityId::fromUnprefixed('1001'))
                 ->build(),
             []
         ));
         $this->getContainer()->get(SegmentEffortRepository::class)->add(
             SegmentEffortBuilder::fromDefaults()
-                ->withSegmentId(SegmentId::fromUnprefixed(1000))
+                ->withSegmentId(SegmentId::fromUnprefixed('1000'))
                 ->withSegmentEffortId(SegmentEffortId::random())
-                ->withActivityId(ActivityId::fromUnprefixed(1001))
+                ->withActivityId(ActivityId::fromUnprefixed('1001'))
                 ->build()
         );
         $this->getContainer()->get(SegmentRepository::class)->add(
             SegmentBuilder::fromDefaults()
-                ->withSegmentId(SegmentId::fromUnprefixed(1000))
+                ->withSegmentId(SegmentId::fromUnprefixed('1000'))
                 ->build()
         );
         $this->getContainer()->get(ActivityStreamRepository::class)->add(
             ActivityStreamBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(1001))
+                ->withActivityId(ActivityId::fromUnprefixed('1001'))
                 ->build()
         );
         $this->getContainer()->get(ActivitySplitRepository::class)->add(ActivitySplitBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1001))
+            ->withActivityId(ActivityId::fromUnprefixed('1001'))
             ->withUnitSystem(UnitSystem::IMPERIAL)
             ->withSplitNumber(3)
             ->build());
 
         $this->getContainer()->get(ActivityLapRepository::class)->add(ActivityLapBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1001))
+            ->withActivityId(ActivityId::fromUnprefixed('1001'))
             ->build());
 
         $this->getContainer()->get(ActivityBestEffortRepository::class)->add(ActivityBestEffortBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1001))
+            ->withActivityId(ActivityId::fromUnprefixed('1001'))
             ->build());
 
         $this->commandBus->dispatch(new ImportActivities($output, null, ImportedActivities::empty()));
@@ -244,14 +243,14 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(100))
+                ->withActivityId(ActivityId::fromUnprefixed('100'))
                 ->build(),
             []
         ));
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(1000))
+                ->withActivityId(ActivityId::fromUnprefixed('1000'))
                 ->build(),
             []
         ));
@@ -267,7 +266,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withActivityId(ActivityId::fromUnprefixed('4'))
                 ->build(), []
         ));
 
@@ -294,7 +293,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withActivityId(ActivityId::fromUnprefixed('4'))
                 ->withGearId(GearId::fromUnprefixed($assignedGearId))
                 ->build(), []
         ));
@@ -303,10 +302,13 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->assertEquals(
             null === $expectedGearId ? null : GearId::fromUnprefixed($expectedGearId),
-            $this->getContainer()->get(ActivityRepository::class)->find(ActivityId::fromUnprefixed(4))->getGearId()
+            $this->getContainer()->get(ActivityRepository::class)->find(ActivityId::fromUnprefixed('4'))->getGearId()
         );
     }
 
+    /**
+     * @return iterable<string, array{?GearType, string, bool, ?string}>
+     */
     public static function provideGearAssignments(): iterable
     {
         yield 'custom gear is kept when strava has no gear' => [GearType::CUSTOM, 'custom-one', false, 'custom-one'];
@@ -334,7 +336,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(2))
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
                 ->build(), []
         ));
 
@@ -357,7 +359,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(2))
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
                 ->build(), []
         ));
 
@@ -383,7 +385,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(2))
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
                 ->build(), []
         ));
 
@@ -409,7 +411,7 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withActivityId(ActivityId::fromUnprefixed('4'))
                 ->withSportType($sportTypeOfExistingActivity)
                 ->build(), []
         ));
@@ -420,6 +422,9 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         $this->assertStringEndsWith('  => [4/7] Imported activity: "Night Ride5 - 11-09-2023"', (string) $output);
     }
 
+    /**
+     * @return iterable<string, array{array<string, mixed>, SportType}>
+     */
     public static function provideImportSettingsThatSkipTheVirtualRide(): iterable
     {
         yield 'recorded before the cutoff date' => [['skipActivitiesRecordedBefore' => '2023-09-01'], SportType::RIDE];
@@ -433,14 +438,14 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withActivityId(ActivityId::fromUnprefixed('4'))
                 ->build(),
             []
         ));
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(1000))
+                ->withActivityId(ActivityId::fromUnprefixed('1000'))
                 ->withStartingCoordinate(Coordinate::createFromLatAndLng(
                     Latitude::fromString('51.2'),
                     Longitude::fromString('3.18')
@@ -454,24 +459,24 @@ class ImportActivitiesCommandHandlerTest extends ContainerTestCase
         ));
 
         $segmentEffortOne = SegmentEffortBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1000))
+            ->withActivityId(ActivityId::fromUnprefixed('1000'))
             ->build();
         $this->getContainer()->get(SegmentEffortRepository::class)->add($segmentEffortOne);
 
         $stream = ActivityStreamBuilder::fromDefaults()
-            ->withActivityId(ActivityId::fromUnprefixed(1000))
+            ->withActivityId(ActivityId::fromUnprefixed('1000'))
             ->build();
         $this->getContainer()->get(ActivityStreamRepository::class)->add($stream);
 
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
                 ->withName('Delete this one as well')
-                ->withActivityId(ActivityId::fromUnprefixed(1001))
+                ->withActivityId(ActivityId::fromUnprefixed('1001'))
                 ->build(),
             []
         ));
 
-        $this->commandBus->dispatch(new ImportActivities($output, ActivityIds::fromArray([ActivityId::fromUnprefixed(4)]), ImportedActivities::empty()));
+        $this->commandBus->dispatch(new ImportActivities($output, ActivityIds::fromArray([ActivityId::fromUnprefixed('4')]), ImportedActivities::empty()));
 
         $this->assertSame(
             "Importing activities...\n"

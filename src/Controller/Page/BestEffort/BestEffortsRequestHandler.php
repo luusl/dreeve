@@ -5,20 +5,23 @@ declare(strict_types=1);
 namespace App\Controller\Page\BestEffort;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\BestEffort\BestEffortChart;
 use App\Domain\Activity\BestEffort\BestEffortPeriod;
 use App\Domain\Activity\BestEffort\BestEffortsCalculator;
+use App\Domain\Settings\SettingsRepository;
 use App\Domain\Theme\Theme;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\Time\Clock\Clock;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -33,6 +36,7 @@ final readonly class BestEffortsRequestHandler
         private Environment $twig,
         private Theme $theme,
         private PageRenderer $pageRenderer,
+        private SettingsRepository $settingsRepository,
     ) {
     }
 
@@ -43,10 +47,13 @@ final readonly class BestEffortsRequestHandler
             cacheability: Cacheability::for(
                 cacheKey: 'best-efforts',
                 cacheTags: CacheTags::of(RootCacheTag::ACTIVITIES),
-                ttlInSeconds: $this->clock->getCurrentDateTimeImmutable()->getSecondsUntilMidnight(),
+                ttl: $this->clock->now()->getDurationUntilMidnight(),
             ),
             render: fn (): string => $this->renderFor(),
             navigationSection: NavigationSection::BEST_EFFORTS,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Best efforts'),
+            ),
         );
     }
 
@@ -54,6 +61,7 @@ final readonly class BestEffortsRequestHandler
     {
         $bestEfforts = $this->bestEffortsCalculator->calculate();
         $bestEffortsCharts = [];
+        $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
 
         foreach ($bestEfforts->getActivityTypes() as $activityType) {
             foreach (BestEffortPeriod::cases() as $bestEffortPeriod) {
@@ -64,6 +72,7 @@ final readonly class BestEffortsRequestHandler
                         bestEfforts: $bestEfforts,
                         translator: $this->translator,
                         theme: $this->theme,
+                        unitSystem: $unitSystem,
                     )->build()
                 );
             }

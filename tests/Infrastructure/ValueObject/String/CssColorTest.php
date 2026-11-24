@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Infrastructure\ValueObject\String;
 
 use App\Infrastructure\ValueObject\String\CssColor;
@@ -8,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 class CssColorTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideValidCssColors')]
+    #[DataProvider('provideValidCssColors')]
     public function testShouldBeValid(string $color): void
     {
         $this->assertEquals(
@@ -24,6 +26,9 @@ class CssColorTest extends TestCase
         CssColor::fromString('LOL');
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function provideValidCssColors(): iterable
     {
         yield 'named color' => ['red'];

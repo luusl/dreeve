@@ -1,28 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Infrastructure\Time\Clock;
 
 use App\Infrastructure\Time\Clock\Clock;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+use Symfony\Component\Clock\MockClock;
+use Time\Duration;
 
 class PausedClock implements Clock
 {
-    private function __construct(private readonly SerializableDateTime $pausedOn)
+    private function __construct(private readonly MockClock $clock)
     {
     }
 
     public static function on(SerializableDateTime $on): PausedClock
     {
-        return new self($on);
+        return new self(new MockClock($on));
     }
 
     public static function fromString(string $dateTime): PausedClock
     {
-        return new self(SerializableDateTime::fromString($dateTime));
+        return self::on(SerializableDateTime::fromString($dateTime));
     }
 
-    public function getCurrentDateTimeImmutable(): SerializableDateTime
+    public function now(): SerializableDateTime
     {
-        return $this->pausedOn;
+        return SerializableDateTime::createFromInterface($this->clock->now());
+    }
+
+    public function sleep(Duration $duration): void
+    {
+        $this->clock->sleep($duration->seconds);
     }
 }

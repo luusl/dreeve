@@ -40,9 +40,11 @@ class AnalyzeRouteGeographyTest extends ContainerTestCase
 
         $context = $this->analyzeRouteGeography->process($context);
 
+        $activity = $context->getActivity();
+        $this->assertNotNull($activity);
         $this->assertEquals(
             RouteGeography::create(['test' => 'lol']),
-            $context->getActivity()->getRouteGeography(),
+            $activity->getRouteGeography(),
         );
     }
 
@@ -50,7 +52,7 @@ class AnalyzeRouteGeographyTest extends ContainerTestCase
     {
         $context = ActivityImportContext::create(Path::fromString('/lol/lol.png'))->withActivity(
             ActivityBuilder::fromDefaults()
-                ->withSportType(SportType::VIRTUAL_RIDE)
+                ->withSportType(SportType::RIDE)
                 ->withRouteGeography(RouteGeography::create(['test' => 'lol']))
                 ->withWorldType(WorldType::ZWIFT)
                 ->withStartingCoordinate(Coordinate::createFromLatAndLng(Latitude::fromString('-11.636883'), Longitude::fromString('166.972044')))
@@ -64,15 +66,19 @@ class AnalyzeRouteGeographyTest extends ContainerTestCase
 
         $context = $this->analyzeRouteGeography->process($context);
 
+        $activity = $context->getActivity();
+        $this->assertNotNull($activity);
         $this->assertEquals(
             RouteGeography::create(['test' => 'lol', 'state' => 'watopia']),
-            $context->getActivity()->getRouteGeography(),
+            $activity->getRouteGeography(),
         );
     }
 
     #[\Override]
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->analyzeRouteGeography = new AnalyzeRouteGeography(
             $this->nominatim = $this->createMock(Nominatim::class),
             $this->getContainer()->get(RouteGeographyAnalyzer::class),

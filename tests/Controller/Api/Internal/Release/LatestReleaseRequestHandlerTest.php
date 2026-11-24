@@ -6,10 +6,12 @@ use App\Application\AppVersion;
 use App\Controller\Api\Internal\Release\LatestReleaseRequestHandler;
 use App\Domain\Integration\GitHub\GitHub;
 use App\Infrastructure\Cache\CacheableRenderer;
+use App\Infrastructure\Config\ManagedMode;
 use App\Infrastructure\Serialization\Json;
 use App\Tests\ContainerTestCase;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\TransferException;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 
 class LatestReleaseRequestHandlerTest extends ContainerTestCase
@@ -26,11 +28,13 @@ class LatestReleaseRequestHandlerTest extends ContainerTestCase
                     ['path' => '.github/workflows/ci.yml'],
                     ['path' => '.github/workflows/docker-image.yml'],
                 ]])),
+                default => throw new \LogicException(sprintf('Unexpected request to "%s"', $uri)),
             });
 
         $handler = new LatestReleaseRequestHandler(
             new GitHub($client),
             $this->getContainer()->get(CacheableRenderer::class),
+            ManagedMode::fromString('0'),
         );
 
         $response = $handler->handle();
@@ -56,6 +60,7 @@ class LatestReleaseRequestHandlerTest extends ContainerTestCase
         $handler = new LatestReleaseRequestHandler(
             new GitHub($client),
             $this->getContainer()->get(CacheableRenderer::class),
+            ManagedMode::fromString('0'),
         );
 
         $this->assertEquals(['latestVersion' => AppVersion::getSemanticVersion(), 'updateAvailable' => false], Json::decode((string) $handler->handle()->getContent()));
@@ -72,11 +77,13 @@ class LatestReleaseRequestHandlerTest extends ContainerTestCase
                 'https://api.github.com/repos/dreeveapp/dreeve/actions/runs' => new Response(200, body: Json::encode(['workflow_runs' => [
                     ['path' => '.github/workflows/ci.yml'],
                 ]])),
+                default => throw new \LogicException(sprintf('Unexpected request to "%s"', $uri)),
             });
 
         $handler = new LatestReleaseRequestHandler(
             new GitHub($client),
             $this->getContainer()->get(CacheableRenderer::class),
+            ManagedMode::fromString('0'),
         );
 
         $this->assertEquals(['latestVersion' => 'v999.0.0', 'updateAvailable' => false], Json::decode((string) $handler->handle()->getContent()));
@@ -88,11 +95,31 @@ class LatestReleaseRequestHandlerTest extends ContainerTestCase
         $client
             ->expects($this->once())
             ->method('request')
-            ->willThrowException(new TransferException('Connection timed out'));
+            ->willThrowException(new ConnectException(
+                message: 'Connection timed out',
+                request: new Request('GET', 'uri'),
+            ));
 
         $handler = new LatestReleaseRequestHandler(
             new GitHub($client),
             $this->getContainer()->get(CacheableRenderer::class),
+            ManagedMode::fromString('0'),
+        );
+
+        $this->assertEquals(['latestVersion' => null, 'updateAvailable' => false], Json::decode((string) $handler->handle()->getContent()));
+    }
+
+    public function testHandleOnAManagedInstance(): void
+    {
+        $client = $this->createMock(Client::class);
+        $client
+            ->expects($this->never())
+            ->method('request');
+
+        $handler = new LatestReleaseRequestHandler(
+            new GitHub($client),
+            $this->getContainer()->get(CacheableRenderer::class),
+            ManagedMode::fromString('1'),
         );
 
         $this->assertEquals(['latestVersion' => null, 'updateAvailable' => false], Json::decode((string) $handler->handle()->getContent()));

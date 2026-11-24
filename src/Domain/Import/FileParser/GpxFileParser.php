@@ -19,6 +19,7 @@ use App\Domain\Import\FileParser\Gpx\GpxMetadata;
 use App\Domain\Import\FileParser\Gpx\GpxSportType;
 use App\Domain\Import\FileParser\Gpx\GpxWorkoutSummary;
 use App\Domain\Import\SupportedFileExtension;
+use App\Domain\Media\MediaItemIds;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
@@ -112,6 +113,7 @@ final readonly class GpxFileParser implements ActivityFileParser
             description: $workoutSummary?->getDescription() ?? $metadata->getDescription() ?? $this->resolveTrackDescription($xml),
             distance: Kilometer::from(round($distanceInMeter / 1000, 3)),
             elevation: Meter::from(round($activityLaps->sum(static fn (ActivityLap $lap): float => $lap->getElevationDifference()->toFloat()))),
+            descent: Meter::from(round(StreamMath::descent($streams[StreamType::ALTITUDE->value]))),
             startingCoordinate: StreamMath::firstCoordinate($streams),
             calories: $calories,
             kilojoules: null,
@@ -130,8 +132,7 @@ final readonly class GpxFileParser implements ActivityFileParser
             elapsedTimeInSeconds: $elapsedTimeInSeconds,
             deviceName: $deviceName,
             connectedSensors: null,
-            totalImageCount: 0,
-            localImagePaths: [],
+            mediaItemIds: MediaItemIds::empty(),
             polyline: StreamMath::encodePolyline($streams),
             routeGeography: RouteGeography::create([]),
             weather: null,
@@ -139,6 +140,8 @@ final readonly class GpxFileParser implements ActivityFileParser
             isCommute: false,
             isGroupActivity: false,
             workoutType: null,
+            workoutRpe: null,
+            workoutFeel: null,
         );
 
         return ParsedActivityFile::create(

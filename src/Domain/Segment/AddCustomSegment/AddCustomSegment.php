@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace App\Domain\Segment\AddCustomSegment;
 
 use App\Domain\Activity\ActivityId;
+use App\Domain\Activity\ActivityReference;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
 use App\Infrastructure\CQRS\Command\DomainCommand;
 use App\Infrastructure\CQRS\Command\ProvidesFlashMessage;
 use App\Infrastructure\ValueObject\String\Name;
-use Symfony\Contracts\Translation\TranslatorInterface;
+use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Contracts\Translation\TranslatableInterface;
 
 final readonly class AddCustomSegment extends DomainCommand implements DeserializableCommand, ProvidesFlashMessage
 {
@@ -32,6 +34,12 @@ final readonly class AddCustomSegment extends DomainCommand implements Deseriali
             throw CouldNotDeserializeCommand::invalidPayload('An "activityId" is required.');
         }
 
+        try {
+            $activityId = ActivityReference::parse($payload['activityId']);
+        } catch (\InvalidArgumentException) {
+            throw CouldNotDeserializeCommand::invalidPayload('The "activityId" does not contain a valid activity id.');
+        }
+
         if (!isset($payload['name']) || !is_string($payload['name']) || '' === trim($payload['name'])) {
             throw CouldNotDeserializeCommand::invalidPayload('A "name" is required.');
         }
@@ -48,7 +56,7 @@ final readonly class AddCustomSegment extends DomainCommand implements Deseriali
         }
 
         return new self(
-            activityId: ActivityId::fromString($payload['activityId']),
+            activityId: $activityId,
             startIndex: (int) $payload['startIndex'],
             endIndex: (int) $payload['endIndex'],
             name: Name::fromString(trim($payload['name'])),
@@ -81,8 +89,8 @@ final readonly class AddCustomSegment extends DomainCommand implements Deseriali
         return $this->isFavourite;
     }
 
-    public function getFlashMessage(TranslatorInterface $translator): string
+    public function getFlashMessage(): TranslatableInterface
     {
-        return $translator->trans('The segment has been created. Its efforts will show up after the next import run.', [], 'admin');
+        return new TranslatableMessage('The segment has been created. Its efforts will show up after the next import run.', domain: 'admin');
     }
 }

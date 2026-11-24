@@ -4,23 +4,19 @@ declare(strict_types=1);
 
 namespace App\Domain\Settings;
 
-use App\Application\AppSubTitle;
 use App\Application\ProfilePictureUrl;
 use App\Domain\Athlete\Athlete;
 use App\Domain\Athlete\AthleteBirthDate;
 use App\Domain\Athlete\HeartRateZone\HeartRateZoneConfiguration;
 use App\Domain\Athlete\MaxHeartRate\MaxHeartRateFormulas;
 use App\Domain\Athlete\RestingHeartRate\RestingHeartRateFormulas;
-use App\Domain\Ftp\FtpHistory;
 
 final readonly class GeneralSettings
 {
     private function __construct(
-        private ?AppSubTitle $appSubTitle,
         private ?ProfilePictureUrl $profilePictureUrl,
         private Athlete $athlete,
         private HeartRateZoneConfiguration $heartRateZoneConfiguration,
-        private FtpHistory $ftpHistory,
     ) {
     }
 
@@ -61,7 +57,6 @@ final readonly class GeneralSettings
         $gender = $data['gender'] ?? null;
 
         return new self(
-            appSubTitle: AppSubTitle::fromOptionalString($data['appSubTitle'] ?? null),
             profilePictureUrl: ProfilePictureUrl::fromOptionalString(is_string($data['profilePictureUrl'] ?? null) ? $data['profilePictureUrl'] : null),
             athlete: Athlete::create(
                 athleteId: substr(hash('sha256', sprintf('%s|%s|%s', $firstName, $lastName, $athleteBirthDate->format('Y-m-d'))), 0, 12),
@@ -73,13 +68,7 @@ final readonly class GeneralSettings
                 restingHeartRateFormula: new RestingHeartRateFormulas()->determineFormula($restingHeartRateFormula),
             ),
             heartRateZoneConfiguration: HeartRateZoneConfiguration::fromArray($data['heartRateZones'] ?? []),
-            ftpHistory: FtpHistory::fromArray($data['ftpHistory'] ?? []),
         );
-    }
-
-    public function getAppSubTitle(): ?AppSubTitle
-    {
-        return $this->appSubTitle;
     }
 
     public function getProfilePictureUrl(): ?ProfilePictureUrl
@@ -95,10 +84,5 @@ final readonly class GeneralSettings
     public function getHeartRateZoneConfiguration(): HeartRateZoneConfiguration
     {
         return $this->heartRateZoneConfiguration;
-    }
-
-    public function getFtpHistory(): FtpHistory
-    {
-        return $this->ftpHistory;
     }
 }

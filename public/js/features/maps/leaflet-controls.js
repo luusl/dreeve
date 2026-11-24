@@ -1,3 +1,5 @@
+import L from 'leaflet';
+
 const FlyToPlacesControl = L.Control.extend({
     options: {
         position: 'topright',
@@ -64,7 +66,7 @@ const MapToolsControl = L.Control.extend({
             return button;
         };
 
-        if (options.showFullscreen) {
+        if (options.showFullscreen && document.fullscreenEnabled) {
             const fsButton = makeButton(enterIcon, 'Toggle fullscreen');
             L.DomEvent.on(fsButton, 'click', function (e) {
                 L.DomEvent.preventDefault(e);
@@ -94,8 +96,9 @@ const MapToolsControl = L.Control.extend({
 
         options.toggles.forEach(function (toggle) {
             const button = makeButton(toggle.icon, toggle.title);
-            button.setAttribute('aria-pressed', 'false');
-            let isActive = false;
+            let isActive = true === toggle.active;
+            button.classList.toggle('is-active', isActive);
+            button.setAttribute('aria-pressed', String(isActive));
             let isBusy = false;
 
             L.DomEvent.on(button, 'click', function (e) {

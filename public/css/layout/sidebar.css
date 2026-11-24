@@ -1,4 +1,8 @@
 @layer components {
+    body:has(#drawer-navigation[aria-modal="true"]) {
+        @apply max-md:overflow-hidden;
+    }
+
     aside#drawer-navigation {
         @apply fixed top-0 left-0 w-64 sidebar-collapsed:w-16 h-screen pt-14 bg-white border-r border-gray-200 z-1001;
 
@@ -20,11 +24,11 @@
                     }
 
                     span:nth-of-type(1) {
-                        @apply sidebar-collapsed:hidden flex-1 whitespace-nowrap;
+                        @apply sidebar-collapsed:hidden flex-1 min-w-0 truncate;
                     }
 
                     span.badge {
-                        @apply sidebar-collapsed:hidden bg-primary/15 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full;
+                        @apply sidebar-collapsed:hidden shrink-0 bg-primary/15 text-primary text-xs font-medium px-2.5 py-0.5 rounded-full;
                     }
                 }
             }

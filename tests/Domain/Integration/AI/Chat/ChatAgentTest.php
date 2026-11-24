@@ -22,7 +22,7 @@ class ChatAgentTest extends TestCase
      * @param array<string, mixed> $config
      * @param array<string, mixed> $expectedRequest
      */
-    #[DataProvider(methodName: 'provideProviders')]
+    #[DataProvider('provideProviders')]
     public function testItCallsTheConfiguredProvider(array $config, array $expectedRequest): void
     {
         $requests = [];
@@ -55,6 +55,9 @@ class ChatAgentTest extends TestCase
         $this->assertSame([$expectedRequest], $requests);
     }
 
+    /**
+     * @return iterable<string, array{array<string, mixed>, array<string, mixed>}>
+     */
     public static function provideProviders(): iterable
     {
         yield 'anthropic' => [

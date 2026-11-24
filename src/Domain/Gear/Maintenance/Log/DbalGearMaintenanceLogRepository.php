@@ -68,13 +68,13 @@ final readonly class DbalGearMaintenanceLogRepository extends DbalRepository imp
         return $this->hydrate($result);
     }
 
-    public function delete(GearMaintenanceLogId $gearMaintenanceLogId): void
+    public function delete(GearMaintenanceLog $gearMaintenanceLog): void
     {
         $this->connection->executeStatement(
             'DELETE FROM GearMaintenanceLog WHERE gearMaintenanceLogId = :gearMaintenanceLogId',
-            ['gearMaintenanceLogId' => $gearMaintenanceLogId]
+            ['gearMaintenanceLogId' => $gearMaintenanceLog->getId()]
         );
-        $this->eventBus->publishEvents([new GearMaintenanceLogWasUpdated()]);
+        $this->eventBus->publishEvents($gearMaintenanceLog->getRecordedEvents());
     }
 
     public function existsForGear(GearId $gearId): bool
@@ -95,20 +95,6 @@ final readonly class DbalGearMaintenanceLogRepository extends DbalRepository imp
             $this->hydrate(...),
             $results
         ));
-    }
-
-    public function findMostRecentForMaintenanceTask(MaintenanceTaskId $maintenanceTaskId): ?GearMaintenanceLog
-    {
-        $result = $this->connection->executeQuery(
-            'SELECT * FROM GearMaintenanceLog WHERE maintenanceTaskId = :maintenanceTaskId ORDER BY performedOn DESC LIMIT 1',
-            ['maintenanceTaskId' => $maintenanceTaskId]
-        )->fetchAssociative();
-
-        if (false === $result) {
-            return null;
-        }
-
-        return $this->hydrate($result);
     }
 
     public function findMostRecentPerMaintenanceTask(): array

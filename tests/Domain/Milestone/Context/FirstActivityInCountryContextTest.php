@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Milestone\Context;
 
 use App\Domain\Milestone\Context\FirstActivityInCountryContext;
@@ -17,8 +19,8 @@ class FirstActivityInCountryContextTest extends TestCase
         $this->assertEquals('Morning ride', $context->getActivityName());
     }
 
-    #[TestWith(data: ['xk'])]
-    #[TestWith(data: ['XK'])]
+    #[TestWith(['xk'])]
+    #[TestWith(['XK'])]
     public function testGetCountryNameForKosovo(string $countryCode): void
     {
         $context = new FirstActivityInCountryContext($countryCode, 'Ride in Kosovo');

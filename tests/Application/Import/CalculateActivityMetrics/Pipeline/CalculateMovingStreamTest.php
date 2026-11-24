@@ -26,7 +26,7 @@ class CalculateMovingStreamTest extends ContainerTestCase
         foreach ($streams as $streamType => $data) {
             $this->activityStreamRepository->add(
                 ActivityStreamBuilder::fromDefaults()
-                    ->withActivityId(ActivityId::fromUnprefixed(1))
+                    ->withActivityId(ActivityId::fromUnprefixed('1'))
                     ->withStreamType(StreamType::from($streamType))
                     ->withData($data)
                     ->build()
@@ -36,10 +36,13 @@ class CalculateMovingStreamTest extends ContainerTestCase
         $this->calculateMovingStream->process(new SpyOutput());
 
         $this->assertSame($expectedMovingStream, $this->activityStreamRepository
-            ->findByActivityId(ActivityId::fromUnprefixed(1))
+            ->findByActivityId(ActivityId::fromUnprefixed('1'))
             ->filterOnType(StreamType::MOVING)?->getData());
     }
 
+    /**
+     * @return iterable<string, array{array<string, list<mixed>>, list<bool>|null}>
+     */
     public static function provideStreams(): iterable
     {
         yield 'velocity below 0.5 m/s means stopped' => [

@@ -5,16 +5,18 @@ declare(strict_types=1);
 namespace App\Controller\Page\Rewind;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Rewind\FindAvailableRewindOptions\FindAvailableRewindOptions;
 use App\Domain\Rewind\RewindCacheTags;
 use App\Domain\Rewind\RewindItemsBuilder;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 #[AsController]
@@ -27,6 +29,7 @@ final readonly class RewindRequestHandler
         private RewindItemsBuilder $rewindItemsBuilder,
         private PageRenderer $pageRenderer,
         private Environment $twig,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -50,6 +53,9 @@ final readonly class RewindRequestHandler
             ),
             render: fn (): string => $this->renderFor($rewindOption),
             navigationSection: NavigationSection::REWIND,
+            metadata: new PageMetadata(
+                title: $this->labelFor($rewindOption),
+            ),
         );
     }
 
@@ -66,5 +72,14 @@ final readonly class RewindRequestHandler
             ),
             'isAllTimeRewind' => FindAvailableRewindOptions::ALL_TIME === $rewindOption,
         ]);
+    }
+
+    private function labelFor(string $rewindOption): string
+    {
+        if (FindAvailableRewindOptions::ALL_TIME === $rewindOption) {
+            return $this->translator->trans('All time');
+        }
+
+        return sprintf('%s %s', $this->translator->trans('Rewind'), $rewindOption);
     }
 }

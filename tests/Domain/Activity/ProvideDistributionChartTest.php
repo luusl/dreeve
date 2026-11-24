@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Activity;
 
 use App\Domain\Activity\ProvideDistributionChart;
@@ -8,7 +10,7 @@ use PHPUnit\Framework\TestCase;
 
 class ProvideDistributionChartTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideTestData')]
+    #[DataProvider('provideTestData')]
     public function testFindClosestSteppedValue(int $min, int $max, int $step, int|float $target, int $expectedOutcome): void
     {
         $class = new readonly class($min, $max, $step, $target) {
@@ -18,7 +20,7 @@ class ProvideDistributionChartTest extends TestCase
                 private int $min,
                 private int $max,
                 private int $step,
-                private int $target)
+                private int|float $target)
             {
             }
 
@@ -39,6 +41,9 @@ class ProvideDistributionChartTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<int, array{int, int, int, int|float, int}>
+     */
     public static function provideTestData(): iterable
     {
         yield [0, 100, 3, 2, 3];

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Daemon\Cron;
 
+use App\Console\Backup\CreateBackupConsoleCommand;
 use App\Console\Import\RunStravaImportConsoleCommand;
 use App\Console\Notification\AppUpdateAvailableNotificationConsoleCommand;
 use App\Console\Notification\GearMaintenanceNotificationConsoleCommand;
 use App\Domain\Import\ImportMode;
+use App\Infrastructure\Config\ManagedMode;
 use App\Infrastructure\Localisation\TranslatableWithDescription;
 use Symfony\Contracts\Translation\TranslatorInterface;
 
@@ -17,6 +19,7 @@ enum CronActionId: string implements TranslatableWithDescription
     case RUN_STRAVA_IMPORT = 'runStravaImportAndBuildApp';
     case GEAR_MAINTENANCE_NOTIFICATION = 'gearMaintenanceNotification';
     case APP_UPDATE_AVAILABLE_NOTIFICATION = 'appUpdateAvailableNotification';
+    case BACKUP = 'backup';
 
     public function trans(TranslatorInterface $translator, ?string $locale = null): string
     {
@@ -24,6 +27,7 @@ enum CronActionId: string implements TranslatableWithDescription
             self::RUN_STRAVA_IMPORT => $translator->trans('Import Strava data', domain: 'admin', locale: $locale),
             self::GEAR_MAINTENANCE_NOTIFICATION => $translator->trans('Gear maintenance notification', domain: 'admin', locale: $locale),
             self::APP_UPDATE_AVAILABLE_NOTIFICATION => $translator->trans('App update available notification', domain: 'admin', locale: $locale),
+            self::BACKUP => $translator->trans('Local backup', domain: 'admin', locale: $locale),
         };
     }
 
@@ -33,6 +37,7 @@ enum CronActionId: string implements TranslatableWithDescription
             self::RUN_STRAVA_IMPORT => $translator->trans('Imports new Strava activities.', domain: 'admin', locale: $locale),
             self::GEAR_MAINTENANCE_NOTIFICATION => $translator->trans('Sends a notification when gear maintenance is due. Requires a configured notification service.', domain: 'admin', locale: $locale),
             self::APP_UPDATE_AVAILABLE_NOTIFICATION => $translator->trans('Sends a notification when a new app version is available. Requires a configured notification service.', domain: 'admin', locale: $locale),
+            self::BACKUP => $translator->trans('Creates a backup of the database and storage files in the backups folder.', domain: 'admin', locale: $locale),
         };
     }
 
@@ -42,16 +47,25 @@ enum CronActionId: string implements TranslatableWithDescription
             self::RUN_STRAVA_IMPORT => sprintf('bin/console %s', RunStravaImportConsoleCommand::NAME),
             self::GEAR_MAINTENANCE_NOTIFICATION => sprintf('bin/console %s', GearMaintenanceNotificationConsoleCommand::NAME),
             self::APP_UPDATE_AVAILABLE_NOTIFICATION => sprintf('bin/console %s', AppUpdateAvailableNotificationConsoleCommand::NAME),
+            self::BACKUP => sprintf('bin/console %s', CreateBackupConsoleCommand::NAME),
         };
     }
 
-    public function supportsImportMode(ImportMode $importMode): bool
+    public function supports(ImportMode $importMode, ManagedMode $managedMode): bool
     {
-        if (self::RUN_STRAVA_IMPORT !== $this) {
-            return true;
-        }
+        return match ($this) {
+            self::RUN_STRAVA_IMPORT => !$importMode->isFiles(),
+            self::APP_UPDATE_AVAILABLE_NOTIFICATION, self::BACKUP => !$managedMode->isEnabled(),
+            self::GEAR_MAINTENANCE_NOTIFICATION => true,
+        };
+    }
 
-        return !$importMode->isFiles();
+    public function isForced(ManagedMode $managedMode): bool
+    {
+        return match ($this) {
+            self::BACKUP => $managedMode->isEnabled(),
+            self::RUN_STRAVA_IMPORT, self::GEAR_MAINTENANCE_NOTIFICATION, self::APP_UPDATE_AVAILABLE_NOTIFICATION => false,
+        };
     }
 
     public function defaultCronExpression(): string
@@ -61,6 +75,7 @@ enum CronActionId: string implements TranslatableWithDescription
             // which whole-hour European timezones hit at 02:00 local time for part of the year.
             self::RUN_STRAVA_IMPORT => '30 2 * * *',
             self::GEAR_MAINTENANCE_NOTIFICATION, self::APP_UPDATE_AVAILABLE_NOTIFICATION => '0 4 * * *',
+            self::BACKUP => '0 3 * * *',
         };
     }
 }

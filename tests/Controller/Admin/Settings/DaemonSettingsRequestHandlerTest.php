@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller\Admin\Settings;
 
 use App\Domain\Import\ImportMode;
@@ -27,12 +29,12 @@ class DaemonSettingsRequestHandlerTest extends AdminWebTestCase
             $crawler->filter('form[data-dispatch-command="update-settings"]')->text(),
         );
 
-        // The settings navigation, with "Daemon" active.
+        // The settings navigation, with "Scheduled actions" active.
         $settingsPanel = $crawler->filter('nav.contextual-panel[aria-label="Settings"]');
         $this->assertCount(1, $settingsPanel);
         $selectedLink = $settingsPanel->filter('a[aria-selected="true"]');
         $this->assertCount(1, $selectedLink);
-        $this->assertStringContainsString('Daemon', $selectedLink->text());
+        $this->assertStringContainsString('Scheduled actions', $selectedLink->text());
     }
 
     public function testItHidesTheStravaImportActionInFileImportMode(): void
@@ -48,5 +50,18 @@ class DaemonSettingsRequestHandlerTest extends AdminWebTestCase
         // The notification actions are supported in every import mode.
         $this->assertCount(1, $crawler->filter('input[name="data[cron][gearMaintenanceNotification][expression]"]'));
         $this->assertCount(1, $crawler->filter('input[name="data[cron][appUpdateAvailableNotification][expression]"]'));
+    }
+
+    public function testItHidesTheAppUpdateNotificationAndBackupActionsOnManagedInstances(): void
+    {
+        $this->withManagedMode();
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/settings/daemon');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertCount(0, $crawler->filter('input[name="data[cron][appUpdateAvailableNotification][expression]"]'));
+        $this->assertCount(1, $crawler->filter('input[name="data[cron][gearMaintenanceNotification][expression]"]'));
+        $this->assertCount(0, $crawler->filter('input[name="data[cron][backup][expression]"]'));
     }
 }

@@ -8,6 +8,8 @@ use App\Domain\Activity\Route\RouteGeography;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\Sensor\ConnectedSensors;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\Serialization\Json;
@@ -24,12 +26,12 @@ final readonly class ActivityHydrator
      */
     private const array COLUMNS = [
         'activityId', 'startDateTime', 'sportType', 'worldType', 'importSource',
-        'externalReferenceId', 'name', 'description', 'distance', 'elevation',
+        'externalReferenceId', 'name', 'description', 'distance', 'elevation', 'descent',
         'startingCoordinateLatitude', 'startingCoordinateLongitude', 'calories', 'kilojoules',
         'averagePower', 'maxPower', 'averageSpeed', 'maxSpeed', 'averageHeartRate', 'maxHeartRate',
         'averageCadence', 'movingTimeInSeconds', 'elapsedTimeInSeconds', 'deviceName',
-        'connectedSensors', 'totalImageCount', 'localImagePaths', 'polyline', 'routeGeography',
-        'weather', 'gearId', 'isCommute', 'isGroupActivity', 'workoutType', 'excludedFrom',
+        'connectedSensors', 'mediaItemIds', 'polyline', 'routeGeography',
+        'weather', 'gearId', 'isCommute', 'isGroupActivity', 'workoutType', 'workoutRpe', 'workoutFeel', 'excludedFrom',
     ];
 
     public static function columns(?string $alias = null): string
@@ -63,6 +65,7 @@ final readonly class ActivityHydrator
             description: $result['description'] ?: '',
             distance: Meter::from($result['distance'])->toKilometer(),
             elevation: Meter::from($result['elevation'] ?: 0),
+            descent: null !== ($result['descent'] ?? null) ? Meter::from($result['descent']) : null,
             startingCoordinate: Coordinate::createFromOptionalLatAndLng(
                 Latitude::fromOptionalString((string) $result['startingCoordinateLatitude']),
                 Longitude::fromOptionalString((string) $result['startingCoordinateLongitude'])
@@ -82,8 +85,10 @@ final readonly class ActivityHydrator
             connectedSensors: null !== ($result['connectedSensors'] ?? null)
                 ? ConnectedSensors::fromArray(Json::decode($result['connectedSensors']))
                 : null,
-            totalImageCount: $result['totalImageCount'] ?: 0,
-            localImagePaths: $result['localImagePaths'] ? explode(',', (string) $result['localImagePaths']) : [],
+            mediaItemIds: MediaItemIds::fromArray(array_map(
+                MediaItemId::fromString(...),
+                Json::decode($result['mediaItemIds'] ?? '[]'),
+            )),
             polyline: $result['polyline'],
             routeGeography: RouteGeography::create(Json::decode($result['routeGeography'] ?? '[]')),
             weather: $result['weather'],
@@ -91,10 +96,9 @@ final readonly class ActivityHydrator
             isCommute: (bool) $result['isCommute'],
             isGroupActivity: (bool) $result['isGroupActivity'],
             workoutType: WorkoutType::tryFrom($result['workoutType'] ?? ''),
-            excludedFrom: ActivityExclusions::fromArray(array_map(
-                ActivityExclusion::from(...),
-                Json::decode($result['excludedFrom'] ?? '[]'),
-            )),
+            workoutRpe: null !== ($result['workoutRpe'] ?? null) ? WorkoutRpe::fromFitValue((int) $result['workoutRpe']) : null,
+            workoutFeel: null !== ($result['workoutFeel'] ?? null) ? (int) $result['workoutFeel'] : null,
+            excludedFrom: ActivityExclusions::fromValues(Json::decode($result['excludedFrom'] ?? '[]')),
         );
     }
 }

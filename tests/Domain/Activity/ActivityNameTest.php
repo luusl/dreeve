@@ -12,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 
 class ActivityNameTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideActivityTitles')]
+    #[DataProvider('provideActivityTitles')]
     public function testFrom(string $expectedTitle, string $dateTime, SportType $sportType): void
     {
         $this->assertEquals(
@@ -24,6 +24,9 @@ class ActivityNameTest extends TestCase
         );
     }
 
+    /**
+     * @return array<string, array{string, string, SportType}>
+     */
     public static function provideActivityTitles(): array
     {
         return [

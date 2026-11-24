@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Domain\Gear\Maintenance\CreateGearMaintenanceComponent;
 
 use App\Domain\Gear\Maintenance\Installation\GearComponentInstallations;
-use App\Domain\Gear\Maintenance\ParsesGearMaintenanceComponentPayload;
+use App\Domain\Gear\Maintenance\ProvideGearMaintenanceComponentPayload;
 use App\Domain\Gear\Maintenance\Task\MaintenanceTasks;
+use App\Domain\Gear\ProvideNotesFromPayload;
 use App\Domain\Gear\ProvidePurchasePriceFromPayload;
-use App\Domain\Image\NewImage;
-use App\Domain\Image\ProvideLocalImageFromDropZonePayload;
+use App\Domain\Media\DropZone\ProvideMediaItemsFromDropZonePayload;
+use App\Domain\Media\NewMediaItem;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
 use App\Infrastructure\CQRS\Command\DomainCommand;
@@ -19,14 +20,15 @@ use Money\Money;
 final readonly class CreateGearMaintenanceComponent extends DomainCommand implements DeserializableCommand
 {
     use ProvidesCommandName;
-    use ParsesGearMaintenanceComponentPayload;
+    use ProvideGearMaintenanceComponentPayload;
+    use ProvideNotesFromPayload;
     use ProvidePurchasePriceFromPayload;
-    use ProvideLocalImageFromDropZonePayload;
+    use ProvideMediaItemsFromDropZonePayload;
 
     private function __construct(
         private Name $label,
         private GearComponentInstallations $installations,
-        private ?NewImage $newImage,
+        private ?NewMediaItem $newMediaItem,
         private ?Money $purchasePrice,
         private MaintenanceTasks $maintenanceTasks,
         private bool $isRetired,
@@ -36,12 +38,12 @@ final readonly class CreateGearMaintenanceComponent extends DomainCommand implem
 
     public static function fromPayload(array $payload): self
     {
-        [$newImages] = self::parseImages($payload, 'localImagePath');
+        [$newMediaItems] = self::parseMediaItems($payload, 'mediaItem');
 
         return new self(
             label: self::parseLabel($payload),
             installations: self::parseInstallations($payload),
-            newImage: $newImages[0] ?? null,
+            newMediaItem: $newMediaItems[0] ?? null,
             purchasePrice: self::parsePurchasePrice($payload),
             maintenanceTasks: self::parseMaintenanceTasks($payload, generateMissingIds: true),
             isRetired: filter_var($payload['isRetired'] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -59,9 +61,9 @@ final readonly class CreateGearMaintenanceComponent extends DomainCommand implem
         return $this->installations;
     }
 
-    public function getNewImage(): ?NewImage
+    public function getNewMediaItem(): ?NewMediaItem
     {
-        return $this->newImage;
+        return $this->newMediaItem;
     }
 
     public function getPurchasePrice(): ?Money

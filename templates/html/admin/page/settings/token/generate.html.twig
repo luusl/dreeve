@@ -7,9 +7,7 @@
                 <h3 class="text-lg font-semibold">{% block title %}{% endblock %}</h3>
                 <a href="{{ overviewUrl }}" aria-label="{{ "Close"|trans({}, 'admin') }}"
                    class="grid place-items-center size-8 rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                    <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/>
-                    </svg>
+                    {{ svg('close') }}
                 </a>
             </div>
             <p class="description mt-0!">
@@ -34,7 +32,7 @@
                     <span class="grid size-6 shrink-0 place-items-center rounded-md bg-orange-100 text-xs font-bold text-primary">2</span>
                     <div class="min-w-0 flex-1">
                         <p class="text-sm font-medium">{{ "Set {envVar} in your {envFile} file"|trans({'{envVar}': envVar, '{envFile}': '.env'}, 'admin') }}</p>
-                        <p class="mt-0.5 text-sm text-gray-500">{{ "Paste the value above, replacing any key that is already there."|trans({}, 'admin') }}</p>
+                        <p class="mt-0.5 text-sm text-gray-500">{{ "Paste the value above, separated by a comma from any keys you want to keep."|trans({}, 'admin') }}</p>
                     </div>
                 </li>
                 <li class="flex items-start gap-3">

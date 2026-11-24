@@ -6,6 +6,7 @@ namespace App\Tests;
 
 use App\Domain\Settings\DbalSettingsRepository;
 use App\Domain\Settings\SettingsGroup;
+use App\Infrastructure\Config\ManagedMode;
 use App\Tests\Infrastructure\Eventing\SpyEventBus;
 use Doctrine\DBAL\Connection;
 use Symfony\Component\DependencyInjection\Container;
@@ -17,17 +18,20 @@ trait ProvideSettings
     protected function provideSettings(): void
     {
         $settingsRepository = new DbalSettingsRepository(
-            $this->getContainer()->get(Connection::class),
-            new SpyEventBus(),
+            connection: $this->getContainer()->get(Connection::class),
+            eventBus: new SpyEventBus(),
+            managedMode: ManagedMode::fromString('0'),
         );
 
         $settingsRepository->saveGroup(SettingsGroup::GENERAL, [
             'profilePictureUrl' => null,
-            'appSubTitle' => 'Robin The King 👑',
             'birthday' => '1989-08-14',
             'firstName' => 'Robin',
             'lastName' => 'Ingelbrecht',
             'maxHeartRateFormula' => 'fox',
+        ]);
+
+        $settingsRepository->saveGroup(SettingsGroup::ATHLETE_FTP, [
             'ftpHistory' => [
                 'cycling' => [
                     ['on' => '2023-01-01', 'ftp' => 198],
@@ -54,12 +58,14 @@ trait ProvideSettings
         ]);
 
         $settingsRepository->saveGroup(SettingsGroup::APPEARANCE, [
+            'appSubTitle' => 'Robin The King 👑',
             'locale' => 'en_US',
             'unitSystem' => 'metric',
             'timeFormat' => 24,
             'dateFormat' => [
                 'short' => 'd-m-y',
                 'normal' => 'd-m-Y',
+                'long' => 'F j, Y',
             ],
         ]);
 

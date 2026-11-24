@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Infrastructure\Daemon\Cron;
 
-use App\Domain\Import\ImportMode;
 use App\Infrastructure\Daemon\Cron\CronAction;
 use App\Infrastructure\Daemon\Cron\CronActionId;
 use Cron\CronExpression;
@@ -29,7 +30,5 @@ class CronActionTest extends TestCase
         );
 
         $this->assertSame('bin/console app:import:strava', $cronAction->getCommand());
-        $this->assertFalse($cronAction->supportsImportMode(ImportMode::FILES));
-        $this->assertTrue($cronAction->supportsImportMode(ImportMode::STRAVA_API));
     }
 }

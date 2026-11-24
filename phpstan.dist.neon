@@ -1,14 +1,22 @@
 includes:
     - vendor/tomasvotruba/type-coverage/config/extension.neon
+    - vendor/phpstan/phpstan-symfony/extension.neon
+    - vendor/phpstan/phpstan-symfony/rules.neon
+    - vendor/phpstan/phpstan-phpunit/extension.neon
+    - vendor/phpstan/phpstan-phpunit/rules.neon
 parameters:
     level: 8
+    tmpDir: var/cache/phpstan
     paths:
         - migrations/
         - src/
-    ignoreErrors:
-        - identifier: missingType.generics
+        - tests/
     type_coverage:
         return: 100
         param: 100
         property: 100
         constant: 100
+    symfony:
+        containerXmlPath: var/cache/test/App_KernelTestDebugContainer.xml
+rules:
+    - PHPStan\Rules\StrictCalls\StrictFunctionCallsRule

@@ -45,8 +45,13 @@ export default defineConfig({
 					customSets: [
 						{
 							label: 'Getting started',
-							description: 'installing, updating and migrating a Dreeve instance',
+							description: 'installing a Dreeve instance and migrating from v4',
 							paths: ['getting-started/**'],
+						},
+						{
+							label: 'Maintenance',
+							description: 'updating and backing up a Dreeve instance',
+							paths: ['maintenance/**'],
 						},
 						{
 							label: 'Importing activities',
@@ -55,7 +60,7 @@ export default defineConfig({
 						},
 						{
 							label: 'Connectors',
-							description: 'automatically getting activities from Garmin, Polar, Wahoo, Hammerhead, Zepp, Apple Health, Google Health, MyWhoosh and iGPSPORT into Dreeve',
+							description: 'automatically getting activities from Garmin, Polar, Wahoo, Hammerhead, Zepp, COROS, Apple Health, Google Health, MyWhoosh and iGPSPORT into Dreeve',
 							paths: ['connectors/**'],
 						},
 						{
@@ -103,8 +108,14 @@ export default defineConfig({
 										{ slug: 'getting-started/prerequisites', label: 'Prerequisites' },
 										{ slug: 'getting-started/installation', label: 'Installation' },
 										{ slug: 'getting-started/installation-on-k8s', label: 'Installation on Kubernetes' },
-										{ slug: 'getting-started/updates', label: 'Updates' },
 										{ slug: 'getting-started/migrating-from-v4', label: 'Migrating from v4 to v5' },
+									],
+								},
+								{
+									label: 'Maintenance',
+									items: [
+										{ slug: 'maintenance/updates', label: 'Updates' },
+										{ slug: 'maintenance/backup-and-restore', label: 'Backup & restore' },
 									],
 								},
 								{
@@ -125,6 +136,7 @@ export default defineConfig({
 										{ slug: 'connectors/wahoo-connector', label: 'Wahoo Connector' },
 										{ slug: 'connectors/hammerhead-connector', label: 'Hammerhead Connector' },
 										{ slug: 'connectors/zepp-connector', label: 'Zepp Connector' },
+										{ slug: 'connectors/coros-connector', label: 'COROS Connector' },
 										{ slug: 'connectors/apple-health', label: 'Apple Health', badge: { text: 'Community', variant: 'note' } },
 										{ slug: 'connectors/google-health-sync', label: 'Google Health Sync', badge: { text: 'Community', variant: 'note' } },
 										{ slug: 'connectors/mywhoosh-sync', label: 'MyWhoosh Sync', badge: { text: 'Community', variant: 'note' } },

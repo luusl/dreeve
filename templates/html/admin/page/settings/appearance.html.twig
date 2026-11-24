@@ -8,6 +8,25 @@
     {% set dateFormat = settings.dateFormat ?? {} %}
     {% set photos = settings.photos ?? {} %}
     {% set hidePhotosForSportTypes = photos.hidePhotosForSportTypes ?? [] %}
+    {% embed 'html/admin/page/settings/component/section.html.twig' with {title: "Instance"|trans({}, 'admin')} %}
+        {% block body %}
+            <div>
+                <label for="appUrl">{{ "App URL"|trans({}, 'admin') }}</label>
+                <input type="text" id="appUrl" value="{{ appUrl }}" disabled>
+                <p class="description">
+                    {{ "The URL the app is hosted on."|trans({}, 'admin') }}
+                    {{ "Configured via an environment variable and cannot be changed here."|trans({}, 'admin') }}
+                </p>
+            </div>
+            <div>
+                <label for="appSubTitle">{{ "App subtitle"|trans({}, 'admin') }}</label>
+                <input type="text" id="appSubTitle" name="data[appSubTitle]" value="{{ settings.appSubTitle ?? '' }}">
+                <p class="description">
+                    {{ "Optional subtitle to display in the navbar. Useful for distinguishing between multiple instances of the app. Leave empty to disable."|trans({}, 'admin') }}
+                </p>
+            </div>
+        {% endblock %}
+    {% endembed %}
     {% embed 'html/admin/page/settings/component/section.html.twig' with {title: "Units & language"|trans({}, 'admin')} %}
         {% block body %}
             <div class="grid gap-4 sm:grid-cols-2">
@@ -38,7 +57,7 @@
     {% endembed %}
     {% embed 'html/admin/page/settings/component/section.html.twig' with {title: "Date & time"|trans({}, 'admin')} %}
         {% block body %}
-            <div class="grid gap-4 sm:grid-cols-3">
+            <div class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <label for="timeFormat">{{ "Time format"|trans({}, 'admin') }}</label>
                     <select id="timeFormat" name="data[timeFormat]">
@@ -63,7 +82,17 @@
                         {{ "PHP date format for normal dates, e.g. d-m-Y renders to 01-01-2025."|trans({}, 'admin') }}
                     </p>
                 </div>
+                <div>
+                    <label for="dateFormatLong">{{ "Long date format"|trans({}, 'admin') }}</label>
+                    <input type="text" id="dateFormatLong" name="data[dateFormat][long]" value="{{ dateFormat.long ?? 'F j, Y' }}" required>
+                    <p class="description">
+                        {{ "PHP date format for long dates, e.g. F j, Y renders to January 1, 2025."|trans({}, 'admin') }}
+                    </p>
+                </div>
             </div>
+            <p class="description mt-2">
+                {{ "See the {phpDateFormat}."|trans({'{phpDateFormat}': '<a class="underline" href="https://www.php.net/manual/en/datetime.format.php" target="_blank" rel="noopener">' ~ "PHP date format documentation"|trans({}, 'admin') ~ '</a>'}, 'admin')|raw }}
+            </p>
         {% endblock %}
     {% endembed %}
     {% embed 'html/admin/page/settings/component/section.html.twig' with {

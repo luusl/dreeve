@@ -6,12 +6,13 @@ namespace App\Domain\Gear\Maintenance\UpdateGearMaintenanceComponent;
 
 use App\Domain\Gear\Maintenance\GearComponentId;
 use App\Domain\Gear\Maintenance\Installation\GearComponentInstallations;
-use App\Domain\Gear\Maintenance\ParsesGearMaintenanceComponentPayload;
+use App\Domain\Gear\Maintenance\ProvideGearMaintenanceComponentPayload;
 use App\Domain\Gear\Maintenance\Task\MaintenanceTasks;
+use App\Domain\Gear\ProvideNotesFromPayload;
 use App\Domain\Gear\ProvidePurchasePriceFromPayload;
-use App\Domain\Image\NewImage;
-use App\Domain\Image\ProvideLocalImageFromDropZonePayload;
-use App\Domain\Image\RemovedImage;
+use App\Domain\Media\DropZone\ProvideMediaItemsFromDropZonePayload;
+use App\Domain\Media\DropZone\RemovedMediaItem;
+use App\Domain\Media\NewMediaItem;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
@@ -22,16 +23,17 @@ use Money\Money;
 final readonly class UpdateGearMaintenanceComponent extends DomainCommand implements DeserializableCommand
 {
     use ProvidesCommandName;
-    use ParsesGearMaintenanceComponentPayload;
+    use ProvideGearMaintenanceComponentPayload;
+    use ProvideNotesFromPayload;
     use ProvidePurchasePriceFromPayload;
-    use ProvideLocalImageFromDropZonePayload;
+    use ProvideMediaItemsFromDropZonePayload;
 
     private function __construct(
         private GearComponentId $gearComponentId,
         private Name $label,
         private GearComponentInstallations $installations,
-        private ?NewImage $newImage,
-        private ?RemovedImage $removedImage,
+        private ?NewMediaItem $newMediaItem,
+        private ?RemovedMediaItem $removedMediaItem,
         private ?Money $purchasePrice,
         private MaintenanceTasks $maintenanceTasks,
         private bool $isRetired,
@@ -45,14 +47,14 @@ final readonly class UpdateGearMaintenanceComponent extends DomainCommand implem
             throw CouldNotDeserializeCommand::invalidPayload('A "gearComponentId" is required.');
         }
 
-        [$newImages, $removedImages] = self::parseImages($payload, 'localImagePath');
+        [$newMediaItems, $removedMediaItems] = self::parseMediaItems($payload, 'mediaItem');
 
         return new self(
             gearComponentId: GearComponentId::fromString(trim($payload['gearComponentId'])),
             label: self::parseLabel($payload),
             installations: self::parseInstallations($payload),
-            newImage: $newImages[0] ?? null,
-            removedImage: $removedImages[0] ?? null,
+            newMediaItem: $newMediaItems[0] ?? null,
+            removedMediaItem: $removedMediaItems[0] ?? null,
             purchasePrice: self::parsePurchasePrice($payload),
             maintenanceTasks: self::parseMaintenanceTasks($payload, generateMissingIds: true),
             isRetired: filter_var($payload['isRetired'] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -75,14 +77,14 @@ final readonly class UpdateGearMaintenanceComponent extends DomainCommand implem
         return $this->installations;
     }
 
-    public function getNewImage(): ?NewImage
+    public function getNewMediaItem(): ?NewMediaItem
     {
-        return $this->newImage;
+        return $this->newMediaItem;
     }
 
-    public function getRemovedImage(): ?RemovedImage
+    public function getRemovedMediaItem(): ?RemovedMediaItem
     {
-        return $this->removedImage;
+        return $this->removedMediaItem;
     }
 
     public function getPurchasePrice(): ?Money

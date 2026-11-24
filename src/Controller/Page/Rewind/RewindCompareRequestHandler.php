@@ -5,16 +5,19 @@ declare(strict_types=1);
 namespace App\Controller\Page\Rewind;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Rewind\FindAvailableRewindOptions\FindAvailableRewindOptions;
 use App\Domain\Rewind\RewindCacheTags;
 use App\Domain\Rewind\RewindItemsBuilder;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 #[AsController]
@@ -25,6 +28,7 @@ final readonly class RewindCompareRequestHandler
         private RewindItemsBuilder $rewindItemsBuilder,
         private PageRenderer $pageRenderer,
         private Environment $twig,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -46,6 +50,9 @@ final readonly class RewindCompareRequestHandler
             throw new NotFoundHttpException('Not found');
         }
 
+        $leftLabel = $this->labelFor($left);
+        $rightLabel = $this->labelFor($right);
+
         return $this->pageRenderer->render(
             cacheability: Cacheability::for(
                 cacheKey: sprintf('rewind.%s.compare.%s', $left, $right),
@@ -54,6 +61,9 @@ final readonly class RewindCompareRequestHandler
             ),
             render: fn (): string => $this->renderFor($left, $right),
             navigationSection: NavigationSection::REWIND,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('{left} vs {right}', ['{left}' => $leftLabel, '{right}' => $rightLabel]),
+            ),
         );
     }
 
@@ -81,5 +91,14 @@ final readonly class RewindCompareRequestHandler
             'rewindItemsLeftIsAllTimeRewind' => FindAvailableRewindOptions::ALL_TIME === $left,
             'rewindItemsRightIsAllTimeRewind' => FindAvailableRewindOptions::ALL_TIME === $right,
         ]);
+    }
+
+    private function labelFor(string $rewindOption): string
+    {
+        if (FindAvailableRewindOptions::ALL_TIME === $rewindOption) {
+            return $this->translator->trans('All time');
+        }
+
+        return sprintf('%s %s', $this->translator->trans('Rewind'), $rewindOption);
     }
 }

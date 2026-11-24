@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Gear\Maintenance\Task;
 
 use App\Domain\Gear\Maintenance\Task\Progress\MaintenanceTaskProgress;
@@ -16,6 +18,9 @@ class MaintenanceTaskProgressTest extends TestCase
         MaintenanceTaskProgress::from(0, $interval, '0 km', '0 km');
     }
 
+    /**
+     * @return iterable<string, array{float}>
+     */
     public static function provideInvalidIntervals(): iterable
     {
         yield 'zero' => [0.0];
@@ -71,6 +76,9 @@ class MaintenanceTaskProgressTest extends TestCase
         $this->assertSame($isHigh, $progress->isHigh());
     }
 
+    /**
+     * @return iterable<string, array{float, bool, bool, bool, bool}>
+     */
     public static function provideStates(): iterable
     {
         yield 'nothing used yet' => [0, true, true, false, false];

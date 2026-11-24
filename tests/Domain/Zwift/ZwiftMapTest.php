@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Zwift;
 
 use App\Domain\Zwift\CouldNotDetermineZwiftMap;
@@ -12,7 +14,7 @@ use PHPUnit\Framework\TestCase;
 
 class ZwiftMapTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideStartingCoordinates')]
+    #[DataProvider('provideStartingCoordinates')]
     public function testFromStartingCoordinate(string $latitude, string $longitude, string $expectedLabel, string $expectedOverlayImageUrl, string $expectedBackgroundColor): void
     {
         $map = ZwiftMap::forStartingCoordinate(Coordinate::createFromLatAndLng(
@@ -68,6 +70,9 @@ class ZwiftMapTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{string, string, string, string, string}>
+     */
     public static function provideStartingCoordinates(): iterable
     {
         yield 'Bologna' => ['44.5308037', '11.26261748', 'Bologna', '/assets/images/maps/zwift-bologna.webp', '#bbbbb7'];

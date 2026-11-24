@@ -22,9 +22,6 @@ down:
 console:
 	@make dcr cmd="bin/console $(arg)"
 
-console-blackfire:
-	@make dcr cmd="blackfire run bin/console $(arg)"
-
 console-profiler:
 	# We need to use the app container here, otherwise the profiler can't access the files through web requests.
 	docker compose exec app bin/console --profile -v $(arg)
@@ -35,11 +32,14 @@ composer:
 download-database:
 	@make stop
 	rm -Rf storage/database/dreeve.*
-	scp $(user)@$(server):/home/docker/volumes/dreeve/storage/database/dreeve.db ./storage/database/dreeve.db
-	@make dc cmd="up -d --build"
+	ssh $(user)@$(server) "rm -f /home/docker/volumes/dreeve/storage/database/dreeve-download.db && cd /home/docker/stacks/dreeve && docker compose exec -T app bin/console dbal:run-sql \"VACUUM INTO '/var/www/storage/database/dreeve-download.db'\""
+	scp $(user)@$(server):/home/docker/volumes/dreeve/storage/database/dreeve-download.db ./storage/database/dreeve.db
+	ssh $(user)@$(server) "rm -f /home/docker/volumes/dreeve/storage/database/dreeve-download.db"
+	@make dc cmd="up -d --build --wait app"
+	@make dc cmd="up -d --build daemon"
 
 download-assets:
-	scp -r $(user)@$(server):/home/docker/stacks/dreeve/storage/files ./storage/
+	scp -r $(user)@$(server):/home/docker/volumes/dreeve/storage/files ./storage/
 
 build-countries-asset:
 	@make dcr cmd="bin/console app:geography:build-countries-asset"
@@ -69,6 +69,7 @@ phpunit-html-coverage:
 	@make paratest arg="--coverage-html var/coverage"
 
 phpstan:
+	@make dcr cmd="bin/console cache:warmup --env=test"
 	@make dcr cmd="vendor/bin/phpstan --memory-limit=1G $(arg)"
 
 csfix:
@@ -80,7 +81,6 @@ delete-snapshots:
 
 rector:
 	@make dcr cmd="vendor/bin/rector"
-	@make dcr cmd="vendor/bin/rector --config rector-tests.php"
 
 # Helpers to build the app.
 app-build-assets:
@@ -100,10 +100,6 @@ app-docs-build:
 
 clear-cache:
 	docker compose exec app bin/console app:cache:render:clear
-# Ollama models
-ollama-run-llama32:
-	docker compose exec ollama ollama pull llama3.2
-
 # Helpers for forks and PRs
 fork-fetch-remote:
 	git remote add $(remote-name) $(fork-url)

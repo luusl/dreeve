@@ -1,17 +1,14 @@
 import {fetchJson} from "../../utils";
 import {loadEcharts} from "../../features/charts/echarts-loader";
 import {registerEchartsCallbacks, resolveEchartsCallbacks} from "../../features/charts/echarts-callbacks";
-import DarkModeManager from "../dark-mode";
-import {END_MARKER_COLOR, MARKER_BORDER_COLOR, START_MARKER_COLOR} from "../../features/maps/route-marker-colors";
+import {isDarkModeEnabled} from "../../layout/dark-mode";
+import {END_MARKER_COLOR, MARKER_BORDER_COLOR, PRIMARY_COLOR, START_MARKER_COLOR} from "../../features/maps/map-colors";
+import {createAdminLeafletMap} from "../../features/maps/admin-leaflet-map";
 
 const ROOT_SELECTOR = '[data-route-range-picker]';
 const MAP_SELECTOR = '[data-route-range-picker-map]';
 const CHART_SELECTOR = '[data-route-range-picker-chart]';
-const TILE_LAYER_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" rel="noreferrer noopener">OpenStreetMap</a>';
-const MAX_ZOOM = 17;
 const ROUTE_COLOR = '#9CA3AF';
-const SELECTION_COLOR = '#F26722';
 
 const markerIcon = (L, fillColor) => L.divIcon({
     className: '',
@@ -112,17 +109,9 @@ class RouteRangePicker {
             return;
         }
 
-        const {default: L} = await import(/* webpackChunkName: "leaflet" */ 'leaflet');
-        await import(/* webpackChunkName: "leaflet" */ '../../features/maps/ctrl-scroll-zoom');
-
+        const {L, map} = await createAdminLeafletMap(this.mapNode);
         this.L = L;
-        this.map = L.map(this.mapNode, {
-            ctrlScrollZoom: true,
-            maxZoom: MAX_ZOOM,
-            zoomSnap: .5,
-            zoomDelta: .5,
-        });
-        L.tileLayer(TILE_LAYER_URL, {attribution: ATTRIBUTION, maxZoom: MAX_ZOOM}).addTo(this.map);
+        this.map = map;
     }
 
     async mountChart() {
@@ -132,7 +121,7 @@ class RouteRangePicker {
 
         await loadEcharts();
         registerEchartsCallbacks();
-        this.chart = echarts.init(this.chartNode, new DarkModeManager().isDarkModeEnabled() ? 'v5-dark' : 'v5');
+        this.chart = echarts.init(this.chartNode, isDarkModeEnabled() ? 'v5-dark' : 'v5');
         new ResizeObserver(() => this.chart.resize()).observe(this.chartNode);
     }
 
@@ -165,7 +154,7 @@ class RouteRangePicker {
         const points = this.route.points;
         this.layers = {
             route: L.polyline(points, {color: ROUTE_COLOR, weight: 4, interactive: false}).addTo(this.map),
-            selection: L.polyline([], {color: SELECTION_COLOR, weight: 6, interactive: false}).addTo(this.map),
+            selection: L.polyline([], {color: PRIMARY_COLOR, weight: 6, interactive: false}).addTo(this.map),
             start: L.marker(points[0], {draggable: true, icon: markerIcon(L, START_MARKER_COLOR)}).addTo(this.map),
             end: L.marker(points[points.length - 1], {draggable: true, icon: markerIcon(L, END_MARKER_COLOR)}).addTo(this.map),
         };
@@ -254,7 +243,7 @@ class RouteRangePicker {
             series: [{
                 markArea: {
                     silent: true,
-                    itemStyle: {color: SELECTION_COLOR, opacity: .25},
+                    itemStyle: {color: PRIMARY_COLOR, opacity: .25},
                     data: [[{xAxis: start}, {xAxis: end}]],
                 },
             }],

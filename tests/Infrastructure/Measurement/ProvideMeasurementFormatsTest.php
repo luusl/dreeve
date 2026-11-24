@@ -16,7 +16,7 @@ class ProvideMeasurementFormatsTest extends TestCase
 {
     use ProvideMeasurementFormats;
 
-    #[DataProvider(methodName: 'provideNumbers')]
+    #[DataProvider('provideNumbers')]
     public function testFormatNumber(?float $number, int $precision, string $expectedResult): void
     {
         $this->assertSame(
@@ -25,7 +25,7 @@ class ProvideMeasurementFormatsTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideUnits')]
+    #[DataProvider('provideUnits')]
     public function testFormatUnitWithSymbol(Unit $unit, int $precision, string $expectedResult): void
     {
         $this->assertSame(
@@ -34,6 +34,9 @@ class ProvideMeasurementFormatsTest extends TestCase
         );
     }
 
+    /**
+     * @return list<array{?float, int, string}>
+     */
     public static function provideNumbers(): array
     {
         return [
@@ -46,6 +49,9 @@ class ProvideMeasurementFormatsTest extends TestCase
         ];
     }
 
+    /**
+     * @return list<array{Unit, int, string}>
+     */
     public static function provideUnits(): array
     {
         return [

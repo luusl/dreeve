@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Controller\Page;
 
 use App\Application\AppShell;
+use App\Application\PageMetadata\PageMetadata;
 use App\Domain\Integration\AI\Chat\AddChatMessage\AddChatMessage;
 use App\Domain\Integration\AI\Chat\ChatRepository;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
-use App\Infrastructure\Http\PrivateNoStoreHtmlResponse;
+use App\Infrastructure\Http\Response\CachePolicy;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Http\ServerSentEvent;
 use App\Infrastructure\Renderer\MarkdownRenderer;
 use App\Infrastructure\Serialization\Json;
@@ -17,15 +19,13 @@ use Symfony\AI\Agent\AgentInterface;
 use Symfony\AI\Platform\Message\Message;
 use Symfony\AI\Platform\Message\Role;
 use Symfony\AI\Platform\Result\Stream\Delta\TextDelta;
-use Symfony\Component\Form\Extension\Core\Type\SubmitType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
-use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\EventStreamResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Twig\Environment;
 
 #[AsController]
@@ -36,7 +36,6 @@ final readonly class ChatRequestHandler
         private ChatRepository $chatRepository,
         private CommandBus $commandBus,
         private SettingsRepository $settingsRepository,
-        private FormFactoryInterface $formFactory,
         private AppShell $appShell,
         private Environment $twig,
         private MarkdownRenderer $markdownRenderer,
@@ -44,17 +43,19 @@ final readonly class ChatRequestHandler
     }
 
     #[Route(path: '/chat', name: 'chat', methods: ['GET'])]
-    public function handle(): PrivateNoStoreHtmlResponse
+    public function handle(): HtmlResponse
     {
         if (!$this->settingsRepository->integrations()->isAIIntegrationEnabled()) {
             throw new NotFoundHttpException('Not found');
         }
 
-        return new PrivateNoStoreHtmlResponse($this->appShell->render(
+        return CachePolicy::private()->noStore()->applyTo(new HtmlResponse($this->appShell->render(
             content: $this->renderFor(),
             navigationSection: null,
-            openGraph: null,
-        ));
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Virtual workout assistant'),
+            ),
+        )));
     }
 
     #[Route(path: '/chat/clear', name: 'ai_chat_clear', methods: ['POST'], priority: 2)]
@@ -154,17 +155,8 @@ final readonly class ChatRequestHandler
 
     private function renderFor(): string
     {
-        $form = $this->formFactory->createBuilder()
-            ->add('message', TextType::class, [
-                'label' => 'Message',
-                'required' => true,
-            ])
-            ->add('submit', SubmitType::class)
-            ->getForm();
-
         return $this->twig->load('html/chat/chat.html.twig')->render([
             'chatHistory' => $this->chatRepository->findAll(),
-            'form' => $form->createView(),
             'chatCommands' => Json::encode($this->settingsRepository->integrations()->getChatCommands()),
         ]);
     }

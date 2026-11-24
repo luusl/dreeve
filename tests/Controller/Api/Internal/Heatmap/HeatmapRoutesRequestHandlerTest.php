@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller\Api\Internal\Heatmap;
 
 use App\Tests\Controller\ControllerWebTestCase;
@@ -28,7 +30,15 @@ class HeatmapRoutesRequestHandlerTest extends ControllerWebTestCase
             'X-Dreeve-Cache-Tags',
             'settings.appearance, activity.route',
         );
+        $this->assertResponseHeaderSame('Cache-Control', 'no-cache, private');
+        $etag = (string) $this->client->getResponse()->headers->get('ETag');
+        $this->assertNotEmpty($etag);
         $this->assertMatchesJsonSnapshot((string) $this->client->getResponse()->getContent());
+
+        $this->client->request('GET', '/api/internal/heatmap/routes', server: ['HTTP_IF_NONE_MATCH' => $etag]);
+
+        $this->assertResponseStatusCodeSame(304);
+        $this->assertSame('', $this->client->getResponse()->getContent());
     }
 
     #[\Override]

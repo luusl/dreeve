@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 
 class MaxHeartRateFormulaTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideCalculateData')]
+    #[DataProvider('provideCalculateData')]
     public function testCalculate(MaxHeartRateFormula $formula, int $age, int $expectedHeartRate): void
     {
         $this->assertEquals(
@@ -24,6 +24,9 @@ class MaxHeartRateFormulaTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{MaxHeartRateFormula, int, int}>
+     */
     public static function provideCalculateData(): iterable
     {
         yield 'Arena, aged 20' => [new Arena(), 20, 195];

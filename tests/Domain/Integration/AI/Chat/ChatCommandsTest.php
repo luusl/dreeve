@@ -24,13 +24,19 @@ class ChatCommandsTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideInvalidConfig')]
+    /**
+     * @param list<array<string, mixed>> $yml
+     */
+    #[DataProvider('provideInvalidConfig')]
     public function testFromYmlStringItShouldThrow(array $yml, string $expectedException): void
     {
         $this->expectExceptionObject(new InvalidChatCommandsConfig($expectedException));
         ChatCommands::fromArray($yml);
     }
 
+    /**
+     * @return iterable<string, array{list<array<string, mixed>>, string}>
+     */
     public static function provideInvalidConfig(): iterable
     {
         $yml = self::getValidYml();
@@ -62,6 +68,9 @@ class ChatCommandsTest extends TestCase
         yield 'empty "message" key' => [$yml, 'command and message cannot be empty'];
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
     private static function getValidYml(): array
     {
         return Yaml::parse(<<<YML

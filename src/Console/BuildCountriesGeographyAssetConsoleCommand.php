@@ -6,6 +6,7 @@ namespace App\Console;
 
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Geography\Polygon;
+use App\Infrastructure\ValueObject\String\CompressedString;
 use App\Infrastructure\ValueObject\String\KernelProjectDir;
 use GuzzleHttp\Client;
 use League\Flysystem\FilesystemOperator;
@@ -13,6 +14,7 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 
 #[AsCommand(name: 'app:geography:build-countries-asset', description: 'Build the country boundary asset from Natural Earth')]
 final class BuildCountriesGeographyAssetConsoleCommand extends Command
@@ -25,6 +27,7 @@ final class BuildCountriesGeographyAssetConsoleCommand extends Command
     public function __construct(
         private readonly KernelProjectDir $kernelProjectDir,
         private readonly Client $client,
+        #[Target('countries-geography.storage')]
         private readonly FilesystemOperator $countriesGeographyStorage,
     ) {
         parent::__construct();
@@ -93,12 +96,12 @@ final class BuildCountriesGeographyAssetConsoleCommand extends Command
             $totalPolygons += count($encodedPolygons);
             // Each element is already a complete JSON array, so this is the encoding of the list.
             $this->countriesGeographyStorage->write(
-                $countryCode.'.json',
-                '['.implode(',', $encodedPolygons).']'
+                $countryCode.'.json.zst',
+                (string) CompressedString::fromUncompressed('['.implode(',', $encodedPolygons).']')
             );
         }
 
-        $this->countriesGeographyStorage->write('index.json', Json::encode($index));
+        $this->countriesGeographyStorage->write('index.json.zst', (string) Json::encodeAndCompress($index));
 
         $bytes = 0;
         foreach ($this->countriesGeographyStorage->listContents('') as $file) {

@@ -12,7 +12,7 @@ use App\Domain\Gear\Maintenance\Log\DeleteGearMaintenanceLog\DeleteGearMaintenan
 use App\Domain\Gear\Maintenance\Log\GearMaintenanceLogId;
 use App\Domain\Gear\Maintenance\Log\GearMaintenanceLogOverviewRepository;
 use App\Domain\Gear\Maintenance\Log\UpdateGearMaintenanceLog\UpdateGearMaintenanceLog;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
 use Twig\Environment;
@@ -47,9 +47,6 @@ final readonly class ManageGearMaintenanceLogFormRequestHandler
         return new HtmlResponse($this->twig->render('html/admin/page/gear/maintenance/edit-gear-maintenance-log.html.twig', [
             'dispatchCommand' => UpdateGearMaintenanceLog::getCommandName(),
             'gearMaintenanceLog' => $gearMaintenanceLog,
-            'componentLabel' => $gearMaintenanceLog->getComponentLabel(),
-            'taskLabel' => $gearMaintenanceLog->getTaskLabel(),
-            'gearName' => $gearMaintenanceLog->getGearName(),
         ]));
     }
 
@@ -63,9 +60,6 @@ final readonly class ManageGearMaintenanceLogFormRequestHandler
         return new HtmlResponse($this->twig->render('html/admin/page/gear/maintenance/delete-gear-maintenance-log.html.twig', [
             'dispatchCommand' => DeleteGearMaintenanceLog::getCommandName(),
             'gearMaintenanceLog' => $gearMaintenanceLog,
-            'componentLabel' => $gearMaintenanceLog->getComponentLabel(),
-            'taskLabel' => $gearMaintenanceLog->getTaskLabel(),
-            'gearName' => $gearMaintenanceLog->getGearName(),
         ]));
     }
 

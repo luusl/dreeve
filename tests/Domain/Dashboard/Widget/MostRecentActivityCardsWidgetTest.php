@@ -36,7 +36,7 @@ class MostRecentActivityCardsWidgetTest extends ContainerTestCase
                 ->add('onlyShowActivitiesWithAMap', false)
                 ->add('sportTypesToInclude', [])
         );
-        $this->assertMatchesHtmlSnapshot($render);
+        $this->assertMatchesHtmlSnapshot((string) $render);
     }
 
     public function testRenderWithMultipleActivities(): void
@@ -51,7 +51,7 @@ class MostRecentActivityCardsWidgetTest extends ContainerTestCase
                 ->add('onlyShowActivitiesWithAMap', false)
                 ->add('sportTypesToInclude', [])
         );
-        $this->assertMatchesHtmlSnapshot($render);
+        $this->assertMatchesHtmlSnapshot((string) $render);
     }
 
     public function testRenderForAnActivityWithoutAMap(): void
@@ -67,7 +67,7 @@ class MostRecentActivityCardsWidgetTest extends ContainerTestCase
                 ->add('onlyShowActivitiesWithAMap', false)
                 ->add('sportTypesToInclude', [])
         );
-        $this->assertMatchesHtmlSnapshot($render);
+        $this->assertMatchesHtmlSnapshot((string) $render);
     }
 
     public function testRenderWithOnlyActivitiesWithAMapItShouldSkipActivitiesWithoutARoute(): void
@@ -163,13 +163,16 @@ class MostRecentActivityCardsWidgetTest extends ContainerTestCase
         $this->assertNull($render);
     }
 
-    #[DataProvider(methodName: 'provideInvalidConfig')]
+    #[DataProvider('provideInvalidConfig')]
     public function testGuardValidConfigurationItShouldThrow(WidgetConfiguration $config, string $expectedException): void
     {
         $this->expectExceptionObject(new InvalidDashboardLayout($expectedException));
         $this->widget->guardValidConfiguration($config);
     }
 
+    /**
+     * @return iterable<string, array{WidgetConfiguration, string}>
+     */
     public static function provideInvalidConfig(): iterable
     {
         yield 'missing "numberOfActivitiesToDisplay" key' => [WidgetConfiguration::empty(), 'Configuration item "numberOfActivitiesToDisplay" is required for MostRecentActivityCardsWidget.'];

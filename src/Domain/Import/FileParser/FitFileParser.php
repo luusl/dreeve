@@ -12,6 +12,7 @@ use App\Domain\Activity\Math;
 use App\Domain\Activity\Route\RouteGeography;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Activity\WorkoutRpe;
 use App\Domain\Activity\WorldType;
 use App\Domain\Gear\Sensor\ConnectedSensor;
 use App\Domain\Gear\Sensor\ConnectedSensors;
@@ -23,6 +24,7 @@ use App\Domain\Import\FileParser\Fit\FitProduct;
 use App\Domain\Import\FileParser\Fit\FitSportType;
 use App\Domain\Import\FileParser\Fit\FitStrapHeartRate;
 use App\Domain\Import\SupportedFileExtension;
+use App\Domain\Media\MediaItemIds;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
@@ -62,7 +64,8 @@ final readonly class FitFileParser implements ActivityFileParser
 
     public function parse(RawActivityFile $file): ParsedActivityFile
     {
-        $process = $this->processFactory->create(['fit-tool', (string) $file->getPath()]);
+        $process = $this->processFactory->create(['fit-tool']);
+        $process->setInput($file->getContents());
         $process->run();
 
         if (!$process->isSuccessful()) {
@@ -89,15 +92,11 @@ final readonly class FitFileParser implements ActivityFileParser
         $manufacturerId = null;
         $productId = null;
 
-        $messages = Json::decodeLazy(
-            json: $output,
-            pointer: '/files/-/messages',
-        );
-
         $hasMessages = false;
-        foreach ($messages as $message) {
+        foreach (array_filter(explode("\n", $output)) as $line) {
             $hasMessages = true;
-            $fields = $this->fieldMap($message['fields'] ?? []);
+            $message = Json::decode($line);
+            $fields = $message['fields'] ?? [];
             switch ($message['name'] ?? null) {
                 case 'record':
                     $records[] = $fields;
@@ -208,6 +207,7 @@ final readonly class FitFileParser implements ActivityFileParser
             description: '' !== $workoutDescription ? $workoutDescription : null,
             distance: Kilometer::from(round((is_numeric($session['total_distance'] ?? null) ? (float) $session['total_distance'] : 0.0) / 1000, 3)),
             elevation: Meter::from(round(is_numeric($session['total_ascent'] ?? null) && (float) $session['total_ascent'] > 0 ? (float) $session['total_ascent'] : StreamMath::elevationGain($streamMap[StreamType::ALTITUDE->value]))),
+            descent: Meter::from(round(is_numeric($session['total_descent'] ?? null) && (float) $session['total_descent'] > 0 ? (float) $session['total_descent'] : StreamMath::descent($streamMap[StreamType::ALTITUDE->value]))),
             startingCoordinate: $this->resolveStartingCoordinate($session, $streamMap),
             calories: is_numeric($session['total_calories'] ?? null) ? (int) round((float) $session['total_calories']) : null,
             kilojoules: null !== $work ? (int) round($work / 1000) : null,
@@ -228,8 +228,7 @@ final readonly class FitFileParser implements ActivityFileParser
             elapsedTimeInSeconds: is_numeric($session['total_elapsed_time'] ?? null) ? (int) round((float) $session['total_elapsed_time']) : 0,
             deviceName: $deviceName,
             connectedSensors: $this->resolveConnectedSensors($deviceInfoMessages),
-            totalImageCount: 0,
-            localImagePaths: [],
+            mediaItemIds: MediaItemIds::empty(),
             polyline: StreamMath::encodePolyline($streamMap),
             routeGeography: RouteGeography::create([]),
             weather: null,
@@ -237,6 +236,8 @@ final readonly class FitFileParser implements ActivityFileParser
             isCommute: false,
             isGroupActivity: false,
             workoutType: null,
+            workoutRpe: is_numeric($session['workout_rpe'] ?? null) ? WorkoutRpe::fromFitValue((int) $session['workout_rpe']) : null,
+            workoutFeel: is_numeric($session['workout_feel'] ?? null) ? (int) $session['workout_feel'] : null,
         );
 
         return ParsedActivityFile::create(
@@ -539,23 +540,5 @@ final readonly class FitFileParser implements ActivityFileParser
         }
 
         return StreamMath::firstCoordinate($streams);
-    }
-
-    /**
-     * @param array<int, array<string, mixed>> $fields
-     *
-     * @return array<string, mixed>
-     */
-    private function fieldMap(array $fields): array
-    {
-        $map = [];
-        foreach ($fields as $field) {
-            if (!is_string($field['name'] ?? null)) {
-                continue;
-            }
-            $map[$field['name']] = $field['value'] ?? null;
-        }
-
-        return $map;
     }
 }

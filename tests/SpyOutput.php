@@ -1,11 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests;
 
 use Symfony\Component\Console\Output\BufferedOutput;
 
 class SpyOutput extends BufferedOutput implements \Stringable
 {
+    /** @var array<string> */
     private array $messages = [];
 
     #[\Override]

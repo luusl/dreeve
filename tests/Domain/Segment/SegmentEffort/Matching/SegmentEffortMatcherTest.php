@@ -13,7 +13,10 @@ use PHPUnit\Framework\TestCase;
 
 class SegmentEffortMatcherTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideActivities')]
+    /**
+     * @param list<float> $expectedElapsedTimes
+     */
+    #[DataProvider('provideActivities')]
     public function testMatch(string $fixture, array $expectedElapsedTimes): void
     {
         $streams = Json::decode(file_get_contents(__DIR__.'/fixtures/'.$fixture.'.json') ?: '');
@@ -39,6 +42,9 @@ class SegmentEffortMatcherTest extends TestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{string, list<float>}>
+     */
     public static function provideActivities(): iterable
     {
         yield 'exact pass' => ['exact-pass', [125.0]];

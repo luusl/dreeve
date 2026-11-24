@@ -3,6 +3,7 @@
 namespace App\Tests\Controller\Admin;
 
 use App\Controller\Admin\OidcLoginRequestHandler;
+use App\Infrastructure\Security\Oidc\OidcCaFilePath;
 use App\Infrastructure\Security\Oidc\OidcConfig;
 use App\Infrastructure\Security\Oidc\OidcLoginAttempt;
 use App\Infrastructure\Security\Oidc\OidcProvider;
@@ -72,6 +73,7 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
             }),
             new ArrayAdapter(),
             static::getContainer()->get(UrlGeneratorInterface::class),
+            OidcCaFilePath::fromString('/certs/ca.pem'),
         ));
     }
 
@@ -107,7 +109,7 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
     /**
      * @param array<string, mixed> $claims
      */
-    #[DataProvider(methodName: 'provideAllowedClaims')]
+    #[DataProvider('provideAllowedClaims')]
     public function testCallbackLogsInTheAdmin(array $claims): void
     {
         $crawler = $this->client->request('GET', '/admin/login');
@@ -122,7 +124,9 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         $this->assertNotNull($this->client->getCookieJar()->get('REMEMBERME'));
 
         $tokenRequest = array_first(array_filter($this->requests, fn (array $request): bool => self::TOKEN_ENDPOINT === $request['url']));
+        $this->assertNotNull($tokenRequest);
         $this->assertSame('POST', $tokenRequest['method']);
+        $this->assertSame('/certs/ca.pem', $tokenRequest['options']['cafile']);
         $this->assertContains('Authorization: Basic '.base64_encode('dreeve:secret'), $tokenRequest['options']['normalized_headers']['authorization']);
         parse_str($tokenRequest['options']['body'], $tokenRequestBody);
         $this->assertSame([
@@ -143,12 +147,13 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
     {
         yield 'allowed subject' => [['sub' => 'athlete-subject']];
         yield 'allowed verified email' => [['sub' => 'unknown', 'email' => 'Athlete@Example.com', 'email_verified' => true]];
+        yield 'issued slightly in the future' => [['iat' => time() + 30]];
     }
 
     /**
      * @param array<string, mixed> $claims
      */
-    #[DataProvider(methodName: 'provideRejectedClaims')]
+    #[DataProvider('provideRejectedClaims')]
     public function testCallbackRejectsTheClaims(array $claims): void
     {
         $this->client->request('GET', '/admin/login/oidc');
@@ -161,7 +166,7 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         );
 
         $this->client->request('GET', '/admin/login/oidc/callback', ['code' => 'the-code', 'state' => $loginAttempt->getState()]);
-        $this->assertLoginIsRejected();
+        $this->assertLoginIsRejected('Single sign-on failed, see errors.log for details.');
     }
 
     /**
@@ -174,6 +179,38 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         yield 'wrong audience' => [['aud' => 'another-client']];
         yield 'wrong issuer' => [['iss' => 'https://evil.example.com/']];
         yield 'expired' => [['exp' => time() - 60]];
+    }
+
+    /**
+     * @param array<string, mixed> $claims
+     */
+    #[DataProvider('provideNotAllowedClaims')]
+    public function testCallbackRefusesAUserThatIsNotAllowed(array $claims): void
+    {
+        $this->client->request('GET', '/admin/login/oidc');
+        /** @var OidcLoginAttempt $loginAttempt */
+        $loginAttempt = $this->client->getRequest()->getSession()->get(OidcLoginAttempt::SESSION_KEY);
+
+        $this->idToken = $this->signIdToken([...$this->validClaims($loginAttempt), ...$claims], $this->signingKey);
+
+        $this->client->request('GET', '/admin/login/oidc/callback', ['code' => 'the-code', 'state' => $loginAttempt->getState()]);
+        $this->assertResponseRedirects('/admin/login');
+
+        $errorLog = static::getContainer()->get('monolog.handler.errors');
+        $this->assertFalse($errorLog->hasErrorRecords());
+
+        $crawler = $this->client->followRedirect();
+        $this->assertStringContainsString('You are not allowed to sign in to this admin panel.', $crawler->filter('.text-red-700')->text());
+
+        $this->client->request('GET', '/admin/upload');
+        $this->assertResponseRedirects('/admin/login');
+    }
+
+    /**
+     * @return iterable<string, array{0: array<string, mixed>}>
+     */
+    public static function provideNotAllowedClaims(): iterable
+    {
         yield 'subject not allowed' => [['sub' => 'someone-else']];
         yield 'unverified email' => [['sub' => 'someone-else', 'email' => 'athlete@example.com', 'email_verified' => false]];
     }
@@ -187,7 +224,23 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         $this->idToken = $this->signIdToken($this->validClaims($loginAttempt), $this->signingKey);
 
         $this->client->request('GET', '/admin/login/oidc/callback', ['code' => 'the-code', 'state' => 'tampered']);
-        $this->assertLoginIsRejected();
+        $this->assertLoginIsRejected('Your sign-in session expired, please try again.');
+    }
+
+    public function testCallbackRejectsAMissingLoginAttempt(): void
+    {
+        $this->client->request('GET', '/admin/login/oidc/callback', ['code' => 'the-code', 'state' => 'state']);
+        $this->assertLoginIsRejected('Your sign-in session expired, please try again.');
+    }
+
+    public function testCallbackShowsTheProviderError(): void
+    {
+        $this->client->request('GET', '/admin/login/oidc');
+        /** @var OidcLoginAttempt $loginAttempt */
+        $loginAttempt = $this->client->getRequest()->getSession()->get(OidcLoginAttempt::SESSION_KEY);
+
+        $this->client->request('GET', '/admin/login/oidc/callback', ['error' => 'access_denied', 'state' => $loginAttempt->getState()]);
+        $this->assertLoginIsRejected('The provider returned an error: access_denied');
     }
 
     public function testCallbackRejectsAForeignSigningKey(): void
@@ -202,7 +255,7 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         );
 
         $this->client->request('GET', '/admin/login/oidc/callback', ['code' => 'the-code', 'state' => $loginAttempt->getState()]);
-        $this->assertLoginIsRejected();
+        $this->assertLoginIsRejected('Single sign-on failed, see errors.log for details.');
     }
 
     public function testCallbackRejectsATokenResponseWithoutIdToken(): void
@@ -212,7 +265,7 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         $loginAttempt = $this->client->getRequest()->getSession()->get(OidcLoginAttempt::SESSION_KEY);
 
         $this->client->request('GET', '/admin/login/oidc/callback', ['code' => 'the-code', 'state' => $loginAttempt->getState()]);
-        $this->assertLoginIsRejected();
+        $this->assertLoginIsRejected('Single sign-on failed, see errors.log for details.');
     }
 
     public function testCallbackRejectsADiscoveryDocumentWithoutTokenEndpoint(): void
@@ -224,7 +277,7 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         $loginAttempt = $this->client->getRequest()->getSession()->get(OidcLoginAttempt::SESSION_KEY);
 
         $this->client->request('GET', '/admin/login/oidc/callback', ['code' => 'the-code', 'state' => $loginAttempt->getState()]);
-        $this->assertLoginIsRejected();
+        $this->assertLoginIsRejected('Single sign-on failed, see errors.log for details.');
         $this->assertNotContains(self::TOKEN_ENDPOINT, array_column($this->requests, 'url'));
     }
 
@@ -233,7 +286,7 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         $oidcConfig = OidcConfig::fromStrings('', '', '', '');
         $handler = new OidcLoginRequestHandler(
             $oidcConfig,
-            new OidcProvider($oidcConfig, new MockHttpClient(), new ArrayAdapter(), $this->createStub(UrlGeneratorInterface::class)),
+            new OidcProvider($oidcConfig, new MockHttpClient(), new ArrayAdapter(), $this->createStub(UrlGeneratorInterface::class), null),
         );
 
         $this->expectException(NotFoundHttpException::class);
@@ -246,7 +299,7 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         $oidcConfig = OidcConfig::fromStrings('', '', '', '');
         $handler = new OidcLoginRequestHandler(
             $oidcConfig,
-            new OidcProvider($oidcConfig, new MockHttpClient(), new ArrayAdapter(), $this->createStub(UrlGeneratorInterface::class)),
+            new OidcProvider($oidcConfig, new MockHttpClient(), new ArrayAdapter(), $this->createStub(UrlGeneratorInterface::class), null),
         );
 
         $this->expectException(NotFoundHttpException::class);
@@ -254,12 +307,15 @@ class OidcLoginRequestHandlerTest extends AdminWebTestCase
         $handler->callback();
     }
 
-    private function assertLoginIsRejected(): void
+    private function assertLoginIsRejected(string $expectedMessage): void
     {
         $this->assertResponseRedirects('/admin/login');
 
+        $errorLog = static::getContainer()->get('monolog.handler.errors');
+        $this->assertTrue($errorLog->hasErrorThatContains('OIDC login failed'));
+
         $crawler = $this->client->followRedirect();
-        $this->assertCount(1, $crawler->filter('.text-red-700'));
+        $this->assertSame($expectedMessage, $crawler->filter('.text-red-700')->text());
 
         $this->client->request('GET', '/admin/upload');
         $this->assertResponseRedirects('/admin/login');

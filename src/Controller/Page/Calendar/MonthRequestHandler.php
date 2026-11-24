@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Page\Calendar;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\FindFirstActivityStartDate\FindFirstActivityStartDate;
@@ -15,7 +16,7 @@ use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Time\Clock\Clock;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Component\HttpKernel\Attribute\AsController;
@@ -47,7 +48,7 @@ final readonly class MonthRequestHandler
             throw new NotFoundHttpException('Not found');
         }
 
-        if ($month->isBefore($firstMonth) || $month->isAfter(Month::fromDate($this->clock->getCurrentDateTimeImmutable()))) {
+        if ($month->isBefore($firstMonth) || $month->isAfter(Month::fromDate($this->clock->now()))) {
             throw new NotFoundHttpException('Not found');
         }
 
@@ -62,6 +63,9 @@ final readonly class MonthRequestHandler
             ),
             render: fn (): string => $this->renderFor($month),
             navigationSection: NavigationSection::MONTHLY_STATS,
+            metadata: new PageMetadata(
+                title: $month->getLabel(),
+            ),
         );
     }
 
@@ -71,7 +75,7 @@ final readonly class MonthRequestHandler
 
         return $this->twig->load('html/calendar/month.html.twig')->render([
             'hasPreviousMonth' => $month->getId() !== $monthlyStats->getFirstMonth()?->getId(),
-            'hasNextMonth' => $month->getId() !== Month::fromDate($this->clock->getCurrentDateTimeImmutable())->getId(),
+            'hasNextMonth' => $month->getId() !== Month::fromDate($this->clock->now())->getId(),
             'statistics' => $monthlyStats->getForMonth($month),
             'calendar' => Calendar::create(
                 month: $month,

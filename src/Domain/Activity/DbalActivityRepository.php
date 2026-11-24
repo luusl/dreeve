@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity;
 
-use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\SportType\SportTypes;
 use App\Domain\Gear\Sensor\ConnectedSensors;
 use App\Domain\Integration\Weather\OpenMeteo\Weather;
@@ -65,7 +64,7 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             $queryBuilder->andWhere('sportType IN (:sportTypes)')
                 ->setParameter(
                     key: 'sportTypes',
-                    value: array_map(fn (SportType $sportType): string => $sportType->value, $restrictToSportTypes->toArray()),
+                    value: $restrictToSportTypes->toValues(),
                     type: ArrayParameterType::STRING
                 );
         }
@@ -137,16 +136,16 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
     {
         $sql = 'INSERT INTO Activity (
             activityId, startDateTime, sportType, activityType, worldType, importSource, externalReferenceId, name, description, distance,
-            elevation, startingCoordinateLatitude, startingCoordinateLongitude, calories, kilojoules,
+            elevation, descent, startingCoordinateLatitude, startingCoordinateLongitude, calories, kilojoules,
             averagePower, maxPower, averageSpeed, maxSpeed, averageHeartRate, maxHeartRate,
-            averageCadence,movingTimeInSeconds, elapsedTimeInSeconds, deviceName, connectedSensors, totalImageCount, localImagePaths,
-            polyline, routeGeography, weather, gearId, data, isCommute, isGroupActivity, workoutType, excludedFrom
+            averageCadence,movingTimeInSeconds, elapsedTimeInSeconds, deviceName, connectedSensors, mediaItemIds,
+            polyline, routeGeography, weather, gearId, data, isCommute, isGroupActivity, workoutType, workoutRpe, workoutFeel, excludedFrom
         ) VALUES(
             :activityId, :startDateTime, :sportType, :activityType, :worldType, :importSource, :externalReferenceId, :name, :description, :distance,
-            :elevation, :startingCoordinateLatitude, :startingCoordinateLongitude, :calories, :kilojoules,
+            :elevation, :descent, :startingCoordinateLatitude, :startingCoordinateLongitude, :calories, :kilojoules,
             :averagePower, :maxPower, :averageSpeed, :maxSpeed, :averageHeartRate, :maxHeartRate,
-            :averageCadence, :movingTimeInSeconds, :elapsedTimeInSeconds, :deviceName, :connectedSensors, :totalImageCount, :localImagePaths,
-            :polyline, :routeGeography, :weather, :gearId, :data, :isCommute, :isGroupActivity, :workoutType, :excludedFrom
+            :averageCadence, :movingTimeInSeconds, :elapsedTimeInSeconds, :deviceName, :connectedSensors, :mediaItemIds,
+            :polyline, :routeGeography, :weather, :gearId, :data, :isCommute, :isGroupActivity, :workoutType, :workoutRpe, :workoutFeel, :excludedFrom
         )';
 
         $activity = $activityWithRawData->getActivity();
@@ -162,6 +161,7 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'description' => $activity->getDescription(),
             'distance' => $activity->getDistance()->toMeter()->toInt(),
             'elevation' => $activity->getElevation()->toInt(),
+            'descent' => $activity->getDescent()?->toInt(),
             'startingCoordinateLatitude' => $activity->getStartingCoordinate()?->getLatitude()->toFloat(),
             'startingCoordinateLongitude' => $activity->getStartingCoordinate()?->getLongitude()->toFloat(),
             'calories' => $activity->getCalories(),
@@ -177,8 +177,7 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'elapsedTimeInSeconds' => $activity->getElapsedTimeInSeconds(),
             'deviceName' => $activity->getDeviceName(),
             'connectedSensors' => $activity->getConnectedSensors() instanceof ConnectedSensors ? Json::encode($activity->getConnectedSensors()) : null,
-            'totalImageCount' => $activity->getTotalImageCount(),
-            'localImagePaths' => implode(',', $activity->getLocalImagePaths()),
+            'mediaItemIds' => Json::encode($activity->getMediaItemIds()),
             'polyline' => $activity->getEncodedPolyline(),
             'routeGeography' => Json::encode($activity->getRouteGeography()),
             'weather' => $activity->getWeather() instanceof Weather ? Json::encode($activity->getWeather()) : null,
@@ -187,6 +186,8 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'isCommute' => (int) $activity->isCommute(),
             'isGroupActivity' => (int) $activity->isGroupActivity(),
             'workoutType' => $activity->getWorkoutType()?->value,
+            'workoutRpe' => $activity->getWorkoutRpe()?->toInt(),
+            'workoutFeel' => $activity->getRawWorkoutFeel(),
             'excludedFrom' => $activity->getExcludedFrom()->isEmpty() ? null : Json::encode($activity->getExcludedFrom()),
         ]);
 
@@ -211,6 +212,7 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
                     movingTimeInSeconds = :movingTimeInSeconds,
                     elapsedTimeInSeconds = :elapsedTimeInSeconds,
                     elevation = :elevation,
+                    descent = :descent,
                     calories = :calories,
                     kilojoules = :kilojoules,
                     polyline = :polyline,
@@ -219,12 +221,13 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
                     routeGeography = :routeGeography,
                     weather = :weather,
                     gearId = :gearId,
-                    totalImageCount = :totalImageCount,
-                    localImagePaths = :localImagePaths,
+                    mediaItemIds = :mediaItemIds,
                     data = :data,
                     isCommute = :isCommute,
                     isGroupActivity = :isGroupActivity,
                     workoutType = :workoutType,
+                    workoutRpe = :workoutRpe,
+                    workoutFeel = :workoutFeel,
                     excludedFrom = :excludedFrom
                     WHERE activityId = :activityId';
 
@@ -240,6 +243,7 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'deviceName' => $activity->getDeviceName(),
             'distance' => $activity->getDistance()->toMeter()->toInt(),
             'elevation' => $activity->getElevation()->toInt(),
+            'descent' => $activity->getDescent()?->toInt(),
             'calories' => $activity->getCalories(),
             'kilojoules' => $activity->getKilojoules(),
             'averageSpeed' => $activity->getAverageSpeed()->toFloat(),
@@ -254,11 +258,12 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
             'routeGeography' => Json::encode($activity->getRouteGeography()),
             'weather' => $activity->getWeather() instanceof Weather ? Json::encode($activity->getWeather()) : null,
             'gearId' => $activity->getGearId(),
-            'totalImageCount' => $activity->getTotalImageCount(),
-            'localImagePaths' => implode(',', $activity->getLocalImagePaths()),
+            'mediaItemIds' => Json::encode($activity->getMediaItemIds()),
             'isCommute' => (int) $activity->isCommute(),
             'isGroupActivity' => (int) $activity->isGroupActivity(),
             'workoutType' => $activity->getWorkoutType()?->value,
+            'workoutRpe' => $activity->getWorkoutRpe()?->toInt(),
+            'workoutFeel' => $activity->getRawWorkoutFeel(),
             'excludedFrom' => $activity->getExcludedFrom()->isEmpty() ? null : Json::encode($activity->getExcludedFrom()),
             'data' => Json::encode($this->cleanData($activityWithRawData->getRawData())),
         ]);
@@ -266,31 +271,15 @@ final readonly class DbalActivityRepository extends DbalRepository implements Ac
         $this->eventBus->publishEvents($activity->getRecordedEvents());
     }
 
-    public function delete(ActivityId $activityId): void
+    public function delete(Activity $activity): void
     {
-        // The start date determines which year scoped cache tags need to be invalidated,
-        // so it has to be read before the row is gone.
-        $startDateTime = $this->connection->executeQuery(
-            'SELECT startDateTime FROM Activity WHERE activityId = :activityId',
-            ['activityId' => (string) $activityId],
-        )->fetchOne();
-
         $sql = 'DELETE FROM Activity WHERE activityId = :activityId';
 
         $this->connection->executeStatement($sql, [
-            'activityId' => $activityId,
+            'activityId' => $activity->getId(),
         ]);
 
-        if (false === $startDateTime) {
-            return;
-        }
-
-        $this->eventBus->publishEvents([
-            new ActivityWasDeleted(
-                activityId: $activityId,
-                startDate: SerializableDateTime::fromString((string) $startDateTime)
-            ),
-        ]);
+        $this->eventBus->publishEvents($activity->getRecordedEvents());
     }
 
     public function markActivitiesForDeletion(ActivityIds $activityIds): void

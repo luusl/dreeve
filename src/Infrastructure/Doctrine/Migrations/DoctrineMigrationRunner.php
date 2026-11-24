@@ -5,19 +5,19 @@ declare(strict_types=1);
 namespace App\Infrastructure\Doctrine\Migrations;
 
 use App\Infrastructure\Console\ConsoleApplication;
-use App\Infrastructure\Time\Sleep;
+use App\Infrastructure\Time\Clock\Clock;
 use Doctrine\DBAL\Exception\LockWaitTimeoutException;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Time\Duration;
 
 final readonly class DoctrineMigrationRunner implements MigrationRunner
 {
     private const int MAX_ATTEMPTS = 3;
-    private const int SECONDS_BETWEEN_ATTEMPTS = 5;
 
     public function __construct(
         private MigrationSquashHandler $migrationSquashHandler,
-        private Sleep $sleep,
+        private Clock $clock,
     ) {
     }
 
@@ -40,11 +40,12 @@ final readonly class DoctrineMigrationRunner implements MigrationRunner
                     throw new CouldNotRunMigrations('The database was locked by another process, migrations could not run.', previous: $lockWaitTimeout);
                 }
 
+                $delay = Duration::fromSeconds(5);
                 $output->writeln(sprintf(
                     '<comment>The database is locked by another process, retrying in %d seconds...</comment>',
-                    self::SECONDS_BETWEEN_ATTEMPTS
+                    $delay->seconds
                 ));
-                $this->sleep->sweetDreams(self::SECONDS_BETWEEN_ATTEMPTS);
+                $this->clock->sleep($delay);
             }
         }
     }

@@ -22,12 +22,16 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final readonly class OidcProvider
 {
+    private HttpClientInterface $httpClient;
+
     public function __construct(
         private OidcConfig $oidcConfig,
-        private HttpClientInterface $httpClient,
+        HttpClientInterface $httpClient,
         private CacheInterface $cache,
         private UrlGeneratorInterface $urlGenerator,
+        ?OidcCaFilePath $caFilePath,
     ) {
+        $this->httpClient = $httpClient->withOptions(['cafile' => $caFilePath instanceof OidcCaFilePath ? (string) $caFilePath : null]);
     }
 
     public function buildAuthorizationUrl(OidcLoginAttempt $loginAttempt): string
@@ -76,6 +80,7 @@ final readonly class OidcProvider
             signatureKeyset: null,
             audience: $this->oidcConfig->getClientId(),
             issuers: [$this->getDiscoveredString('issuer')],
+            clock: new OidcTokenClock(),
         );
         $idTokenHandler->enableDiscovery(
             cache: $this->cache,

@@ -66,7 +66,7 @@ class TrainingGoalsWidgetTest extends ContainerTestCase
             now: SerializableDateTime::fromString('2025-10-16'),
             configuration: $config
         );
-        $this->assertMatchesHtmlSnapshot($render);
+        $this->assertMatchesHtmlSnapshot((string) $render);
     }
 
     #[DataProvider('provideConfigurationsWithoutGoalsToRender')]
@@ -80,6 +80,9 @@ class TrainingGoalsWidgetTest extends ContainerTestCase
         $this->assertNull($render);
     }
 
+    /**
+     * @return iterable<string, array{WidgetConfiguration}>
+     */
     public static function provideConfigurationsWithoutGoalsToRender(): iterable
     {
         yield 'no goals configured' => [WidgetConfiguration::empty()];
@@ -109,7 +112,7 @@ class TrainingGoalsWidgetTest extends ContainerTestCase
             now: SerializableDateTime::fromString('2025-10-16'),
             configuration: $config
         );
-        $this->assertMatchesHtmlSnapshot($render);
+        $this->assertMatchesHtmlSnapshot((string) $render);
     }
 
     #[\Override]

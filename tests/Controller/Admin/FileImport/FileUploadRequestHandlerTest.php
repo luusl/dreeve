@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller\Admin\FileImport;
 
 use App\Domain\Import\ImportMode;
@@ -44,6 +46,9 @@ class FileUploadRequestHandlerTest extends AdminWebTestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function provideAdminPaths(): iterable
     {
         yield 'root admin path' => ['/admin'];

@@ -26,7 +26,6 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
     {
         $data = [
             'profilePictureUrl' => null,
-            'appSubTitle' => 'A brand new subtitle',
             'birthday' => '1990-01-01',
             'firstName' => 'Jane',
             'lastName' => 'Doe',
@@ -45,6 +44,7 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
     public function testItUpdatesAppearanceSettings(): void
     {
         $data = [
+            'appSubTitle' => 'A brand new subtitle',
             'unitSystem' => 'imperial',
             'locale' => 'nl_BE',
             'timeFormat' => 12,
@@ -222,6 +222,16 @@ class UpdateSettingsCommandHandlerTest extends ContainerTestCase
         ]));
 
         $this->assertEquals($data, $this->settingsRepository->findGroup(SettingsGroup::SECURITY));
+    }
+
+    public function testItRejectsUnknownSettings(): void
+    {
+        $this->expectExceptionObject(new CouldNotDeserializeCommand('Unknown setting "level" for group "appearance"'));
+
+        UpdateSettings::fromPayload([
+            'group' => SettingsGroup::APPEARANCE->value,
+            'data' => ['unitSystem' => 'metric', 'level' => 80],
+        ]);
     }
 
     public function testItRejectsInvalidDaemonSettings(): void

@@ -1,15 +1,15 @@
 import {eventBus, Events} from '../../core/event-bus';
+import {initComponents} from '../../core/component-registry';
+import {fetchJson} from '../../utils';
+import {createAdminLeafletMap, MAX_ZOOM} from '../../features/maps/admin-leaflet-map';
+import {PRIMARY_COLOR} from '../../features/maps/map-colors';
 
 const ROOT_SELECTOR = '[data-coordinate-picker]';
 const MAP_SELECTOR = '[data-coordinate-picker-map]';
-const TILE_LAYER_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const ATTRIBUTION = '© <a href="https://www.openstreetmap.org/copyright" rel="noreferrer noopener">OpenStreetMap</a>';
+const WARNING_SELECTOR = '[data-coordinate-picker-warning]';
 const MIN_ZOOM = 1;
-const MAX_ZOOM = 17;
 const WORLD_ZOOM = 2;
 const COORDINATE_ZOOM = 13;
-
-const instances = new Map();
 
 const numberOf = (field) => {
     const value = parseFloat(field?.value ?? '');
@@ -29,10 +29,14 @@ class CoordinatePicker {
 
         const options = JSON.parse(root.getAttribute('data-coordinate-picker') || '{}');
         this.radiusToMeter = options.radiusToMeter || 1;
+        this.polylineUrl = options.polylineUrl || null;
+        this.maxDistanceFromRouteInMeter = options.maxDistanceFromRouteInMeter || null;
+        this.warning = root.querySelector(WARNING_SELECTOR);
 
         this.map = null;
         this.marker = null;
         this.circle = null;
+        this.routes = null;
         this.hasCoordinate = false;
         this.isMounting = false;
         this.isDestroyed = false;
@@ -78,29 +82,71 @@ class CoordinatePicker {
         }
         this.isMounting = true;
 
-        const {default: L} = await import(/* webpackChunkName: "leaflet" */ 'leaflet');
-        await import(/* webpackChunkName: "leaflet" */ '../../features/maps/ctrl-scroll-zoom');
+        const {L, map} = await createAdminLeafletMap(this.mapNode, {minZoom: MIN_ZOOM});
 
         this.isMounting = false;
         if (this.isDestroyed) {
+            map.remove();
+
             return;
         }
 
         this.L = L;
-        this.map = L.map(this.mapNode, {
-            ctrlScrollZoom: true,
-            minZoom: MIN_ZOOM,
-            maxZoom: MAX_ZOOM,
-            zoomSnap: .5,
-            zoomDelta: .5,
-        });
-        L.tileLayer(TILE_LAYER_URL, {attribution: ATTRIBUTION, maxZoom: MAX_ZOOM}).addTo(this.map);
+        this.map = map;
 
         this.map.on('click', (event) => this.writeCoordinate(event.latlng));
 
         this.resetView();
         this.render();
         this.map.invalidateSize();
+
+        await this.addRoutes();
+    }
+
+    async addRoutes() {
+        if (!this.polylineUrl) {
+            return;
+        }
+
+        const polylines = (await fetchJson(this.polylineUrl)).filter((coordinates) => coordinates.length > 0);
+        if (!this.map || 0 === polylines.length) {
+            return;
+        }
+
+        this.routes = this.L.featureGroup(polylines.map((coordinates) => this.L.polyline(coordinates, {
+            color: PRIMARY_COLOR,
+            weight: 2,
+            opacity: .9,
+            noClip: true,
+            interactive: false,
+        }))).addTo(this.map);
+
+        if (!this.coordinate()) {
+            this.resetView();
+        }
+        this.updateWarning(this.coordinate());
+    }
+
+    distanceFromRouteInMeter(coordinate) {
+        const point = this.map.latLngToLayerPoint(coordinate);
+
+        return Math.min(...this.routes.getLayers()
+            .map((polyline) => polyline.closestLayerPoint(point))
+            .filter((closestPoint) => null !== closestPoint)
+            .map((closestPoint) => this.map.distance(coordinate, this.map.layerPointToLatLng(closestPoint))));
+    }
+
+    updateWarning(coordinate) {
+        if (!this.warning) {
+            return;
+        }
+
+        const isFarFromRoute = null !== coordinate
+            && null !== this.routes
+            && null !== this.maxDistanceFromRouteInMeter
+            && this.distanceFromRouteInMeter(coordinate) > this.maxDistanceFromRouteInMeter;
+
+        this.warning.classList.toggle('hidden', !isFarFromRoute);
     }
 
     coordinate() {
@@ -159,6 +205,7 @@ class CoordinatePicker {
     render() {
         const coordinate = this.coordinate();
         this.hasCoordinate = null !== coordinate;
+        this.updateWarning(coordinate);
 
         if (!coordinate) {
             this.marker?.remove();
@@ -196,7 +243,7 @@ class CoordinatePicker {
         if (!this.circle) {
             this.circle = this.L.circle(coordinate, {
                 radius,
-                color: '#F26722',
+                color: PRIMARY_COLOR,
                 weight: 2,
                 fillOpacity: .15,
                 interactive: false,
@@ -211,6 +258,11 @@ class CoordinatePicker {
 
     resetView() {
         const coordinate = this.coordinate();
+        if (!coordinate && this.routes) {
+            this.map.fitBounds(this.routes.getBounds());
+
+            return;
+        }
         if (!coordinate) {
             this.map.setView([20, 0], WORLD_ZOOM);
 
@@ -235,28 +287,8 @@ class CoordinatePicker {
     }
 }
 
-const destroyDetachedPickers = () => {
-    instances.forEach((picker, root) => {
-        if (document.contains(root)) {
-            return;
-        }
-        picker.destroy();
-        instances.delete(root);
-    });
-};
-
 export default function initCoordinatePickers(rootNode = document) {
-    destroyDetachedPickers();
-
-    rootNode.querySelectorAll(ROOT_SELECTOR).forEach((root) => {
-        if (instances.has(root)) {
-            return;
-        }
-
-        const picker = new CoordinatePicker(root);
-        instances.set(root, picker);
-        picker.init();
-    });
+    initComponents(rootNode, ROOT_SELECTOR, CoordinatePicker);
 }
 
 eventBus.on(Events.REPEATER_CHANGED, ({repeater}) => initCoordinatePickers(repeater));

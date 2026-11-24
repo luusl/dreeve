@@ -36,7 +36,10 @@ class UpdateSegmentTest extends TestCase
         $this->assertFalse($command->isFavourite());
     }
 
-    #[DataProvider(methodName: 'provideInvalidPayloads')]
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[DataProvider('provideInvalidPayloads')]
     public function testFromPayloadThrowsOnInvalidPayload(array $payload, string $expectedReason): void
     {
         $this->expectExceptionObject(CouldNotDeserializeCommand::invalidPayload($expectedReason));
@@ -44,6 +47,9 @@ class UpdateSegmentTest extends TestCase
         UpdateSegment::fromPayload($payload);
     }
 
+    /**
+     * @return iterable<string, array{array<string, mixed>, string}>
+     */
     public static function provideInvalidPayloads(): iterable
     {
         $valid = ['segmentId' => 'segment-1', 'name' => 'Kwaremont'];

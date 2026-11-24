@@ -8,9 +8,9 @@ use App\Domain\Gear\Gear;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Gear\GearType;
-use App\Domain\Image\ImageDirectory;
-use App\Domain\Image\ImageStorage;
-use App\Domain\Image\NewImage;
+use App\Domain\Media\MediaItemDirectory;
+use App\Domain\Media\MediaItemStorage;
+use App\Domain\Media\NewMediaItem;
 use App\Infrastructure\CQRS\Command\Command;
 use App\Infrastructure\CQRS\Command\CommandHandler;
 use App\Infrastructure\Time\Clock\Clock;
@@ -21,7 +21,7 @@ final readonly class AddGearCommandHandler implements CommandHandler
     public function __construct(
         private GearRepository $gearRepository,
         private Clock $clock,
-        private ImageStorage $imageStorage,
+        private MediaItemStorage $mediaItemStorage,
     ) {
     }
 
@@ -29,26 +29,24 @@ final readonly class AddGearCommandHandler implements CommandHandler
     {
         assert($command instanceof AddGear);
 
+        $newMediaItem = $command->getNewMediaItem();
         $gear = Gear::create(
             gearId: GearId::random(),
-            createdOn: $this->clock->getCurrentDateTimeImmutable(),
+            createdOn: $this->clock->now(),
             name: $command->getName(),
             isRetired: $command->isRetired(),
             type: GearType::CUSTOM,
+            notes: $command->getNotes(),
+            mediaItemId: $newMediaItem instanceof NewMediaItem
+                ? $this->mediaItemStorage->store(
+                    newMediaItem: $newMediaItem,
+                    directory: MediaItemDirectory::GEAR,
+                )->getId()
+                : null,
         );
 
         if ($command->getPurchasePrice() instanceof Money) {
             $gear = $gear->withPurchasePrice($command->getPurchasePrice());
-        }
-
-        $newImage = $command->getNewImage();
-        if ($newImage instanceof NewImage) {
-            $gear = $gear->withLocalImagePath(
-                $this->imageStorage->store(
-                    newImage: $newImage,
-                    directory: ImageDirectory::GEAR
-                )->toLocalImagePath()
-            );
         }
 
         $this->gearRepository->add($gear);

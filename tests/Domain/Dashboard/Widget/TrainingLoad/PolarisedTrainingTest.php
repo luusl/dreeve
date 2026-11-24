@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Dashboard\Widget\TrainingLoad;
 
 use App\Domain\Athlete\HeartRateZone\TimeInHeartRateZones;
@@ -17,7 +19,7 @@ class PolarisedTrainingTest extends ContainerTestCase
      * @param array<int, ZoneDistributionTrend> $expectedTrends
      * @param array<int, float>                 $expectedPercentages
      */
-    #[DataProvider(methodName: 'fromRollingWindowProvider')]
+    #[DataProvider('fromRollingWindowProvider')]
     public function testFromRollingWindow(
         TimeInHeartRateZones $current,
         TimeInHeartRateZones $asOfPreviousDay,
@@ -44,6 +46,9 @@ class PolarisedTrainingTest extends ContainerTestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{TimeInHeartRateZones, TimeInHeartRateZones, array<int, ZoneDistributionTrend>, array<int, float>}>
+     */
     public static function fromRollingWindowProvider(): iterable
     {
         $steady = [ZoneDistributionTrend::STEADY, ZoneDistributionTrend::STEADY, ZoneDistributionTrend::STEADY];

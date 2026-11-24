@@ -14,8 +14,13 @@ use App\Domain\Activity\UpdateManuallyAddedActivity\UpdateManuallyAddedActivityC
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Gear\GearId;
-use App\Domain\Image\ImageStorage;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
+use App\Domain\Media\MediaItemPath;
+use App\Domain\Media\MediaItemRepository;
+use App\Domain\Media\MediaItems;
+use App\Domain\Media\MediaItemStorage;
 use App\Domain\Settings\DbalSettingsRepository;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
@@ -27,6 +32,7 @@ use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
+use App\Tests\Domain\Media\MediaItemBuilder;
 use League\Flysystem\FilesystemOperator;
 
 class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
@@ -152,7 +158,11 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
     {
         $this->fileStorage->write('activities/keep.png', 'keep');
         $this->fileStorage->write('activities/drop.png', 'drop');
-        $this->addManuallyAddedActivity('files/activities/keep.png', 'files/activities/drop.png');
+        $this->getContainer()->get(MediaItemRepository::class)->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('drop'))
+            ->withPath(MediaItemPath::fromString('activities/drop.png'))
+            ->build());
+        $this->addManuallyAddedActivity(MediaItemId::fromUnprefixed('keep'), MediaItemId::fromUnprefixed('drop'));
 
         $this->commandBus->dispatch(UpdateManuallyAddedActivity::fromPayload([
             'activityId' => 'activity-1',
@@ -160,30 +170,40 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
             'sportType' => 'Run',
             'startDateTime' => '2023-10-17T16:15',
             'duration' => ['minutes' => 30],
-            'images' => Json::encode([
-                ['status' => 'removed', 'path' => '/files/activities/drop.png'],
+            'mediaItems' => Json::encode([
+                ['status' => 'removed', 'id' => 'mediaItem-drop'],
                 ['status' => 'new', 'filename' => 'new.jpg', 'content' => base64_encode('new-content')],
             ]),
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
 
-        $localImagePaths = $activity->getLocalImagePaths();
-        $this->assertCount(2, $localImagePaths);
-        $this->assertSame(2, $activity->getTotalImageCount());
-        $this->assertSame('/files/activities/keep.png', $localImagePaths[0]);
-        $this->assertStringEndsWith('.jpg', $localImagePaths[1]);
+        $this->assertEquals(
+            MediaItemIds::fromArray([MediaItemId::fromUnprefixed('keep'), MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5')]),
+            $activity->getMediaItemIds(),
+        );
 
         $this->assertFalse($this->fileStorage->fileExists('activities/drop.png'));
         $this->assertTrue($this->fileStorage->fileExists('activities/keep.png'));
-        $newRelativePath = ltrim((string) preg_replace('#^/files/#', '', $localImagePaths[1]), '/');
-        $this->assertSame('new-content', $this->fileStorage->read($newRelativePath));
+        $this->assertSame('new-content', $this->fileStorage->read('activities/0025176c-5652-11ee-923d-02424dd627d5.jpg'));
+        $this->assertEquals(
+            MediaItems::fromArray([
+                MediaItemBuilder::fromDefaults()
+                    ->withMediaItemId(MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'))
+                    ->withPath(MediaItemPath::fromString('activities/0025176c-5652-11ee-923d-02424dd627d5.jpg'))
+                    ->build(),
+            ]),
+            $this->getContainer()->get(MediaItemRepository::class)->findByIds(MediaItemIds::fromArray([
+                MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'),
+                MediaItemId::fromUnprefixed('drop'),
+            ])),
+        );
     }
 
     public function testHandleLeavesImagesUntouchedWhenNothingChanged(): void
     {
         $this->fileStorage->write('activities/existing.png', 'binary');
-        $this->addManuallyAddedActivity('files/activities/existing.png');
+        $this->addManuallyAddedActivity(MediaItemId::fromUnprefixed('existing'));
 
         $this->commandBus->dispatch(UpdateManuallyAddedActivity::fromPayload([
             'activityId' => 'activity-1',
@@ -191,12 +211,12 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
             'sportType' => 'Run',
             'startDateTime' => '2023-10-17T16:15',
             'duration' => ['minutes' => 30],
-            'images' => '[]',
+            'mediaItems' => '[]',
         ]));
 
         $activity = $this->activityRepository->find(ActivityId::fromUnprefixed('1'));
 
-        $this->assertSame(['/files/activities/existing.png'], $activity->getLocalImagePaths());
+        $this->assertEquals(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('existing')]), $activity->getMediaItemIds());
         $this->assertTrue($this->fileStorage->fileExists('activities/existing.png'));
     }
 
@@ -228,7 +248,7 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
         $handler = new UpdateManuallyAddedActivityCommandHandler(
             activityRepository: $this->activityRepository,
             settingsRepository: $this->getContainer()->get(SettingsRepository::class),
-            imageStorage: $this->getContainer()->get(ImageStorage::class),
+            mediaItemStorage: $this->getContainer()->get(MediaItemStorage::class),
             importMode: ImportMode::STRAVA_API,
         );
 
@@ -243,7 +263,7 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
         ]));
     }
 
-    private function addManuallyAddedActivity(string ...$localImagePaths): void
+    private function addManuallyAddedActivity(MediaItemId ...$mediaItemIds): void
     {
         $activity = ActivityBuilder::fromDefaults()
             ->withActivityId(ActivityId::fromUnprefixed('1'))
@@ -257,14 +277,12 @@ class UpdateManuallyAddedActivityCommandHandlerTest extends ContainerTestCase
             ->withAverageHeartRate(130)
             ->withMaxHeartRate(160)
             ->withDistance(Kilometer::from(10))
-            ->withElevation(Meter::from(120));
-
-        if ([] !== $localImagePaths) {
-            $activity = $activity->withLocalImagePaths(...$localImagePaths);
-        }
+            ->withElevation(Meter::from(120))
+            ->withMediaItemIds(...$mediaItemIds)
+            ->build();
 
         $this->activityRepository->add(ActivityWithRawData::fromState(
-            activity: $activity->build(),
+            activity: $activity,
             rawData: [],
         ));
     }

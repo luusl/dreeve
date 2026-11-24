@@ -26,6 +26,7 @@
             </div>
             <div>
                 <label class="flex items-center gap-2 mt-0! font-medium cursor-pointer">
+                    <input type="hidden" name="data[requiresAuthentication]" value="0">
                     <input type="checkbox" name="data[requiresAuthentication]" value="1"
                            {{ (settings.requiresAuthentication ?? false) ? 'checked' : '' }}>
                     <span>{{ "Require a login for the entire app"|trans({}, 'admin') }}</span>
@@ -80,6 +81,15 @@
                         {{ "Set through the {envVar} environment variable and cannot be changed here."|trans({'{envVar}': 'OIDC_ALLOWED_USERS'}, 'admin') }}
                     </p>
                 </div>
+                {% if oidcCaFilePath %}
+                    <div>
+                        <label for="oidcCaFilePath">{{ "CA certificate"|trans({}, 'admin') }}</label>
+                        <input type="text" id="oidcCaFilePath" value="{{ oidcCaFilePath }}" disabled>
+                        <p class="description">
+                            {{ "Set through the {envVar} environment variable and cannot be changed here."|trans({'{envVar}': 'OIDC_CA_FILE'}, 'admin') }}
+                        </p>
+                    </div>
+                {% endif %}
                 <div>
                     <label for="oidcRedirectUri">{{ "Redirect URI"|trans({}, 'admin') }}</label>
                     <input type="text" id="oidcRedirectUri" value="{{ oidcRedirectUri }}" readonly>
@@ -114,9 +124,10 @@
             <div>
                 <label for="apiKeyState" class="mt-0!">{{ "API key"|trans({}, 'admin') }}</label>
                 <input type="text" id="apiKeyState" disabled
-                       value="{{ apiKey.isEmpty() ? "Not configured, API access is disabled"|trans({}, 'admin') : "Configured"|trans({}, 'admin') }}">
+                       value="{{ apiKey.isEmpty() ? "Not configured, API access is disabled"|trans({}, 'admin') : "{count} key(s) configured"|trans({'{count}': apiKey|length}, 'admin') }}">
                 <p class="description">
                     {{ "Set through the {envVar} environment variable and cannot be changed here."|trans({'{envVar}': 'DREEVE_API_KEY'}, 'admin') }}
+                    {{ "Separate several keys with a comma, so each integration can have its own key."|trans({}, 'admin') }}
                 </p>
             </div>
             <div class="flex">
@@ -144,9 +155,10 @@
             <div>
                 <label for="mcpKeyState" class="mt-0!">{{ "MCP key"|trans({}, 'admin') }}</label>
                 <input type="text" id="mcpKeyState" disabled
-                       value="{{ mcpKey.isEmpty() ? "Not configured, MCP server is disabled"|trans({}, 'admin') : "Configured"|trans({}, 'admin') }}">
+                       value="{{ mcpKey.isEmpty() ? "Not configured, MCP server is disabled"|trans({}, 'admin') : "{count} key(s) configured"|trans({'{count}': mcpKey|length}, 'admin') }}">
                 <p class="description">
                     {{ "Set through the {envVar} environment variable and cannot be changed here."|trans({'{envVar}': 'DREEVE_MCP_KEY'}, 'admin') }}
+                    {{ "Separate several keys with a comma, so each integration can have its own key."|trans({}, 'admin') }}
                 </p>
             </div>
             <div class="flex">

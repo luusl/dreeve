@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Page\Gear;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Calendar\Months;
 use App\Domain\Gear\RecordingDevice\FindRecordingDeviceUsagePerMonth\FindRecordingDeviceUsagePerMonth;
@@ -17,11 +18,12 @@ use App\Infrastructure\Cache\Context\CacheContexts;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Measurement\Time\Seconds;
 use App\Infrastructure\Time\Clock\Clock;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Twig\Environment;
 
 #[AsController]
@@ -48,10 +50,13 @@ final readonly class RecordingDevicesRequestHandler
                     RootCacheTag::ACTIVITIES,
                 ),
                 cacheContexts: CacheContexts::of(AuthenticatedCacheContext::class),
-                ttlInSeconds: $this->clock->getCurrentDateTimeImmutable()->getSecondsUntilMidnight(),
+                ttl: $this->clock->now()->getDurationUntilMidnight(),
             ),
             render: fn (): string => $this->renderFor(),
             navigationSection: NavigationSection::GEAR,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Recording devices'),
+            ),
         );
     }
 
@@ -66,7 +71,7 @@ final readonly class RecordingDevicesRequestHandler
             ),
             'deviceUsage' => $deviceUsage,
             'totalMovingTime' => Seconds::from((int) $devices->sum(fn (RecordingDevice $device): int => $device->getTimeTracked()->toInt())),
-            'lastTwelveMonths' => Months::lastXMonths(12, $this->clock->getCurrentDateTimeImmutable()),
+            'lastTwelveMonths' => Months::lastXMonths(12, $this->clock->now()),
             'unitSystem' => $this->settingsRepository->appearance()->getUnitSystem(),
         ]);
     }

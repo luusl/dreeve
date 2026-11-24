@@ -4,12 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller\Api\Internal\Release;
 
-use App\Infrastructure\Cache\Cacheability;
-use App\Infrastructure\Cache\CacheableRenderer;
-use App\Infrastructure\Cache\Context\AuthenticatedCacheContext;
-use App\Infrastructure\Cache\Context\CacheContexts;
-use App\Infrastructure\Cache\Tag\CacheTags;
-use App\Infrastructure\Http\PrivateNoStoreHtmlResponse;
+use App\Infrastructure\Http\Response\CachePolicy;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Security\Visitor;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,25 +16,19 @@ final readonly class ReleaseAnnouncementRequestHandler
 {
     public function __construct(
         private Visitor $visitor,
-        private CacheableRenderer $cacheableRenderer,
         private Environment $twig,
     ) {
     }
 
     #[Route(path: '/api/internal/release-announcement', name: 'release_announcement', methods: ['GET'])]
-    public function handle(): PrivateNoStoreHtmlResponse
+    public function handle(): HtmlResponse
     {
-        $render = $this->cacheableRenderer->render(
-            cacheability: Cacheability::for(
-                cacheKey: 'app.release-announcement',
-                cacheTags: CacheTags::empty(),
-                cacheContexts: CacheContexts::of(AuthenticatedCacheContext::class),
-            ),
-            render: fn (): string => $this->visitor->isAuthenticated()
-                ? $this->twig->load('html/release-announcement.html.twig')->render()
-                : '',
-        );
+        if (!$this->visitor->isAuthenticated()) {
+            return CachePolicy::private()->noStore()->applyTo(new HtmlResponse(''));
+        }
 
-        return new PrivateNoStoreHtmlResponse($render->getContent() ?? '', headers: $render->getCacheHeaders());
+        return CachePolicy::private()->noStore()->applyTo(
+            new HtmlResponse($this->twig->load('html/component/release-announcement.html.twig')->render()),
+        );
     }
 }

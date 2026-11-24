@@ -17,6 +17,8 @@ class CacheContextGuardTest extends AdminWebTestCase
 
     private const array URLS = [
         'activities' => '/activities',
+        'activity_collections' => '/collections',
+        'activity_collection' => '/collections/activityCollection-1',
         'activity' => '/activities/activity-9756441741',
         'badges' => '/badges',
         'best_efforts' => '/best-efforts',
@@ -38,6 +40,7 @@ class CacheContextGuardTest extends AdminWebTestCase
         'rewind_compare' => '/rewind/2023/compare/2022',
         'segment' => '/segments/segment-10',
         'segments' => '/segments',
+        'activity_collection_polylines' => '/api/internal/collections/activityCollection-1/polylines',
         'activity_best_efforts' => '/api/internal/activities/activity-9542782314/best-efforts',
         'activity_coordinates' => '/api/internal/activities/activity-9756441741/coordinates',
         'activity_data_table' => '/api/internal/activities/data-table',
@@ -51,7 +54,6 @@ class CacheContextGuardTest extends AdminWebTestCase
         'heatmap_countries' => '/api/internal/heatmap/countries',
         'heatmap_routes' => '/api/internal/heatmap/routes',
         'heatmap_tiles' => '/api/internal/heatmap/tiles',
-        'release_announcement' => '/api/internal/release-announcement',
         'segment_data_table' => '/api/internal/segments/data-table',
         'segment_polylines' => '/api/internal/segments/segment-10/polylines',
         'badge_dreeve' => '/badge/dreeve.svg',
@@ -63,6 +65,7 @@ class CacheContextGuardTest extends AdminWebTestCase
     {
         $this->provideFullTestSet();
         $this->addSegmentWithAPolylineFixtures();
+        $this->addActivityCollectionFixtures();
 
         $cacheKeys = [];
         foreach (self::URLS as $routeName => $url) {
@@ -82,6 +85,7 @@ class CacheContextGuardTest extends AdminWebTestCase
     {
         $this->provideFullTestSet();
         $this->addSegmentWithAPolylineFixtures();
+        $this->addActivityCollectionFixtures();
 
         foreach (self::URLS as $routeName => $url) {
             $this->client->request('GET', $url);
@@ -102,6 +106,7 @@ class CacheContextGuardTest extends AdminWebTestCase
     {
         $this->provideFullTestSet();
         $this->addSegmentWithAPolylineFixtures();
+        $this->addActivityCollectionFixtures();
 
         $anonymousCacheKeys = [];
         foreach (self::URLS as $routeName => $url) {
@@ -136,6 +141,7 @@ class CacheContextGuardTest extends AdminWebTestCase
     {
         $this->provideFullTestSet();
         $this->addSegmentWithAPolylineFixtures();
+        $this->addActivityCollectionFixtures();
 
         $renderedForAnonymousVisitor = [];
         foreach (self::URLS as $routeName => $url) {

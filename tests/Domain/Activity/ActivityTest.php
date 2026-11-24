@@ -12,18 +12,23 @@ use App\Domain\Activity\ActivityRouteWasUpdated;
 use App\Domain\Activity\ActivitySportTypeWasChanged;
 use App\Domain\Activity\ActivityWasAdded;
 use App\Domain\Activity\ActivityWasUpdated;
+use App\Domain\Activity\RealWorldMap;
 use App\Domain\Activity\Route\RouteGeography;
 use App\Domain\Activity\SportType\SportType;
+use App\Domain\Activity\WorkoutRpe;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Gear\GearId;
 use App\Domain\Integration\Weather\OpenMeteo\Weather;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\Measurement\Velocity\SecPer100Meter;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\Geography\Coordinate;
+use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
 use App\Infrastructure\ValueObject\Geography\Latitude;
 use App\Infrastructure\ValueObject\Geography\Longitude;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
@@ -60,7 +65,7 @@ class ActivityTest extends TestCase
         $this->assertNull($activity->getLeafletMap());
     }
 
-    public function testLeafletMapWhenZwiftMapCouldNotBeDetermined(): void
+    public function testLeafletMapFallsBackToRealWorldWhenZwiftMapCouldNotBeDetermined(): void
     {
         $activity = ActivityBuilder::fromDefaults()
             ->withWorldType(WorldType::ZWIFT)
@@ -70,7 +75,7 @@ class ActivityTest extends TestCase
             ->withPolyline('line')
             ->build();
 
-        $this->assertNull($activity->getLeafletMap());
+        $this->assertInstanceOf(RealWorldMap::class, $activity->getLeafletMap());
     }
 
     public function testGetPaceInSecPer100Meter(): void
@@ -85,13 +90,13 @@ class ActivityTest extends TestCase
         );
     }
 
-    public function testWithLocalImagePathsItShouldRecordThatTheImagesWereUpdated(): void
+    public function testWithMediaItemIdsItShouldRecordThatTheImagesWereUpdated(): void
     {
         $activity = ActivityBuilder::fromDefaults()
-            ->withLocalImagePaths('/activities/one.jpg')
+            ->withMediaItemIds(MediaItemId::fromUnprefixed('one'))
             ->build();
 
-        $updatedActivity = $activity->withLocalImagePaths(['/activities/one.jpg', '/activities/two.jpg']);
+        $updatedActivity = $activity->withMediaItemIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('one'), MediaItemId::fromUnprefixed('two')]));
 
         $this->assertEquals(
             [new ActivityImagesHaveBeenUpdated(ActivityId::fromUnprefixed('903645'), SerializableDateTime::fromString('2023-10-10'))],
@@ -100,37 +105,26 @@ class ActivityTest extends TestCase
         $this->assertEmpty($activity->getRecordedEvents());
     }
 
-    public function testWithLocalImagePathsItShouldRecordNothingWhenTheImagesDidNotChange(): void
+    public function testWithMediaItemIdsItShouldRecordNothingWhenTheImagesDidNotChange(): void
     {
         $activity = ActivityBuilder::fromDefaults()
-            ->withLocalImagePaths('/activities/one.jpg')
+            ->withMediaItemIds(MediaItemId::fromUnprefixed('one'))
             ->build();
 
         $this->assertEmpty(
-            $activity->withLocalImagePaths(['/activities/one.jpg'])->getRecordedEvents()
+            $activity->withMediaItemIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('one')]))->getRecordedEvents()
         );
     }
 
-    public function testWithLocalImagePathsItShouldRecordNothingWhenOnlyTheLeadingSlashDiffers(): void
+    public function testWithMediaItemIdsItShouldRecordThatTheImagesWereRemoved(): void
     {
         $activity = ActivityBuilder::fromDefaults()
-            ->withLocalImagePaths('activities/one.jpg')
-            ->build();
-
-        $this->assertEmpty(
-            $activity->withLocalImagePaths(['/activities/one.jpg'])->getRecordedEvents()
-        );
-    }
-
-    public function testWithLocalImagePathsItShouldRecordThatTheImagesWereRemoved(): void
-    {
-        $activity = ActivityBuilder::fromDefaults()
-            ->withLocalImagePaths('/activities/one.jpg')
+            ->withMediaItemIds(MediaItemId::fromUnprefixed('one'))
             ->build();
 
         $this->assertEquals(
             [new ActivityImagesHaveBeenUpdated(ActivityId::fromUnprefixed('903645'), SerializableDateTime::fromString('2023-10-10'))],
-            $activity->withLocalImagePaths([])->getRecordedEvents()
+            $activity->withMediaItemIds(MediaItemIds::empty())->getRecordedEvents()
         );
     }
 
@@ -228,6 +222,76 @@ class ActivityTest extends TestCase
                 ->withWorldType(WorldType::REAL_WORLD)
                 ->withPolyline('tqafAua~y^vG{D')
                 ->withRouteGeography(RouteGeography::create(['country_code' => 'BE']))->withRouteGeography(RouteGeography::create([])),
+        ];
+    }
+
+    public function testAllowsPhotoMarkerAt(): void
+    {
+        $this->assertTrue(ActivityBuilder::fromDefaults()
+            ->withSportType(SportType::RIDE)
+            ->withWorldType(WorldType::REAL_WORLD)
+            ->withPolyline((string) EncodedPolyline::fromCoordinates([[51.51, -0.08], [51.52, -0.07]]))
+            ->build()
+            ->allowsPhotoMarkerAt(Coordinate::createFromLatAndLng(
+                latitude: Latitude::fromString('51.515'),
+                longitude: Longitude::fromString('-0.075'),
+            )));
+    }
+
+    #[DataProvider('provideCoordinatesThatAllowNoPhotoMarker')]
+    public function testAllowsNoPhotoMarkerAt(ActivityBuilder $builder, ?Coordinate $coordinate): void
+    {
+        $this->assertFalse($builder->build()->allowsPhotoMarkerAt($coordinate));
+    }
+
+    /**
+     * @return \Generator<string, array{ActivityBuilder, ?Coordinate}>
+     */
+    public static function provideCoordinatesThatAllowNoPhotoMarker(): \Generator
+    {
+        $polyline = (string) EncodedPolyline::fromCoordinates([[51.51, -0.08], [51.52, -0.07]]);
+        $nearTheRoute = Coordinate::createFromLatAndLng(
+            latitude: Latitude::fromString('51.515'),
+            longitude: Longitude::fromString('-0.075'),
+        );
+
+        yield 'without coordinate' => [
+            ActivityBuilder::fromDefaults()
+                ->withSportType(SportType::RIDE)
+                ->withWorldType(WorldType::REAL_WORLD)
+                ->withPolyline($polyline),
+            null,
+        ];
+        yield 'virtual sport type' => [
+            ActivityBuilder::fromDefaults()
+                ->withSportType(SportType::VIRTUAL_RIDE)
+                ->withWorldType(WorldType::REAL_WORLD)
+                ->withPolyline($polyline),
+            $nearTheRoute,
+        ];
+        yield 'not recorded in the real world' => [
+            ActivityBuilder::fromDefaults()
+                ->withSportType(SportType::RIDE)
+                ->withWorldType(WorldType::ZWIFT)
+                ->withPolyline($polyline),
+            $nearTheRoute,
+        ];
+        yield 'without polyline' => [
+            ActivityBuilder::fromDefaults()
+                ->withSportType(SportType::RIDE)
+                ->withWorldType(WorldType::REAL_WORLD)
+                ->withPolyline(null),
+            $nearTheRoute,
+        ];
+        yield 'far from the route' => [
+            ActivityBuilder::fromDefaults()
+                ->withSportType(SportType::RIDE)
+                ->withWorldType(WorldType::REAL_WORLD)
+                ->withPolyline($polyline),
+            Coordinate::createFromLatAndLng(
+                latitude: Latitude::fromString('51.53'),
+                longitude: Longitude::fromString('-0.08'),
+            ),
         ];
     }
 
@@ -362,6 +426,7 @@ class ActivityTest extends TestCase
         yield 'world type' => [fn (Activity $activity): Activity => $activity->withWorldType(WorldType::ZWIFT)];
         yield 'distance' => [fn (Activity $activity): Activity => $activity->withDistance(Kilometer::from(42))];
         yield 'elevation' => [fn (Activity $activity): Activity => $activity->withElevation(Meter::from(666))];
+        yield 'descent' => [fn (Activity $activity): Activity => $activity->withDescent(Meter::from(666))];
         yield 'calories' => [fn (Activity $activity): Activity => $activity->withCalories(500)];
         yield 'average heart rate' => [fn (Activity $activity): Activity => $activity->withAverageHeartRate(140)];
         yield 'max heart rate' => [fn (Activity $activity): Activity => $activity->withMaxHeartRate(180)];
@@ -381,6 +446,8 @@ class ActivityTest extends TestCase
         yield 'commute' => [fn (Activity $activity): Activity => $activity->withCommute(true)];
         yield 'group activity' => [fn (Activity $activity): Activity => $activity->withGroupActivity(true)];
         yield 'workout type' => [fn (Activity $activity): Activity => $activity->withWorkoutType(WorkoutType::RACE)];
+        yield 'workout rpe' => [fn (Activity $activity): Activity => $activity->withWorkoutRpe(WorkoutRpe::fromFitValue(70))];
+        yield 'workout feel' => [fn (Activity $activity): Activity => $activity->withWorkoutFeel(75)];
         yield 'weather' => [fn (Activity $activity): Activity => $activity->withWeather(Weather::fromState(['temperature' => 18.3]))];
         yield 'excluded from' => [fn (Activity $activity): Activity => $activity->withExcludedFrom(
             ActivityExclusions::fromArray([ActivityExclusion::BEST_EFFORTS])
