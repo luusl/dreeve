@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Activity\Eddington\Config;
 
 use App\Domain\Activity\Eddington\Config\EddingtonConfigItem;
@@ -48,13 +50,19 @@ class EddingtonConfigurationTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideInvalidEddingtonConfig')]
+    /**
+     * @param array<int, mixed> $config
+     */
+    #[DataProvider('provideInvalidEddingtonConfig')]
     public function testFromScalarArrayItShouldThrow(array $config, string $expectedException): void
     {
         $this->expectExceptionObject(new InvalidEddingtonConfiguration($expectedException));
         EddingtonConfiguration::fromScalarArray($config);
     }
 
+    /**
+     * @return iterable<string, array{array<int, mixed>, string}>
+     */
     public static function provideInvalidEddingtonConfig(): iterable
     {
         $yml = self::getValidYml();
@@ -98,6 +106,9 @@ class EddingtonConfigurationTest extends TestCase
         yield 'too many items in showInDashboardWidget"' => [$yml, 'You can only have two Eddingtons with "showInDashboardWidget" set to true'];
     }
 
+    /**
+     * @return list<array<string, mixed>>
+     */
     private static function getValidYml(): array
     {
         return [

@@ -8,19 +8,23 @@ use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
+use App\Domain\Media\MediaItemPath;
+use App\Domain\Media\MediaItemRepository;
 use App\Infrastructure\Security\Token\ApiToken;
 use App\Infrastructure\Serialization\Json;
 use App\Tests\Controller\ControllerWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
+use App\Tests\Domain\Media\MediaItemBuilder;
 use League\Flysystem\FilesystemOperator;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\HttpFoundation\Response;
 
 class ActivityImageRemoveRequestHandlerTest extends ControllerWebTestCase
 {
-    private const string KEPT_IMAGE = 'files/activities/9b1d1f3e-3c7a-4a52-8f6e-2f0b8c6d4a11.jpg';
-    private const string REMOVED_IMAGE = 'files/activities/0025176c-5652-11ee-923d-02424dd627d5.png';
-    private const string PATH = '/api/v1/activities/activity-1/images/activityImage-0025176c-5652-11ee-923d-02424dd627d5';
+    private const string REMOVED_IMAGE = 'activities/0025176c-5652-11ee-923d-02424dd627d5.png';
+    private const string PATH = '/api/v1/activities/activity-1/images/mediaItem-0025176c-5652-11ee-923d-02424dd627d5';
 
     private ApiToken $token;
     private ActivityRepository $activityRepository;
@@ -31,9 +35,10 @@ class ActivityImageRemoveRequestHandlerTest extends ControllerWebTestCase
         $this->client->request('DELETE', self::PATH, server: ['HTTP_AUTHORIZATION' => 'Bearer '.$this->token]);
 
         $this->assertResponseStatusCodeSame(Response::HTTP_NO_CONTENT);
-        $this->assertSame(['/'.self::KEPT_IMAGE], $this->activityRepository->find(ActivityId::fromUnprefixed('1'))->getLocalImagePaths());
+        $this->assertEquals(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('9b1d1f3e-3c7a-4a52-8f6e-2f0b8c6d4a11')]), $this->activityRepository->find(ActivityId::fromUnprefixed('1'))->getMediaItemIds());
         $this->assertFalse($this->fileStorage->fileExists('activities/0025176c-5652-11ee-923d-02424dd627d5.png'));
         $this->assertTrue($this->fileStorage->fileExists('activities/9b1d1f3e-3c7a-4a52-8f6e-2f0b8c6d4a11.jpg'));
+        $this->assertTrue($this->getContainer()->get(MediaItemRepository::class)->findByIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5')]))->isEmpty());
     }
 
     #[DataProvider('provideUnknownImages')]
@@ -43,7 +48,7 @@ class ActivityImageRemoveRequestHandlerTest extends ControllerWebTestCase
 
         $this->assertResponseStatusCodeSame(Response::HTTP_NOT_FOUND);
         $this->assertSame('not_found', $this->errorCode());
-        $this->assertSame(['/'.self::KEPT_IMAGE, '/'.self::REMOVED_IMAGE], $this->activityRepository->find(ActivityId::fromUnprefixed('1'))->getLocalImagePaths());
+        $this->assertEquals(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('9b1d1f3e-3c7a-4a52-8f6e-2f0b8c6d4a11'), MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5')]), $this->activityRepository->find(ActivityId::fromUnprefixed('1'))->getMediaItemIds());
     }
 
     /**
@@ -51,7 +56,7 @@ class ActivityImageRemoveRequestHandlerTest extends ControllerWebTestCase
      */
     public static function provideUnknownImages(): iterable
     {
-        yield 'unknown image' => ['activityImage-6f1c2a9e-0000-4000-8000-000000000000'];
+        yield 'unknown image' => ['mediaItem-6f1c2a9e-0000-4000-8000-000000000000'];
         yield 'malformed image id' => ['0025176c-5652-11ee-923d-02424dd627d5'];
     }
 
@@ -66,7 +71,7 @@ class ActivityImageRemoveRequestHandlerTest extends ControllerWebTestCase
 
         $this->client->request(
             'DELETE',
-            '/api/v1/activities/activity-2/images/activityImage-0025176c-5652-11ee-923d-02424dd627d5',
+            '/api/v1/activities/activity-2/images/mediaItem-0025176c-5652-11ee-923d-02424dd627d5',
             server: ['HTTP_AUTHORIZATION' => 'Bearer '.$this->token],
         );
 
@@ -79,7 +84,7 @@ class ActivityImageRemoveRequestHandlerTest extends ControllerWebTestCase
     {
         $this->client->request(
             'DELETE',
-            '/api/v1/activities/'.$activityId.'/images/activityImage-0025176c-5652-11ee-923d-02424dd627d5',
+            '/api/v1/activities/'.$activityId.'/images/mediaItem-0025176c-5652-11ee-923d-02424dd627d5',
             server: ['HTTP_AUTHORIZATION' => 'Bearer '.$this->token],
         );
 
@@ -144,10 +149,14 @@ class ActivityImageRemoveRequestHandlerTest extends ControllerWebTestCase
 
         $this->fileStorage->write('activities/9b1d1f3e-3c7a-4a52-8f6e-2f0b8c6d4a11.jpg', 'kept');
         $this->fileStorage->write('activities/0025176c-5652-11ee-923d-02424dd627d5.png', 'removed');
+        $this->getContainer()->get(MediaItemRepository::class)->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'))
+            ->withPath(MediaItemPath::fromString(self::REMOVED_IMAGE))
+            ->build());
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
-                ->withLocalImagePaths(self::KEPT_IMAGE, self::REMOVED_IMAGE)
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('9b1d1f3e-3c7a-4a52-8f6e-2f0b8c6d4a11'), MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'))
                 ->build(),
             rawData: [],
         ));

@@ -1,6 +1,14 @@
 name: Publish Docker image
 on:
   workflow_dispatch:
+    inputs:
+      registries:
+        description: 'Registries to publish to'
+        type: choice
+        default: both
+        options:
+          - both
+          - ghcr
   push:
     tags:
       - 'v*'
@@ -14,10 +22,10 @@ jobs:
       attestations: write
       id-token: write
     steps:
-      - name: Setup PHP 8.5
+      - name: Setup PHP 8.6
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.5'
+          php-version: '8.6'
           extensions: zstd
 
       - name: Check out the repo
@@ -25,6 +33,17 @@ jobs:
 
       - name: Install dependencies
         run: composer install --prefer-dist --no-scripts --no-dev
+
+      - name: Verify app version matches the tag
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          touch .env
+          bin/console app:release:verify-version "$TAG"
+
+      - name: Compress Symfony Intl data
+        run: composer run compress-intl
 
       - name: Build countries geography asset
         run: |
@@ -36,16 +55,16 @@ jobs:
           ASSET_ROOT=resources
           ASSET_DIR="$ASSET_ROOT/countries"
 
-          if [[ ! -f "$ASSET_DIR/index.json" ]]; then
-            echo "::error::$ASSET_DIR/index.json is missing, refusing to build an image without country boundaries"
+          if [[ ! -f "$ASSET_DIR/index.json.zst" ]]; then
+            echo "::error::$ASSET_DIR/index.json.zst is missing, refusing to build an image without country boundaries"
             exit 1
           fi
 
-          ENTRIES=$(jq 'length' "$ASSET_DIR/index.json")
-          COUNTRIES=$(find "$ASSET_DIR" -name '*.json' -not -name 'index.json' | wc -l)
+          ENTRIES=$(zstd -dc "$ASSET_DIR/index.json.zst" | jq 'length')
+          COUNTRIES=$(find "$ASSET_DIR" -name '*.json.zst' -not -name 'index.json.zst' | wc -l)
 
           if (( ENTRIES < 4000 )); then
-            echo "::error::index.json holds only $ENTRIES polygons, expected 4000+"
+            echo "::error::index.json.zst holds only $ENTRIES polygons, expected 4000+"
             exit 1
           fi
           if (( COUNTRIES < 200 )); then
@@ -63,6 +82,7 @@ jobs:
           echo "$COUNTRIES country files, $ENTRIES polygons indexed"
 
       - name: Log in to Docker Hub
+        if: ${{ inputs.registries != 'ghcr' }}
         uses: docker/login-action@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
@@ -80,7 +100,7 @@ jobs:
         uses: docker/metadata-action@v6
         with:
           images: |
-            luusl/strava-statistics
+            ${{ inputs.registries != 'ghcr' && 'luusl/strava-statistics' || '' }}
             ghcr.io/${{ github.repository }}
 
       - name: Set up QEMU
@@ -101,6 +121,7 @@ jobs:
           platforms: linux/arm/v7
 
       - name: Generate artifact attestation for Docker Hub
+        if: ${{ inputs.registries != 'ghcr' }}
         uses: actions/attest-build-provenance@v4
         with:
           subject-name: index.docker.io/luusl/strava-statistics

@@ -1,6 +1,5 @@
 {% extends "html/admin/page/template.html.twig" %}
 {% block main %}
-    {% autoescape false %}
     {% set activity = activity is defined ? activity : null %}
     {% set overviewUrl = redirectUrl(relativeUrl(path('admin_manage_activity_overview'))) %}
     {% set distance = activity ? (activity.getDistance()|convertMeasurement).toFloat()|round(2) : 0 %}
@@ -9,19 +8,10 @@
     {% set calories = activity ? activity.getCalories() : null %}
     {% set averageHeartRate = activity ? activity.getAverageHeartRate() : null %}
     {% set maxHeartRate = activity ? activity.getMaxHeartRate() : null %}
-    <div class="modal-like-form">
-        <div class="w-full max-w-3xl overflow-y-auto p-6 bg-white border border-gray-200 rounded-lg shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">
-                    {{ activity ? "Edit activity"|trans({}, 'admin') : "Add activity"|trans({}, 'admin') }}
-                </h3>
-                <a href="{{ overviewUrl }}" aria-label="{{ "Close"|trans({}, 'admin') }}"
-                   class="grid place-items-center size-8 rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                    <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/>
-                    </svg>
-                </a>
-            </div>
+    {% embed 'html/admin/component/modal.html.twig' with {closeUrl: overviewUrl, modalSize: 'max-w-3xl'} %}
+        {% block title %}{{ activity ? "Edit activity"|trans({}, 'admin') : "Add activity"|trans({}, 'admin') }}{% endblock %}
+        {% block body %}
+            {% autoescape false %}
             <form data-dispatch-command="{{ dispatchCommand }}" data-redirect="{{ overviewUrl }}" class="flex flex-col gap-4">
                 {% if activity %}
                     <input type="hidden" name="activityId" value="{{ activity.getId() }}">
@@ -106,10 +96,11 @@
                 <div>
                     <label for="activity-gear">{{ "Gear"|trans }}</label>
                     <select id="activity-gear" name="gearId">
-                        <option value="">{{ "None"|trans }}</option>
-                        {% for gear in gears %}
-                            <option value="{{ gear.getId() }}" {{ activity and activity.getGearId() and gear.getId().matches(activity.getGearId()) ? 'selected' }}>{{ gear.getName() }}</option>
-                        {% endfor %}
+                        {% include 'html/admin/component/gear-select-options.html.twig' with {
+                            gears: gears,
+                            suggestFor: activity ? activity.getSportType().getActivityType() : null,
+                            selectedGearId: activity ? activity.getGearId(),
+                        } only %}
                     </select>
                 </div>
                 <div class="flex items-center gap-2">
@@ -128,13 +119,7 @@
                 </div>
                 <div>
                     <label>{{ "Images"|trans({}, 'admin') }}</label>
-                    {% set existingImages = [] %}
-                    {% if activity %}
-                        {% for path in activity.getLocalImagePaths() %}
-                            {% set existingImages = existingImages|merge([{ url: relativeUrl(path), name: path|split('/')|last, path: path }]) %}
-                        {% endfor %}
-                    {% endif %}
-                    {% include 'html/admin/component/image-dropzone-upload.html.twig' with { name: 'images', maxImages: 5, existingImages: existingImages } %}
+                    {% include 'html/admin/page/activity/_image-dropzone.html.twig' %}
                 </div>
                 <div class="flex justify-end gap-2 border-t border-gray-200 pt-4">
                     {% if activity and importMode.isFiles() %}
@@ -147,7 +132,7 @@
                     </button>
                 </div>
             </form>
-        </div>
-    </div>
-    {% endautoescape %}
+            {% endautoescape %}
+        {% endblock %}
+    {% endembed %}
 {% endblock main %}

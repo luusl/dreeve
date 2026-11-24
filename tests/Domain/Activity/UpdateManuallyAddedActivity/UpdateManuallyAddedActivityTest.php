@@ -10,6 +10,7 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\UpdateManuallyAddedActivity\UpdateManuallyAddedActivity;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Gear\GearId;
+use App\Domain\Media\MediaItemId;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -52,14 +53,14 @@ class UpdateManuallyAddedActivityTest extends TestCase
         $this->assertSame(171, $command->getMaxHeartRate());
         $this->assertTrue($command->isCommute());
         $this->assertTrue($command->isGroupActivity());
-        $this->assertSame([], $command->getNewImages());
-        $this->assertSame([], $command->getRemovedImages());
+        $this->assertSame([], $command->getNewMediaItems());
+        $this->assertSame([], $command->getRemovedMediaItems());
     }
 
     public function testFromPayloadWithEmptyOptionalFields(): void
     {
         $command = UpdateManuallyAddedActivity::fromPayload([
-            ...self::validPayload(),
+            ...$this->validPayload(),
             'description' => '   ',
             'gearId' => '',
             'elevation' => '',
@@ -80,24 +81,24 @@ class UpdateManuallyAddedActivityTest extends TestCase
         $this->assertFalse($command->isGroupActivity());
     }
 
-    public function testFromPayloadParsesNewAndRemovedImages(): void
+    public function testFromPayloadParsesNewAndRemovedMediaItems(): void
     {
         $command = UpdateManuallyAddedActivity::fromPayload([
-            ...self::validPayload(),
-            'images' => json_encode([
+            ...$this->validPayload(),
+            'mediaItems' => json_encode([
                 ['status' => 'new', 'filename' => 'photo.jpg', 'content' => base64_encode('binary-content')],
-                ['status' => 'removed', 'path' => '/files/activities/existing.png'],
+                ['status' => 'removed', 'id' => 'mediaItem-existing'],
             ]),
         ]);
 
-        $newImages = $command->getNewImages();
-        $this->assertCount(1, $newImages);
-        $this->assertSame('jpg', $newImages[0]->getFilename()->getExtension());
-        $this->assertSame('binary-content', $newImages[0]->getContent());
+        $newMediaItems = $command->getNewMediaItems();
+        $this->assertCount(1, $newMediaItems);
+        $this->assertSame('jpg', $newMediaItems[0]->getFilename()->getExtension());
+        $this->assertSame('binary-content', $newMediaItems[0]->getContent());
 
-        $removedImages = $command->getRemovedImages();
-        $this->assertCount(1, $removedImages);
-        $this->assertSame('files/activities/existing.png', $removedImages[0]->getPath()->toLocalImagePath());
+        $removedMediaItems = $command->getRemovedMediaItems();
+        $this->assertCount(1, $removedMediaItems);
+        $this->assertEquals(MediaItemId::fromString('mediaItem-existing'), $removedMediaItems[0]->getId());
     }
 
     /**
@@ -108,7 +109,7 @@ class UpdateManuallyAddedActivityTest extends TestCase
     {
         $this->expectExceptionObject(CouldNotDeserializeCommand::invalidPayload($expectedExceptionMessage));
 
-        UpdateManuallyAddedActivity::fromPayload([...self::validPayload(), ...$payload]);
+        UpdateManuallyAddedActivity::fromPayload([...$this->validPayload(), ...$payload]);
     }
 
     /**
@@ -132,7 +133,7 @@ class UpdateManuallyAddedActivityTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private static function validPayload(): array
+    private function validPayload(): array
     {
         return [
             'activityId' => 'activity-1',

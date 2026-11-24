@@ -1,0 +1,728 @@
+'# completed': '# voltooid'
+'42-day fitness trend': 'Fitheidstrend over 42 dagen'
+'7-day fatigue level': 'Vermoeidheidsniveau over 7 dagen'
+'< 1.5: Good variety in training': '< 1.5: Goede variatie in training'
+'> 2.0: High monotony, increased risk': '> 2.0: Hoge monotonie, verhoogd risico'
+'A 6-hour week scores higher than a 5-hour week.': 'Een week van 6 uur scoort hoger dan een week van 5 uur.'
+'A cluster tile is a visited tile whose four neighbours are visited too': 'Een clustertegel is een bezochte tegel waarvan de vier buren ook bezocht zijn'
+'A high intensity score means a larger share of your training is hard rather than easy.': 'Een hoge intensiteitsscore betekent dat een groter deel van je training zwaar is in plaats van licht.'
+'A high score means you concentrate more training into fewer, heavier days.': 'Een hoge score betekent dat je meer training concentreert in minder, zwaardere dagen.'
+'A:C Ratio': 'A:C-ratio'
+'A:C optimal in': 'A:C optimaal binnen'
+'AI integration settings': 'Instellingen AI-integratie'
+'ATL (Fatigue)': 'ATL (Vermoeidheid)'
+'Accumulated fatigue': 'Opgebouwde vermoeidheid'
+'Active days': 'Actieve dagen'
+'Active gear': 'Active gear'
+Activities: Activiteiten
+Activity: Activiteit
+'Activity collections': 'Activity collections'
+'Activity count': 'Aantal activiteiten'
+'Activity heatmap': Activiteitenheatmap
+'Activity locations': Activiteitslocaties
+'Activity start times': 'Starttijden van activiteiten'
+'Acute Training Load (Fatigue) - 7-day exponentially weighted average of your daily training load. Represents short-term fatigue.': 'Acute Training Load (Vermoeidheid) - exponentieel gewogen gemiddelde over 7 dagen van je dagelijkse trainingsbelasting. Geeft de vermoeidheid op korte termijn weer.'
+'Acute:Chronic Ratio - Ratio of ATL to CTL. Indicates injury risk.': 'Acute:Chronic-ratio - Verhouding tussen ATL en CTL. Geeft het blessurerisico aan.'
+'Adaptive & Inclusive Sports': 'Aangepaste & inclusieve sporten'
+'Admin panel': Beheerpaneel
+'Aero sensor': Aerosensor
+Afternoon: Namiddag
+All: Alle
+'All time': 'Sinds het begin'
+'Alpine Ski': Alpineskiën
+'Analyze with WindAhead': 'Analyseren met WindAhead'
+Apr: Apr
+'Ask Mark something...': 'Vraag Mark iets...'
+'Athlete profile': Atletenprofiel
+Aug: Aug
+Average: Gemiddeld
+'Average gradient': 'Gemiddelde helling'
+'Avg distance': 'Avg distance'
+'Avg gradient': 'Gem. helling'
+'Avg pace': 'Gem. tempo'
+'Avg speed': 'Gem. snelheid'
+'Back Country Ski': Toerskiën
+'Back to app': 'Terug naar de app'
+Badges: Badges
+Badminton: Badminton
+Bananas: Bananen
+Basketball: Basketbal
+'Become a sponsor': 'Become a sponsor'
+'Below zone 1': 'Below zone 1'
+Best: Beste
+'Best effort': 'Beste prestatie'
+'Best efforts': 'Beste prestaties'
+'Best efforts for {sportType}': 'Beste prestaties voor {sportType}'
+'Bike light': Fietslicht
+'Bike radar': Fietsradar
+Boxing: Boxing
+'Build zone (–10)': 'Opbouwzone (–10)'
+'Buy me a coffee': 'Buy me a coffee'
+'CTL (Fitness)': 'CTL (Fitheid)'
+Cadence: Cadans
+'Cadence sensor': Cadanssensor
+Cal.: Cal.
+Calories: Calorieën
+'Calories burned': 'Verbrande calorieën'
+'Calories burnt': 'Verbrande calorieën'
+Canoeing: Kanoën
+'Carbon saved': 'Bespaarde CO₂'
+'Challenge consistency': 'Challenge consistentie'
+Challenges: Uitdagingen
+'Chronic Training Load (Fitness) - 42-day exponentially weighted average of your daily training load. Represents long-term training adaptation.': 'Chronic Training Load (Fitheid) - exponentieel gewogen gemiddelde over 42 dagen van je dagelijkse trainingsbelasting. Geeft de trainingsaanpassing op lange termijn weer.'
+'Clear all filters': 'Alle filters wissen'
+'Clear chat': 'Chat wissen'
+Close: Close
+'Cluster tiles': Clustertegels
+Collections: Collections
+Columns: Kolommen
+Commute: Woon-werk
+Commutes: Woon-werkritten
+'Commutes only': 'Enkel woon-werk'
+Compare: Vergelijken
+'Compare to': 'Vergelijken met'
+'Completed {threshold} activities': '{threshold} activiteiten voltooid'
+Components: Onderdelen
+'Configure gear maintenance': 'Onderhoud van uitrusting configureren'
+'Congrats! You achieved {numberOfPRs} PRs in this activity.': "Proficiat! Je behaalde {numberOfPRs} PR's in deze activiteit."
+'Consider reducing load': 'Overweeg de belasting te verminderen'
+Consistency: Consistentie
+Cost: Cost
+'Could not determine your location': 'Could not determine your location'
+Country: Land
+Cricket: Cricket
+Crossfit: Crossfit
+'Crunching the numbers...': 'De cijfers aan het doorrekenen...'
+'Current Status': 'Huidige status'
+Cycling: Fietsen
+'Daily TRIMP': 'Dagelijkse TRIMP'
+'Daily activities': 'Dagelijkse activiteiten'
+Dance: Dansen
+Dark: Dark
+Dashboard: Dashboard
+Date: Datum
+Day: Dag
+'Days away': 'Days away'
+'Days completed': 'Days completed'
+'Days needed': 'Dagen nodig'
+'Days to go': 'Days to go'
+'Daytime stats': 'Daytime statistieken'
+Dec: Dec
+'Decreased compared to yesterday': 'Gedaald ten opzichte van gisteren'
+Density: Dichtheid
+Descent: Descent
+Details: Details
+Device: Apparaat
+Disc Golf: Disc Golf
+Dist.: Afst.
+Distance: Afstand
+'Distance & Elevation': 'Afstand & hoogte'
+'Distance (single activity)': 'Afstand (enkele activiteit)'
+'Distance breakdown': 'Afstand opgesplitst'
+'Distance distribution': Afstandsverdeling
+'Distance in {unit}': 'Afstand in {unit}'
+'Distance over time per gear': 'Afstand in tijd per gear'
+'Distance per month per gear': 'Afstand per maand per gear'
+'Doing a mix of cycling, running, swimming, and strength work increases your variety score.': 'Een mix van fietsen, lopen, zwemmen en krachttraining verhoogt je variatiescore.'
+Download: Download
+Duration: Duur
+'Dusting off the record books...': 'De recordboeken aan het afstoffen...'
+'E-Bike Ride': E-bikerit
+'E-Bike Rides': E-bikeritten
+'E-Mountain Bike Ride': E-mountainbikerit
+'E-Mountain Bike Rides': E-mountainbikeritten
+Eddington: Eddington
+'Eddington number': Eddington-getal
+'Eddington over time': 'Eddington doorheen de tijd'
+'Edit dashboard': 'Dashboard bewerken'
+'Edit this activity': 'Deze activiteit bewerken'
+'Edit this activity collection': 'Edit this activity collection'
+'Edit this segment': 'Edit this segment'
+'Effort vs heart rate': 'Inspanning vs. hartslag'
+'Elapsed time': 'Verstreken tijd'
+'Electronic shifting': 'Elektronisch schakelen'
+Elev: Hgt
+Elev.: Hgt.
+Elevation: Hoogte
+'Elevation (single activity)': 'Hoogte (enkele activiteit)'
+'Elevation gain': 'Elevation gain'
+'Elevation in {unit}': 'Hoogte in {unit}'
+Elliptical: Crosstrainer
+Energy: Energie
+'Energy burned across your activities': 'Verbruikte energie over je activiteiten'
+'Enjoying Dreeve? Support its development': 'Enjoying Dreeve? Support its development'
+'Enter fullscreen mode': 'Volledig scherm'
+Evening: Avond
+Event: Event
+'Excludes commutes': 'Zonder woon-werkritten'
+'Excludes group activities': 'Zonder groepsactiviteiten'
+'Explorer tiles': Explorer-tegels
+'Explorer tiles include all your activities': 'Explorer tiles include all your activities'
+'FTP history': FTP-historiek
+Fastest: Snelste
+Favourite: Favoriet
+Feb: Feb
+Feel: Feel
+'Filling up the bottles...': 'De bidons aan het vullen...'
+'Filter on KOM segments': 'Filteren op KOM-segmenten'
+'Filter on country': 'Filteren op land'
+'Filter on sport type': 'Filteren op sporttype'
+'Filter on starred segments': 'Filteren op segmenten met ster'
+'First activity in {countryName}': 'Eerste activiteit in {countryName}'
+'First-ever activity recorded': 'Allereerste geregistreerde activiteit'
+Firsts: 'Eerste keren'
+Fitness: Fitheid
+'Fitness may be declining due to low recent training load': 'Je fitheid kan dalen door een lage recente trainingsbelasting'
+'Fitness may decline': 'Fitheid kan dalen'
+'Foot pod': Voetsensor
+'For example, an Eddington number of 70 would imply that a cyclist has cycled at least 70 km or miles in a day on at least 70 occasions. Achieving a high Eddington number is difficult, since moving from, say, 70 to 75 will (probably) require more than five new long-distance workouts, since any workout shorter than 75 km or miles will no longer be included in the reckoning.': 'Bijvoorbeeld: een Eddington-getal van 70 betekent dat een fietser op minstens 70 dagen minstens 70 km of mijl per dag heeft gefietst. Een hoog Eddington-getal behalen is moeilijk, want van bijvoorbeeld 70 naar 75 gaan vraagt (waarschijnlijk) meer dan vijf nieuwe lange trainingen, omdat elke training korter dan 75 km of mijl niet langer meetelt.'
+'Form (TSB)': 'Vorm (TSB)'
+Fri: Vr
+Fri.: Vr.
+'Front rings': Kettingbladen
+'Front shifts': 'Schakelingen voor'
+GAP: GAP
+Gear: Uitrusting
+'Gear maintenance': 'Onderhoud van uitrusting'
+'Gear that is retired is disabled by default.': 'Uitrusting die niet meer actief is, wordt standaard uitgeschakeld.'
+'Go to activity': 'Naar activiteit'
+Goal: Doel
+Golf: Golf
+'Good training variety': 'Goede trainingsvariatie'
+'Google searches': Google-zoekopdrachten
+Grad.: Hel.
+Gradient: Helling
+'Gravel Ride': Gravelrit
+'Gravel Rides': Gravelritten
+'Group activities': Groepsactiviteiten
+'Group activities only': 'Enkel groepsactiviteiten'
+'Group activity': Groepsactiviteit
+"Guidelines vary by individual; for more information see Joe Friel's 'The Cyclist's Training Bible' or TrainingPeaks' research documentation.": "Richtlijnen verschillen per persoon; zie voor meer informatie 'The Cyclist's Training Bible' van Joe Friel of de onderzoeksdocumentatie van TrainingPeaks."
+HIIT: HIIT
+HR: HS
+'Hand Cycle': Handbike
+'Heart rate': Hartslag
+'Heart rate monitor': Hartslagmeter
+'Heart rate zone distribution over the past month. For effective polarized training, your workouts should primarily fall within the following zones': 'Verdeling over de hartslagzones in de afgelopen maand. Voor effectieve gepolariseerde training zouden je trainingen voornamelijk in de volgende zones moeten vallen'
+'Heart rate zones': Hartslagzones
+Heatmap: Heatmap
+High: Hoog
+'High fatigue levels may increase injury or burnout risk. Consider reducing load and prioritizing recovery': 'Een hoge vermoeidheid kan het risico op blessures of burn-out verhogen. Overweeg de belasting te verminderen en voorrang te geven aan herstel'
+'High monotony - increase variety': 'Hoge monotonie - zorg voor meer variatie'
+'High risk': 'Hoog risico'
+'Highlight explorer tiles': 'Explorer-tegels markeren'
+'Highlight visited countries': 'Bezochte landen markeren'
+'Highly recovered and ready to perform': 'Goed hersteld en klaar om te presteren'
+Hike: Hike
+Hikes: Hikes
+History: Historiek
+'History (6 weeks)': 'Historiek (6 weken)'
+'How diverse is your training': 'Hoe gevarieerd is je training'
+'How hard is your typical training session': 'Hoe zwaar is je gemiddelde trainingssessie'
+'How long is your typical training session': 'Hoe lang duurt je gemiddelde trainingssessie'
+'How much do you train on average per week': 'Hoeveel train je gemiddeld per week'
+'How much training you do in total on days you train.': 'Hoeveel je in totaal traint op dagen dat je traint.'
+'How often do you train': 'Hoe vaak train je'
+'Ice Skate': Schaatsen
+Imperial: Imperiaal
+"In that time, I’ve covered {totalDistance}, that's {numberOfTripsAroundTheWorld} trips around the world 🌍 or {numberOfTripsToTheMoonPercent}% of the way to the moon 🌕, and climbed an elevation of {totalElevation} which is {timesMountEverest} times Mount Everest 🏔. All up that's {totalTimeRecorded} of moving time 🎉.": 'In die tijd heb ik {totalDistance} afgelegd, dat is {numberOfTripsAroundTheWorld} keer rond de wereld 🌍 of {numberOfTripsToTheMoonPercent}% van de weg naar de maan 🌕, en heb ik in totaal {totalElevation} geklommen, dat is {timesMountEverest} keer de Mount Everest 🏔. Alles samen is dat {totalTimeRecorded} beweegtijd 🎉.'
+'Increased compared to yesterday': 'Gestegen ten opzichte van gisteren'
+'Individual thresholds vary based on fitness level.': 'Individuele drempels verschillen naargelang het fitheidsniveau.'
+'Inline Skate': Inlineskaten
+'Installed on {component}': 'Installed on {component}'
+Intensity: Intensiteit
+Jan: Jan
+Jul: Jul
+Jun: Jun
+KOM: KOM
+Kayaking: Kajakken
+'Kite Surf': Kitesurfen
+Lap: Ronde
+'Last 12 months': 'Last 12 months'
+'Last 30 days': 'Laatste 30 dagen'
+'Last 7 days training load': 'Trainingsbelasting laatste 7 dagen'
+'Last activity': 'Laatste activiteit'
+'Last effort': 'Laatste prestatie'
+'Last effort date': 'Datum laatste prestatie'
+'Last maintenance': 'Laatste onderhoud'
+'Last month': 'Vorige maand'
+'Last used': 'Last used'
+'Last week': 'Vorige week'
+'Last {numberOfDays} days': 'Laatste {numberOfDays} dagen'
+Lifetime: 'Sinds het begin'
+Light: Light
+'Light fatigue with good readiness. A great balance for quality training or longer efforts': 'Lichte vermoeidheid met goede paraatheid. Een mooi evenwicht voor kwaliteitstrainingen of langere inspanningen'
+Load: Belasting
+'Load (CTL/ATL)': 'Belasting (CTL/ATL)'
+Loading...: 'Aan het laden...'
+'Location access is blocked. Allow it in your browser settings to see your location.': 'Location access is blocked. Allow it in your browser settings to see your location.'
+'Locations over the globe': 'Locaties over de hele wereld'
+'Long run': Duurloop
+'Longest activity': 'Langste activiteit'
+'Longest activity (h)': 'Langste activiteit (u)'
+'Longest day': 'Langste dag'
+'Longest distance': 'Langste afstand'
+'Longest streak': 'Longest streak'
+'Longest streaks': 'Langste reeksen'
+'Love Dreeve? Get a free sticker': 'Love Dreeve? Get a free sticker'
+Low: Laag
+'Low risk': 'Laag risico'
+'Low training load': 'Lage trainingsbelasting'
+Maintenance: Onderhoud
+'Manage activities': 'Activiteiten beheren'
+'Manage activity collections': 'Manage activity collections'
+'Manage gear': 'Uitrusting beheren'
+'Manage recording devices': 'Registratietoestellen beheren'
+'Manage segments': 'Manage segments'
+'Map settings': Kaartinstellingen
+'Map tiles at zoom level 14 that your activities passed through': 'Kaarttegels op zoomniveau 14 waar je activiteiten doorheen gingen'
+Mar: Mrt
+Max: Max
+'Max cluster': 'Grootste cluster'
+'Max gradient': 'Max. helling'
+'Max square': 'Grootste vierkant'
+May: Mei
+Medium: Gemiddeld
+Message: Message
+Metric: Metrisch
+'Metrics settings': 'Instellingen meetwaarden'
+Milestones: Mijlpalen
+'Mind & Body Sports': 'Mind & body-sporten'
+'Moderate fatigue with stable fitness. Well suited for consistent day-to-day training': 'Matige vermoeidheid met stabiele fitheid. Zeer geschikt voor regelmatige dagelijkse training'
+'Moderate monotony': 'Matige monotonie'
+Mon: Ma
+Mon.: Ma.
+Monotony: Monotonie
+Month: Month
+Monthly: Maandelijks
+'Monthly stats': 'Maandelijkse stats'
+Morning: Ochtend
+'Most elevation': 'Meeste hoogtemeters'
+'Most recent activities': 'Meest recente activiteiten'
+'Most recent challenges': 'Meest recente uitdagingen'
+'Most recent milestones': 'Meest recente mijlpalen'
+'Mountain Bike Ride': Mountainbikerit
+'Mountain Bike Rides': Mountainbikeritten
+'Moving time': Beweegtijd
+'Moving time by sport': 'Beweegtijd per sport'
+'Moving time in hours': 'Beweegtijd in uren'
+'Muscle oxygen sensor': Spierzuurstofsensor
+Name: Naam
+Neutral: Neutraal
+'New personal best for': 'Nieuw persoonlijk record voor'
+'New version available': 'New version available'
+'Newer activity: {name}': 'Newer activity: {name}'
+'Next milestone': 'Volgende mijlpaal'
+Night: Nacht
+'No activities': 'Geen activiteiten'
+'No data available': 'Geen gegevens beschikbaar'
+'No maintenance tasks': 'No maintenance tasks'
+'No milestones achieved yet': 'Nog geen mijlpalen behaald'
+'No other options to compare with': 'Geen andere opties om mee te vergelijken'
+'No purchase price set': 'No purchase price set'
+None: Geen
+'Nordic Ski': Langlaufen
+Normal: Normal
+'Normalized power': 'Genormaliseerd vermogen'
+'Not fitted': 'Not fitted'
+'Not supported': 'Niet ondersteund'
+Nov: Nov
+Now: Nu
+'Number of activities': 'Aantal activiteiten'
+'Number of activities per month': 'Aantal activiteiten per maand'
+'Number of times completed': 'Aantal keer voltooid'
+Oct: Okt
+'Older activity: {name}': 'Older activity: {name}'
+'Older effort': 'Oudere prestatie'
+'On average, that works out to {dailyAverage} per day, a weekly average of {weeklyAverage} and a monthly average of {monthlyAverage} 🐣.': 'Gemiddeld komt dat neer op {dailyAverage} per dag, {weeklyAverage} per week en {monthlyAverage} per maand 🐣.'
+'On your own': Alleen
+'One of your gear maintenance tasks is due': 'Een van je onderhoudstaken moet uitgevoerd worden'
+"Oops, looks like you've wandered off the map! 🗺️": 'Oeps, het lijkt erop dat je van de kaart bent afgedwaald! 🗺️'
+'Open Water Swim': Openwaterzwemmen
+'Optimal training range': 'Optimaal trainingsbereik'
+'Original file': 'Original file'
+Other: Andere
+'Outdoor Sports': Buitensporten
+Over-fatigued: Oververmoeid
+'Over-fatigued (–30)': 'Oververmoeid (–30)'
+'Overall weekly training stress': 'Totale wekelijkse trainingsstress'
+'Overdue by {amount}': '{amount} te laat'
+'PB badges': PR-badges
+'PET bottles produced': 'Geproduceerde PET-flessen'
+Pace: Tempo
+Padel: Padel
+'Peak fresh': 'Maximaal fris'
+'Peak power outputs': Piekvermogens
+'Per {unit}': 'Per {unit}'
+'Perceived exertion': 'Perceived exertion'
+'Personal bests': 'Persoonlijke records'
+Photo: Foto
+Photos: "Foto's"
+'Physical Therapy': Kinesitherapie
+'Pickle Ball': Pickleball
+Pilates: Pilates
+'Pizza slices': Pizzapunten
+'Polarised training (last 30 days)': 'Gepolariseerde training (laatste 30 dagen)'
+'Pool Swim': Zwembadzwemmen
+Power: Kracht
+'Power meter': Vermogensmeter
+'Powered by an estimated {caloriesBurned} calories, or roughly {numberOfPizzaSlices} slices of pizza 🍕.': 'Aangedreven door naar schatting {caloriesBurned} calorieën, of ongeveer {numberOfPizzaSlices} pizzapunten 🍕.'
+'Prev year': 'Vorig jaar'
+Previous: Vorige
+Progress: Progress
+'Purchase price': Aankoopprijs
+Race: Wedstrijd
+'Racing Score': 'Racing Score'
+'Racquet & Paddle Sports': 'Racket- & peddelsporten'
+'Racquet Ball': Racquetball
+Rank: Rang
+Ranking: Rangschikking
+'Reached a max cluster of {tileCount} tiles': 'Reached a max cluster of {tileCount} tiles'
+'Reached a {size}×{size} max square': 'Reached a {size}×{size} max square'
+'Reached {threshold} hours total moving time': '{threshold} uur totale beweegtijd bereikt'
+'Reached {threshold} total distance': '{threshold} totale afstand bereikt'
+'Reached {threshold} total elevation': '{threshold} totale hoogtemeters bereikt'
+'Rear cogs': Achtertandwielen
+'Rear shifts': 'Schakelingen achter'
+'Recalculating your suffer score...': 'Je suffer score aan het herberekenen...'
+Recent: Recent
+'Recent effort': 'Recente prestatie'
+'Recording device': 'Recording device'
+'Recording devices': Registratietoestellen
+'Recovery Timeline': Hersteltijdlijn
+'Recovery forecast': Herstelprognose
+'Reduced carbon emission by commuting': 'Verminderde CO₂-uitstoot door woon-werkverkeer'
+'Register maintenance': 'Onderhoud registreren'
+'Rest Days': Rustdagen
+'Rest days': Rustdagen
+'Rest days in last 7 days': 'Rustdagen in de laatste 7 dagen'
+'Rest days vs. active days': 'Rustdagen vs. actieve dagen'
+Retired: Retired
+Rewind: Terugblik
+'Rewind comparisons are only available on larger screens.': 'Terugblikvergelijkingen zijn enkel beschikbaar op grotere schermen.'
+Ride: Rit
+Rides: Ritten
+'Risk of detraining': 'Risico op conditieverlies'
+'Rock Climbing': Bergbeklimmen
+'Roller Ski': Rolski
+'Rolling stats': 'Voortschrijdende statistieken'
+Rowing: Roeien
+Run: Loop
+Running: Lopen
+Runs: Hardlopen
+Sail: Zeilen
+Sat: Zat
+Sat.: Za.
+Search: Zoeken
+'Search by name or place...': 'Search by name or place...'
+'Search segment...': 'Zoek segment...'
+"See what's new": "See what's new"
+Segments: Segmenten
+Sep: Sep
+Shifting: Schakelen
+'Show all columns': 'Alle kolommen tonen'
+'Show information': 'Informatie tonen'
+'Show my location': 'Show my location'
+'Show photos': 'Show photos'
+'Shows how your TSB (Form) and A:C Ratio will recover over time if you take complete rest days.': 'Toont hoe je TSB (Vorm) en A:C-ratio in de tijd herstellen als je volledige rustdagen neemt.'
+'Similar activities': 'Gelijkaardige activiteiten'
+"Since I began working out {numberOfDaysAgo} ago on {startDate}, I've logged {totalDaysOfWorkingOut} active days of training and adventure.": 'Sinds ik {numberOfDaysAgo} geleden op {startDate} begon te sporten, heb ik {totalDaysOfWorkingOut} actieve dagen van training en avontuur gelogd.'
+Skateboard: Skateboarden
+Skating: Skaten
+'Slightly fresh': 'Licht fris'
+'Smart trainer': 'Slimme fietstrainer'
+Snowboard: Snowboarden
+Snowshoe: Sneeuwschoenwandelen
+Soccer: Voetbal
+'Someone who regularly trains for 90 minutes will score higher than someone doing mostly short sessions.': 'Wie regelmatig 90 minuten traint, scoort hoger dan wie vooral korte sessies doet.'
+Sort: Sorteren
+Speed: Snelheid
+'Speed & cadence sensor': 'Snelheids- & cadanssensor'
+'Speed sensor': Snelheidssensor
+Splits: Tussentijden
+'Sport variety': Sportvariatie
+Squash: Squash
+Stage: Stage
+Stages: Stages
+'Stair Stepper': Trappenmachine
+'Stand Up Paddling': 'Stand-up paddling'
+'Start times': Starttijden
+'Stats per weekday': 'Stats per weekdag'
+Status: Status
+'Streak started on {date}': 'Reeks gestart op {date}'
+Streaks: Reeksen
+Strong: Strong
+Sun: Zon
+Sun.: Zo.
+Surfing: Surfen
+System: System
+'TSB (Form)': 'TSB (Vorm)'
+'TSB positive in': 'TSB positief binnen'
+'Table Tennis': Tafeltennis
+'Taper sweet-spot (+15)': 'Taper-sweetspot (+15)'
+Target: Target
+'Team Sports': Teamsporten
+Temperature: Temperatuur
+'Temperature sensor': Temperatuursensor
+Tennis: Tennis
+"That's 1.5 times the distance to the edge of space": 'Dat is 1,5 keer de afstand tot de rand van de ruimte'
+"That's 100 days of commitment, triple digits!": 'Dat zijn 100 dagen toewijding, drie cijfers!'
+"That's 2 activities per week for nearly 5 years": 'Dat zijn 2 activiteiten per week gedurende bijna 5 jaar'
+"That's 2 full days of non-stop activity": 'Dat zijn 2 volle dagen onafgebroken activiteit'
+"That's 2 full years of daily activity, incredible!": 'Dat zijn 2 volle jaren dagelijkse activiteit, ongelooflijk!'
+"That's 2 months without missing a day": 'Dat zijn 2 maanden zonder een dag over te slaan'
+"That's 2 months without stopping": 'Dat zijn 2 maanden zonder te stoppen'
+"That's 250 days, over two thirds of a year": 'Dat zijn 250 dagen, meer dan twee derde van een jaar'
+"That's 3 activities per week for nearly 5 years": 'Dat zijn 3 activiteiten per week gedurende bijna 5 jaar'
+"That's 3 weeks straight, they say it takes 21 days to build a habit": 'Dat zijn 3 weken aan een stuk, men zegt dat het 21 dagen duurt om een gewoonte op te bouwen'
+"That's 4 months of unbroken daily activity": 'Dat zijn 4 maanden ononderbroken dagelijkse activiteit'
+"That's 45 days, halfway to a full quarter": 'Dat zijn 45 dagen, halfweg een volledig kwartaal'
+"That's 5 months, nearly half a year without a rest day": 'Dat zijn 5 maanden, bijna een half jaar zonder rustdag'
+"That's 500 days, well beyond a year of daily activity": 'Dat zijn 500 dagen, ruim meer dan een jaar dagelijkse activiteit'
+"That's a full day of non-stop movement": 'Dat is een volle dag onafgebroken beweging'
+"That's a full fortnight of daily activity": 'Dat zijn twee volle weken dagelijkse activiteit'
+"That's a full month of non-stop activity": 'Dat is een volle maand onafgebroken activiteit'
+"That's a full month without a rest day": 'Dat is een volle maand zonder rustdag'
+"That's a full quarter of daily activity": 'Dat is een volledig kwartaal dagelijkse activiteit'
+"That's a full week of daily activity": 'Dat is een volle week dagelijkse activiteit'
+"That's a full week of non-stop movement": 'Dat is een volle week onafgebroken beweging'
+"That's a full year of daily activity": 'Dat is een volledig jaar dagelijkse activiteit'
+"That's about 3.5 months of continuous movement": 'Dat is ongeveer 3,5 maanden onafgebroken beweging'
+"That's about one activity per week for a year": 'Dat is ongeveer één activiteit per week gedurende een jaar'
+"That's about one activity per week for half a year": 'Dat is ongeveer één activiteit per week gedurende een half jaar'
+"That's about one activity per week for two months": 'Dat is ongeveer één activiteit per week gedurende twee maanden'
+"That's almost 2 activities per week for a year": 'Dat zijn bijna 2 activiteiten per week gedurende een jaar'
+"That's almost 21 days of continuous movement": 'Dat is bijna 21 dagen onafgebroken beweging'
+"That's almost 3 activities per week for 7 years": 'Dat zijn bijna 3 activiteiten per week gedurende 7 jaar'
+"That's an activity almost every day for 27 years": 'Dat is bijna elke dag een activiteit gedurende 27 jaar'
+"That's an activity every day for almost 7 years": 'Dat is elke dag een activiteit gedurende bijna 7 jaar'
+"That's an activity every day for nearly 11 years": 'Dat is elke dag een activiteit gedurende bijna 11 jaar'
+"That's an activity every day for nearly 14 years": 'Dat is elke dag een activiteit gedurende bijna 14 jaar'
+"That's an activity every day for over 20 years": 'Dat is elke dag een activiteit gedurende meer dan 20 jaar'
+"That's an activity every day for over 8 years": 'Dat is elke dag een activiteit gedurende meer dan 8 jaar'
+"That's climbing Mount Everest twice": 'Dat is twee keer de Mount Everest beklimmen'
+"That's climbing to the edge of space and back 5 times": 'Dat is 5 keer naar de rand van de ruimte klimmen en terug'
+"That's cruising altitude of a commercial airplane": 'Dat is de kruishoogte van een lijnvliegtuig'
+"That's deeper than the deepest known cave on Earth": 'Dat is dieper dan de diepste gekende grot op aarde'
+"That's five times around the Earth": 'Dat is vijf keer rond de aarde'
+"That's half a year without skipping a single day": 'Dat is een half jaar zonder ook maar één dag over te slaan'
+"That's higher than Felix Baumgartner's space jump": 'Dat is hoger dan de ruimtesprong van Felix Baumgartner'
+"That's higher than the International Space Station's orbit": 'Dat is hoger dan de baan van het Internationaal Ruimtestation'
+"That's higher than the summit of Mont Blanc": 'Dat is hoger dan de top van de Mont Blanc'
+"That's more than 10 days of non-stop movement": 'Dat is meer dan 10 dagen onafgebroken beweging'
+"That's more than 10 months of continuous movement": 'Dat is meer dan 10 maanden onafgebroken beweging'
+"That's more than 2 Eiffel Towers stacked up": 'Dat is meer dan 2 Eiffeltorens op elkaar'
+"That's more than 2.5 times around the Earth": 'Dat is meer dan 2,5 keer rond de aarde'
+"That's more than 4 days of continuous activity": 'Dat is meer dan 4 dagen onafgebroken activiteit'
+"That's more than 4 months of non-stop activity": 'Dat is meer dan 4 maanden onafgebroken activiteit'
+"That's more than 41 days of non-stop movement": 'Dat is meer dan 41 dagen onafgebroken beweging'
+"That's more than 5 activities per week for 7 years": 'Dat zijn meer dan 5 activiteiten per week gedurende 7 jaar'
+"That's more than 8 times the height of Mount Everest": 'Dat is meer dan 8 keer de hoogte van de Mount Everest'
+"That's more than a full year of non-stop movement": 'Dat is meer dan een volledig jaar onafgebroken beweging'
+"That's more than halfway around the Earth": 'Dat is meer dan halfweg rond de aarde'
+"That's more than halfway to the ISS": 'Dat is meer dan halfweg naar het ISS'
+"That's more than the circumference of Mars": 'Dat is meer dan de omtrek van Mars'
+"That's more than the distance from Earth to the Moon": 'Dat is meer dan de afstand van de aarde tot de maan'
+"That's nearly 3 months of non-stop activity": 'Dat is bijna 3 maanden onafgebroken activiteit'
+"That's nearly 4 activities per week for 7 years": 'Dat zijn bijna 4 activiteiten per week gedurende 7 jaar'
+"That's nearly 5 activities per week for a year": 'Dat zijn bijna 5 activiteiten per week gedurende een jaar'
+"That's nearly 7 months of non-stop activity": 'Dat is bijna 7 maanden onafgebroken activiteit'
+"That's nearly climbing Mount Everest 3 times": 'Dat is bijna 3 keer de Mount Everest beklimmen'
+"That's nearly the altitude of the International Space Station": 'Dat is bijna de hoogte van het Internationaal Ruimtestation'
+"That's nearly twice around the Earth": 'Dat is bijna twee keer rond de aarde'
+"That's nearly twice the altitude of the International Space Station": 'Dat is bijna twee keer de hoogte van het Internationaal Ruimtestation'
+"That's over 5.5 months of continuous movement": 'Dat is meer dan 5,5 maanden onafgebroken beweging'
+"That's roughly a quarter of the way around the Earth": 'Dat is ongeveer een kwart rond de aarde'
+"That's roughly the diameter of Jupiter": 'Dat is ongeveer de diameter van Jupiter'
+"That's roughly the diameter of Neptune": 'Dat is ongeveer de diameter van Neptunus'
+"That's roughly the distance from London to Perth": 'Dat is ongeveer de afstand van Londen naar Perth'
+"That's roughly the distance from Madrid to Barcelona": 'Dat is ongeveer de afstand van Madrid naar Barcelona'
+"That's roughly the distance light travels in one second": 'Dat is ongeveer de afstand die licht in één seconde aflegt'
+"That's roughly the length of France": 'Dat is ongeveer de lengte van Frankrijk'
+"That's roughly the length of the Danube river": 'Dat is ongeveer de lengte van de Donau'
+"That's roughly the length of the island of Jamaica": 'Dat is ongeveer de lengte van het eiland Jamaica'
+"That's taller than the Empire State Building": 'Dat is hoger dan het Empire State Building'
+"That's the altitude of a satellite in low Earth orbit": 'Dat is de hoogte van een satelliet in een lage baan om de aarde'
+"That's the circumference of the Earth": 'Dat is de omtrek van de aarde'
+"That's the distance from Earth to the Moon": 'Dat is de afstand van de aarde tot de maan'
+"That's the distance to the edge of space, straight up": 'Dat is de afstand tot de rand van de ruimte, recht omhoog'
+"That's the edge of space, the Kármán line": 'Dat is de rand van de ruimte, de Kármánlijn'
+"That's the height of Mount Everest": 'Dat is de hoogte van de Mount Everest'
+"That's the height of the Eiffel Tower": 'Dat is de hoogte van de Eiffeltoren'
+"That's the length of the Great Wall of China": 'Dat is de lengte van de Chinese Muur'
+"That's three quarters of the way around the Earth": 'Dat is driekwart rond de aarde'
+"That's {number} days of at least {distance}": 'Dat zijn {number} dagen van minstens {distance}'
+"That's {percentage}% of all countries 🌍": 'Dat is {percentage}% van alle landen 🌍'
+'The Eddington number in the context of cycling or running is defined as the maximum number E such that the athlete has covered at least E km on at least E days.': 'Het Eddington-getal bij fietsen of lopen is het grootste getal E waarvoor de atleet op minstens E dagen minstens E km heeft afgelegd.'
+'The largest connected group of cluster tiles': 'The largest connected group of cluster tiles'
+'The largest square of visited tiles': 'The largest square of visited tiles'
+"The page you're looking for doesn't exist or may have been moved.": 'De pagina die je zoekt bestaat niet of is mogelijk verplaatst.'
+Theme: Theme
+'These badges are dynamically created. You can use them in any &lt;img&gt; tag': 'Deze badges worden dynamisch aangemaakt. Je kan ze gebruiken in eender welke &lt;img&gt;-tag'
+'These components are not installed on any gear at the moment.': 'These components are not installed on any gear at the moment.'
+Thinking...: 'Aan het nadenken...'
+'This chart summarizes how you train. Each axis reflects a different normalized training habit, so higher values mean stronger emphasis.': 'Deze grafiek vat samen hoe je traint. Elke as geeft een andere genormaliseerde trainingsgewoonte weer, dus hogere waarden betekenen een sterkere nadruk.'
+'This feature is currently disabled': 'Deze functie is momenteel uitgeschakeld'
+'This month': 'Deze maand'
+'This week': 'Deze week'
+Thu: Do
+Thu.: Do.
+'Tiles visited for the first time in this activity': 'Tiles visited for the first time in this activity'
+Time: Tijd
+'Time in gear': 'Tijd per versnelling'
+'Time in zone': 'Tijd in zone'
+'Times completed': 'Aantal keer voltooid'
+Title: Titel
+'To enable it, configure this in the admin panel': 'Schakel dit in via het beheerpaneel'
+'Toggle sidebar': 'Zijbalk in-/uitklappen'
+'Top 10': 'Top 10'
+'Total distance per month': 'Totale afstand per maand'
+'Total elevation per month': 'Totale hoogtemeters per maand'
+'Total hours spent per gear': 'Totaal aantal uren per uitrusting'
+'Total hours spent per sport type': 'Totaal aantal uren per sporttype'
+'Total moving time per month': 'Totale beweegtijd per maand'
+'Total time': 'Total time'
+'Trail Run': Trailrun
+'Trail Runs': Trailruns
+'Training 4–5 days every week scores higher than doing everything in one or two days.': '4–5 dagen per week trainen scoort hoger dan alles op één of twee dagen doen.'
+'Training Impulse - Training load metric that accounts for intensity and duration.': 'Training Impulse - Maatstaf voor trainingsbelasting die rekening houdt met intensiteit en duur.'
+'Training Load Analysis': 'Analyse trainingsbelasting'
+'Training Monotony - Ratio of average daily load to standard deviation. Indicates training variety.': 'Trainingsmonotonie - Verhouding tussen de gemiddelde dagelijkse belasting en de standaardafwijking. Geeft de variatie in training aan.'
+'Training Stress Balance (Form) – The difference between fitness (CTL) and fatigue (ATL). Reflects how ready you are to perform.': 'Training Stress Balance (Vorm) – Het verschil tussen fitheid (CTL) en vermoeidheid (ATL). Geeft aan hoe klaar je bent om te presteren.'
+'Training goals': Trainingsdoelen
+'Training load is accumulating, recovery days are important': 'De trainingsbelasting stapelt zich op, hersteldagen zijn belangrijk'
+Trip: Trip
+Tue: Di
+Tue.: Di.
+'Unchanged compared to yesterday': 'Onveranderd ten opzichte van gisteren'
+Unspecified: 'Niet gespecificeerd'
+'Upcoming maintenance': 'Komend onderhoud'
+'Upcoming numbers': 'Upcoming numbers'
+Usage: Usage
+'User badge': Gebruikersbadge
+'Velo Mobile': Velomobiel
+'Velo Mobiles': Velomobielen
+'Very high': 'Heel hoog'
+'Very strong': 'Very strong'
+'Very weak': 'Very weak'
+'View all': 'Bekijk alles'
+'View details': 'Details bekijken'
+'View this month': 'Deze maand bekijken'
+'Virtual Ride': 'Virtuele rit'
+'Virtual Rides': 'Virtuele ritten'
+'Virtual Row': 'Virtueel roeien'
+'Virtual Run': 'Virtuele loop'
+'Virtual Runs': 'Virtuele loopsessies'
+'Virtual workout assistant': 'Virtuele trainingsassistent'
+'Visited tiles': 'Bezochte tegels'
+Volleyball: Volleybal
+Volume: Volume
+Wakeboarding: Wakeboarden
+Walk: Wandeling
+Walking: Wandelen
+Walks: Wandelingen
+'Water Sports': Watersport
+'Waxing the chain...': 'De ketting aan het waxen...'
+'We detected following issues': 'We hebben de volgende problemen gedetecteerd'
+"We've been busy! Check out what's new and read about any breaking changes before you update.": "We've been busy! Check out what's new and read about any breaking changes before you update."
+Weak: Weak
+Weather: Weather
+Wed: Woe
+Wed.: Wo.
+Weekly: Wekelijks
+'Weekly Strain': 'Wekelijkse strain'
+'Weekly Strain - Product of weekly training load and monotony. Overall training stress.': 'Wekelijkse strain - Product van de wekelijkse trainingsbelasting en monotonie. Totale trainingsstress.'
+'Weekly TRIMP': 'Wekelijkse TRIMP'
+'Weekly stats': 'Wekelijkse stats'
+Weight: Gewicht
+'Weight Training': Gewichtstraining
+'Weight history': Gewichtshistoriek
+Wheelchair: Rolstoel
+'Wind Surf': Windsurfen
+'Winter Sports': Wintersport
+'With others': 'Met anderen'
+Workout: Training
+'Workout assistant': Trainingsassistent
+'Workout type': 'Type training'
+World: Wereld
+Year: Jaar
+Yearly: Jaarlijks
+'Yearly stats': Jaarstatistieken
+Yoga: Yoga
+"You weren't alone out there": 'Je was er niet alleen'
+'Your Dreeve badge': 'Je Dreeve-badge'
+'Your PB badge': 'Je PR-badge'
+'Your Zwift badge': 'Je Zwift-badge'
+'Your badge(s)': 'Je badge(s)'
+Z1: Z1
+'Z1-2 (Low)': 'Z1-2 (Laag)'
+Z2: Z2
+Z3: Z3
+'Z3 (Mod)': 'Z3 (Matig)'
+Z4: Z4
+'Z4-5 (High)': 'Z4-5 (Hoog)'
+Z5: Z5
+'Zone 1': 'Zone 1'
+'Zone 2': 'Zone 2'
+'Zone 3': 'Zone 3'
+'Zone 4': 'Zone 4'
+'Zone 5': 'Zone 5'
+'Zwift Statistics': Zwift-statistieken
+'Zwift badge': Zwift-badge
+'Zwift stats': Zwift-statistieken
+'Zwift world': 'Zwift world'
+activities: activiteiten
+and: en
+avg: gem.
+bpm: bpm
+clear: wissen
+compare: vergelijken
+countries: landen
+day(s): dag(en)
+days: dagen
+'days needed for next Eddington': 'dagen nodig voor volgende Eddington'
+'days to reach {n}': 'dagen om {n} te bereiken'
+'every {interval}': 'elke {interval}'
+hours: uur
+hrs: u
+humidity: luchtvochtigheid
+'last {numberOfDays} days': 'laatste {numberOfDays} dagen'
+max: max
+min: min
+months: maanden
+more: meer
+n/a: n.v.t.
+never: nooit
+'of your activities': 'van je activiteiten'
+'on': op
+per: per
+'per activity': 'per activiteit'
+'per hour': 'per uur'
+'reached Eddington number {number}': 'Eddington-getal {number} bereikt'
+rpm: rpm
+to: tot
+total: totaal
+watts: watt
+weeks: weken
+workouts: trainingen
+'{amount} left': 'nog {amount}'
+'{daysSinceLastTagged} days': '{daysSinceLastTagged} dagen'
+'{days} consecutive days of activity': '{days} opeenvolgende dagen activiteit'
+'{hoursSinceLastTagged} hours': '{hoursSinceLastTagged} uur'
+'{left} vs {right}': '{left} vs {right}'
+'{maintenanceTaskLabel} every {interval}': '{maintenanceTaskLabel} elke {interval}'
+'{numberOfActivities} activities': '{numberOfActivities} activiteiten'
+'{numberOfActivities} activities in {year}': '{numberOfActivities} activiteiten in {year}'
+'{numberOfDays} days': '{numberOfDays} days'
+'{numberOfDays}-day rolling window': 'Voortschrijdend venster van {numberOfDays} dagen'
+'{numberOfMonths} months': '{numberOfMonths} maanden'
+'{numberOfRestDays} rest days': '{numberOfRestDays} rest days'
+'{numberOfResults} photos': "{numberOfResults} foto's"
+'{numberOfResults} results': '{numberOfResults} resultaten'
+'{numberOfResults} routes': '{numberOfResults} routes'
+'{numberOfRoutes} nearby route(s)': '{numberOfRoutes} route(s) in de buurt'
+'{numberOfTiles} new tile(s)': '{numberOfTiles} new tile(s)'
+'{numberOfWeeks} weeks': '{numberOfWeeks} weken'
+'{threshold} hours using {gearName}': '{threshold} uur met {gearName}'
+'{threshold} total distance using {gearName}': '{threshold} totale afstand met {gearName}'
+'{threshold} total elevation using {gearName}': '{threshold} totale hoogtemeters met {gearName}'

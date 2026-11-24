@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Page\Gear;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Gear\Gear;
 use App\Domain\Gear\GearRepository;
@@ -18,10 +19,11 @@ use App\Infrastructure\Cache\Context\AuthenticatedCacheContext;
 use App\Infrastructure\Cache\Context\CacheContexts;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Time\Clock\Clock;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Twig\Environment;
 
 #[AsController]
@@ -50,10 +52,13 @@ final readonly class GearMaintenanceRequestHandler
                     RootCacheTag::GEAR,
                 ),
                 cacheContexts: CacheContexts::of(AuthenticatedCacheContext::class),
-                ttlInSeconds: $this->clock->getCurrentDateTimeImmutable()->getSecondsUntilMidnight(),
+                ttl: $this->clock->now()->getDurationUntilMidnight(),
             ),
             render: fn (): string => $this->renderFor(),
             navigationSection: NavigationSection::GEAR,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Maintenance'),
+            ),
         );
     }
 
@@ -68,7 +73,7 @@ final readonly class GearMaintenanceRequestHandler
             ]);
         }
 
-        $now = $this->clock->getCurrentDateTimeImmutable();
+        $now = $this->clock->now();
         $gearComponents = $this->gearComponentRepository->findAll();
         $gearsWithComponents = [];
         $componentsNotFitted = GearComponents::empty();

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller\Api\V1\Metrics;
 
 use App\Infrastructure\Security\Token\ApiToken;
@@ -28,6 +30,9 @@ class StreaksRequestHandlerTest extends ControllerWebTestCase
         $this->assertMatchesJsonSnapshot((string) $this->client->getResponse()->getContent());
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function provideQueryStrings(): iterable
     {
         yield 'all sport types' => [''];

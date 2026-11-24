@@ -13,28 +13,30 @@ use App\Domain\Gear\Maintenance\GearComponent;
 use App\Domain\Gear\Maintenance\GearComponentId;
 use App\Domain\Gear\Maintenance\GearComponentRepository;
 use App\Domain\Gear\Maintenance\GearMaintenanceRepository;
+use App\Domain\Gear\Maintenance\Installation\GearComponentInstallation;
+use App\Domain\Gear\Maintenance\Installation\InstallationParent;
 use App\Domain\Gear\Maintenance\Installation\UsageWindow;
 use App\Domain\Gear\Maintenance\Installation\UsageWindows;
 use App\Domain\Gear\Maintenance\Log\GearMaintenanceLog;
 use App\Domain\Gear\Maintenance\Log\GearMaintenanceLogRepository;
 use App\Domain\Gear\Maintenance\Task\IntervalUnit;
+use App\Domain\Gear\Maintenance\Task\MaintenanceTask;
 use App\Domain\Gear\Maintenance\Task\MaintenanceTaskId;
 use App\Domain\Gear\Maintenance\Task\Progress\MaintenanceTaskProgress;
 use App\Domain\Gear\Maintenance\Task\Progress\MaintenanceTaskProgressCalculator;
 use App\Domain\Gear\Maintenance\Task\Progress\ProgressCalculationContext;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Serialization\Json;
+use App\Infrastructure\ValueObject\String\Name;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\ContainerTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Gear\GearBuilder;
+use App\Tests\Domain\Gear\Maintenance\GearComponentBuilder;
 use App\Tests\Infrastructure\Time\Clock\PausedClock;
-use App\Tests\ProvideGearMaintenanceConfig;
 
 class MaintenanceTaskProgressCalculatorTest extends ContainerTestCase
 {
-    use ProvideGearMaintenanceConfig;
-
     public function testCalculateProgress(): void
     {
         $this->assertEquals(
@@ -61,7 +63,14 @@ class MaintenanceTaskProgressCalculatorTest extends ContainerTestCase
 
     public function testCalculateStatusesForTasksThatWereNeverPerformed(): void
     {
-        $this->importGearMaintenanceConfigFromArray(Json::decode(file_get_contents(__DIR__.'/fixtures/never-logged-tasks.json')));
+        $this->getContainer()->get(GearMaintenanceRepository::class)->updateConfig(
+            isFeatureEnabled: true,
+            ignoreRetiredGear: false,
+        );
+        $gearComponentRepository = $this->getContainer()->get(GearComponentRepository::class);
+        foreach (Json::decode((string) file_get_contents(__DIR__.'/fixtures/never-logged-tasks.json')) as $component) {
+            $gearComponentRepository->add(GearComponent::fromArray($component));
+        }
         foreach ([['before-install', '2024-12-01 10:00:00', 100], ['after-install', '2025-02-01 10:00:00', 40]] as [$activityId, $startDateTime, $distance]) {
             $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
                 ActivityBuilder::fromDefaults()
@@ -77,17 +86,59 @@ class MaintenanceTaskProgressCalculatorTest extends ContainerTestCase
         $statuses = $this->getContainer()->get(MaintenanceTaskProgressCalculator::class)->calculateStatuses();
 
         $newChainReplace = $statuses->getForTask(MaintenanceTaskId::fromUnprefixed('new-chain-replace'));
+        $this->assertNotNull($newChainReplace);
         $this->assertNull($newChainReplace->getLastPerformedOn());
-        $this->assertSame('40 km', $newChainReplace->getProgress()->getDescription());
-        $this->assertNotNull($statuses->getForTask(MaintenanceTaskId::fromUnprefixed('new-chain-inspect'))->getProgress());
+        $newChainReplaceProgress = $newChainReplace->getProgress();
+        $this->assertNotNull($newChainReplaceProgress);
+        $this->assertSame('40 km', $newChainReplaceProgress->getDescription());
+        $newChainInspect = $statuses->getForTask(MaintenanceTaskId::fromUnprefixed('new-chain-inspect'));
+        $this->assertNotNull($newChainInspect);
+        $this->assertNotNull($newChainInspect->getProgress());
 
-        $this->assertSame('140 km', $statuses->getForTask(MaintenanceTaskId::fromUnprefixed('old-cassette-replace'))->getProgress()->getDescription());
-        $this->assertNull($statuses->getForTask(MaintenanceTaskId::fromUnprefixed('old-cassette-inspect'))->getProgress());
+        $oldCassetteReplace = $statuses->getForTask(MaintenanceTaskId::fromUnprefixed('old-cassette-replace'));
+        $this->assertNotNull($oldCassetteReplace);
+        $oldCassetteReplaceProgress = $oldCassetteReplace->getProgress();
+        $this->assertNotNull($oldCassetteReplaceProgress);
+        $this->assertSame('140 km', $oldCassetteReplaceProgress->getDescription());
+        $oldCassetteInspect = $statuses->getForTask(MaintenanceTaskId::fromUnprefixed('old-cassette-inspect'));
+        $this->assertNotNull($oldCassetteInspect);
+        $this->assertNull($oldCassetteInspect->getProgress());
     }
 
     public function testGetGearIdsThatHaveDueTasks(): void
     {
-        $this->importGearMaintenanceConfig();
+        $this->getContainer()->get(GearMaintenanceRepository::class)->updateConfig(
+            isFeatureEnabled: true,
+            ignoreRetiredGear: true,
+        );
+        $this->getContainer()->get(GearComponentRepository::class)->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withLabel('Some cool chain')
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g1233776')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g10130856')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('retired')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
+                label: Name::fromString('Lube'),
+                intervalValue: 500,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->build());
         $this->rideSinceTheChainWasLubed(Kilometer::from(600));
 
         // The chain is attached to two active gears and one retired one, which is ignored.
@@ -99,7 +150,50 @@ class MaintenanceTaskProgressCalculatorTest extends ContainerTestCase
 
     public function testGetGearIdsThatHaveDueTasksDoesNotReturnDuplicates(): void
     {
-        $this->importGearMaintenanceConfig();
+        $this->getContainer()->get(GearMaintenanceRepository::class)->updateConfig(
+            isFeatureEnabled: true,
+            ignoreRetiredGear: true,
+        );
+        $this->getContainer()->get(GearComponentRepository::class)->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withLabel('Some cool chain')
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g1233776')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g10130856')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('retired')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
+                label: Name::fromString('Lube'),
+                intervalValue: 500,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-replaced'),
+                label: Name::fromString('Replace'),
+                intervalValue: 1000,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-cleaned'),
+                label: Name::fromString('Clean'),
+                intervalValue: 1000,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->build());
         // Enough to make the 500km lube, the 1000km replace and the 1000km clean all due at once.
         $this->rideSinceTheChainWasLubed(Kilometer::from(1200));
 
@@ -111,10 +205,62 @@ class MaintenanceTaskProgressCalculatorTest extends ContainerTestCase
 
     public function testRetiredComponentsAreNotTracked(): void
     {
-        $this->importGearMaintenanceConfig();
+        $this->getContainer()->get(GearMaintenanceRepository::class)->updateConfig(
+            isFeatureEnabled: true,
+            ignoreRetiredGear: true,
+        );
         $gearComponentRepository = $this->getContainer()->get(GearComponentRepository::class);
-        $chain = Json::decode(Json::encode($gearComponentRepository->find(GearComponentId::fromString('gearComponent-chain'))));
-        $gearComponentRepository->update(GearComponent::fromArray([...$chain, 'isRetired' => true]));
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withLabel('Some cool chain')
+            ->withIsRetired(true)
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g1233776')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g10130856')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('retired')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
+                label: Name::fromString('Lube'),
+                intervalValue: 500,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->build());
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('di-2'))
+            ->withLabel('DI2 Battery')
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g1233776')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g10130856')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('di-2-charged'),
+                label: Name::fromString('Charge'),
+                intervalValue: 11,
+                intervalUnit: IntervalUnit::EVERY_X_HOURS_USED,
+            ))
+            ->build());
         $this->rideSinceTheChainWasLubed(Kilometer::from(600));
 
         $calculator = $this->getContainer()->get(MaintenanceTaskProgressCalculator::class);
@@ -125,7 +271,38 @@ class MaintenanceTaskProgressCalculatorTest extends ContainerTestCase
 
     public function testGetGearIdsThatHaveDueTasksWhenNothingIsDue(): void
     {
-        $this->importGearMaintenanceConfig();
+        $this->getContainer()->get(GearMaintenanceRepository::class)->updateConfig(
+            isFeatureEnabled: true,
+            ignoreRetiredGear: true,
+        );
+        $this->getContainer()->get(GearComponentRepository::class)->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withLabel('Some cool chain')
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g1233776')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('g10130856')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('retired')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
+                label: Name::fromString('Lube'),
+                intervalValue: 500,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->build());
         $this->rideSinceTheChainWasLubed(Kilometer::from(10));
 
         $this->assertEmpty($this->getContainer()->get(MaintenanceTaskProgressCalculator::class)->getGearIdsThatHaveDueTasks()->toArray());

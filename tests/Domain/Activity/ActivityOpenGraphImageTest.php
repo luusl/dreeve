@@ -2,6 +2,7 @@
 
 namespace App\Tests\Domain\Activity;
 
+use App\Application\PageMetadata\OpenGraphImageCanvas;
 use App\Domain\Activity\ActivityOpenGraphImage;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
@@ -35,7 +36,7 @@ class ActivityOpenGraphImageTest extends ContainerTestCase
         $size = getimagesizefromstring($openGraphImage->render(ActivityBuilder::fromDefaults()->build()));
 
         $this->assertIsArray($size);
-        $this->assertEquals([ActivityOpenGraphImage::WIDTH, ActivityOpenGraphImage::HEIGHT, 'image/png'], [$size[0], $size[1], $size['mime']]);
+        $this->assertEquals([OpenGraphImageCanvas::WIDTH, OpenGraphImageCanvas::HEIGHT, 'image/png'], [$size[0], $size[1], $size['mime']]);
     }
 
     #[DataProvider('provideActivityNames')]
@@ -158,7 +159,10 @@ class ActivityOpenGraphImageTest extends ContainerTestCase
         $image = imagecreatefromstring($png);
         $this->assertInstanceOf(\GdImage::class, $image);
 
-        return imagecolorsforindex($image, imagecolorat($image, 128, 90));
+        $color = imagecolorat($image, 128, 90);
+        $this->assertIsInt($color);
+
+        return imagecolorsforindex($image, $color);
     }
 
     #[\Override]

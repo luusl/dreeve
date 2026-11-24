@@ -111,46 +111,12 @@ class DbalGearMaintenanceLogRepositoryTest extends ContainerTestCase
         );
         $this->gearMaintenanceLogRepository->add($log);
 
-        $this->gearMaintenanceLogRepository->delete($log->getId());
+        $log->delete();
+        $this->gearMaintenanceLogRepository->delete($log);
 
         $this->assertEquals(
             GearMaintenanceLogs::empty(),
             $this->gearMaintenanceLogRepository->findAll(),
-        );
-    }
-
-    public function testFindMostRecentForMaintenanceTask(): void
-    {
-        $older = GearMaintenanceLog::create(
-            gearId: GearId::fromUnprefixed('b1'),
-            maintenanceTaskId: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
-            performedOn: SerializableDateTime::fromString('2025-01-01 00:00:00'),
-        );
-        $newer = GearMaintenanceLog::create(
-            gearId: GearId::fromUnprefixed('b1'),
-            maintenanceTaskId: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
-            performedOn: SerializableDateTime::fromString('2025-03-01 00:00:00'),
-        );
-        $otherTask = GearMaintenanceLog::create(
-            gearId: GearId::fromUnprefixed('b1'),
-            maintenanceTaskId: MaintenanceTaskId::fromUnprefixed('chain-replaced'),
-            performedOn: SerializableDateTime::fromString('2025-06-01 00:00:00'),
-        );
-
-        $this->gearMaintenanceLogRepository->add($older);
-        $this->gearMaintenanceLogRepository->add($newer);
-        $this->gearMaintenanceLogRepository->add($otherTask);
-
-        $this->assertEquals(
-            $newer,
-            $this->gearMaintenanceLogRepository->findMostRecentForMaintenanceTask(MaintenanceTaskId::fromUnprefixed('chain-lubed')),
-        );
-    }
-
-    public function testFindMostRecentForMaintenanceTaskReturnsNullWhenNeverMaintained(): void
-    {
-        $this->assertNull(
-            $this->gearMaintenanceLogRepository->findMostRecentForMaintenanceTask(MaintenanceTaskId::fromUnprefixed('chain-lubed')),
         );
     }
 

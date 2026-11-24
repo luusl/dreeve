@@ -7,9 +7,9 @@ namespace App\Domain\Gear\Maintenance\CreateGearMaintenanceComponent;
 use App\Domain\Gear\Maintenance\GearComponent;
 use App\Domain\Gear\Maintenance\GearComponentId;
 use App\Domain\Gear\Maintenance\GearComponentRepository;
-use App\Domain\Image\ImageDirectory;
-use App\Domain\Image\ImageStorage;
-use App\Domain\Image\NewImage;
+use App\Domain\Media\MediaItemDirectory;
+use App\Domain\Media\MediaItemStorage;
+use App\Domain\Media\NewMediaItem;
 use App\Infrastructure\CQRS\Command\Command;
 use App\Infrastructure\CQRS\Command\CommandHandler;
 
@@ -17,7 +17,7 @@ final readonly class CreateGearMaintenanceComponentCommandHandler implements Com
 {
     public function __construct(
         private GearComponentRepository $gearComponentRepository,
-        private ImageStorage $imageStorage,
+        private MediaItemStorage $mediaItemStorage,
     ) {
     }
 
@@ -25,20 +25,17 @@ final readonly class CreateGearMaintenanceComponentCommandHandler implements Com
     {
         assert($command instanceof CreateGearMaintenanceComponent);
 
-        $localImagePath = null;
-        $newImage = $command->getNewImage();
-        if ($newImage instanceof NewImage) {
-            $localImagePath = $this->imageStorage->store(
-                newImage: $newImage,
-                directory: ImageDirectory::GEAR_MAINTENANCE
-            )->toLocalImagePath();
-        }
-
+        $newMediaItem = $command->getNewMediaItem();
         $gearComponent = GearComponent::create(
             id: GearComponentId::random(),
             label: $command->getLabel(),
             installations: $command->getInstallations(),
-            localImagePath: $localImagePath,
+            mediaItemId: $newMediaItem instanceof NewMediaItem
+                ? $this->mediaItemStorage->store(
+                    newMediaItem: $newMediaItem,
+                    directory: MediaItemDirectory::GEAR_MAINTENANCE,
+                )->getId()
+                : null,
             purchasePrice: $command->getPurchasePrice(),
             isRetired: $command->isRetired(),
             notes: $command->getNotes(),

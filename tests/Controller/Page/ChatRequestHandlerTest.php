@@ -10,6 +10,7 @@ use App\Domain\Integration\AI\Chat\DbalChatRepository;
 use App\Domain\Settings\DbalSettingsRepository;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
+use App\Infrastructure\Config\ManagedMode;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\Renderer\MarkdownRenderer;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
@@ -26,8 +27,6 @@ use Symfony\AI\Platform\Message\Role;
 use Symfony\AI\Platform\Result\Stream\Delta\TextDelta;
 use Symfony\AI\Platform\Result\StreamResult;
 use Symfony\AI\Platform\Test\InMemoryPlatform;
-use Symfony\Component\Form\FormFactoryInterface;
-use Symfony\Component\HttpFoundation\EventStreamResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Twig\Environment;
@@ -163,11 +162,9 @@ class ChatRequestHandlerTest extends AdminWebTestCase
         $request = new Request(query: ['message' => 'What is my FTP?']);
         $response = $requestHandler->chatSse($request);
 
-        $this->assertInstanceOf(EventStreamResponse::class, $response);
-
         ob_start();
         $response->sendContent();
-        $content = ob_get_clean();
+        $content = (string) ob_get_clean();
 
         $this->assertStringContainsString('event: fullMessage', $content);
         $this->assertStringContainsString('event: removeThinking', $content);
@@ -213,7 +210,7 @@ class ChatRequestHandlerTest extends AdminWebTestCase
 
         ob_start();
         $response->sendContent();
-        $content = ob_get_clean();
+        $content = (string) ob_get_clean();
 
         $this->assertStringContainsString('event: fullMessage', $content);
         $this->assertStringContainsString('event: removeThinking', $content);
@@ -247,10 +244,9 @@ class ChatRequestHandlerTest extends AdminWebTestCase
             chatAgent: $this->chatAgent,
             chatRepository: $chatRepository,
             commandBus: $this->getContainer()->get(CommandBus::class),
-            twig: $this->getContainer()->get(Environment::class),
             settingsRepository: $this->buildSettingsRepository($aiEnabled),
-            formFactory: $this->getContainer()->get(FormFactoryInterface::class),
             appShell: $this->getContainer()->get(AppShell::class),
+            twig: $this->getContainer()->get(Environment::class),
             markdownRenderer: new MarkdownRenderer(),
         );
     }
@@ -264,17 +260,20 @@ class ChatRequestHandlerTest extends AdminWebTestCase
             chatAgent: $agent,
             chatRepository: $chatRepository,
             commandBus: $commandBus,
-            twig: $this->getContainer()->get(Environment::class),
             settingsRepository: $this->buildSettingsRepository(true),
-            formFactory: $this->getContainer()->get(FormFactoryInterface::class),
             appShell: $this->getContainer()->get(AppShell::class),
+            twig: $this->getContainer()->get(Environment::class),
             markdownRenderer: new MarkdownRenderer(),
         );
     }
 
     private function buildSettingsRepository(bool $aiEnabled): SettingsRepository
     {
-        $settingsRepository = new DbalSettingsRepository($this->getContainer()->get(Connection::class), new SpyEventBus());
+        $settingsRepository = new DbalSettingsRepository(
+            connection: $this->getContainer()->get(Connection::class),
+            eventBus: new SpyEventBus(),
+            managedMode: ManagedMode::fromString('0'),
+        );
         $settingsRepository->saveGroup(SettingsGroup::INTEGRATIONS, [
             'ai' => [
                 'enabled' => $aiEnabled,

@@ -49,10 +49,10 @@ parameters:
     name: imageId
     in: path
     required: true
-    description: The prefixed image identifier, `activityImage-` included, as listed in the activity's `images`.
+    description: The prefixed image identifier, `mediaItem-` included, as listed in the activity's `images`.
     schema:
       type: string
-      examples: ['activityImage-0a8cdfbb-63b4-4f0f-a09d-faedd5a00753']
+      examples: ['mediaItem-0a8cdfbb-63b4-4f0f-a09d-faedd5a00753']
   FileImportId:
     name: fileImportId
     in: path
@@ -61,6 +61,14 @@ parameters:
     schema:
       type: string
       examples: ['fileImport-0198a2b1-8f3e-7c2d-9a4b-1f2e3d4c5b6a']
+  SegmentId:
+    name: segmentId
+    in: path
+    required: true
+    description: The prefixed segment identifier, `segment-` included.
+    schema:
+      type: string
+      examples: ['segment-17267489']
 
 responses:
   ActivityNotFound:
@@ -71,6 +79,14 @@ responses:
         examples:
           unknownActivity:
             value: { error: not_found, message: 'Activity "activity-1" not found' }
+  SegmentNotFound:
+    description: No segment with this identifier exists.
+    content:
+      application/json:
+        schema: { $ref: './dreeve-api.yaml#/components/schemas/Error' }
+        examples:
+          unknownSegment:
+            value: { error: not_found, message: 'Segment "segment-1" not found' }
   Unauthorized:
     description: >-
       The `Authorization` header was missing, malformed, or did not match the configured key.

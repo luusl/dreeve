@@ -12,14 +12,16 @@ use App\Infrastructure\Measurement\Unit;
 use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\Measurement\Velocity\Knot;
+use App\Infrastructure\Measurement\Velocity\SecPer100Meter;
 use App\Infrastructure\Measurement\Velocity\SecPerKm;
+use App\Infrastructure\Measurement\Velocity\Velocity;
 use App\Infrastructure\Twig\MeasurementTwigExtension;
 use App\Tests\ContainerTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class MeasurementTwigExtensionTest extends ContainerTestCase
 {
-    #[DataProvider(methodName: 'provideConversions')]
+    #[DataProvider('provideConversions')]
     public function testDoConversion(Unit $expectedMeasurement, UnitSystem $unitSystem, Unit $measurementToConvert): void
     {
         $extension = $this->extensionFor($unitSystem);
@@ -40,7 +42,22 @@ class MeasurementTwigExtensionTest extends ContainerTestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideMeasurementSymbols')]
+    #[DataProvider('provideVelocities')]
+    public function testVelocity(
+        string $expectedValue,
+        string $expectedSymbol,
+        string $expectedRender,
+        UnitSystem $unitSystem,
+        Velocity $velocity,
+    ): void {
+        $extension = $this->extensionFor($unitSystem);
+
+        $this->assertSame($expectedValue, $extension->formatVelocity($velocity));
+        $this->assertSame($expectedSymbol, $extension->velocitySymbol($velocity));
+        $this->assertSame($expectedRender, $extension->renderVelocity($velocity));
+    }
+
+    #[DataProvider('provideMeasurementSymbols')]
     public function testMeasurementSymbol(string $expectedUnitSymbol, UnitSystem $unitSystem, Unit $measurement): void
     {
         $extension = $this->extensionFor($unitSystem);
@@ -51,7 +68,7 @@ class MeasurementTwigExtensionTest extends ContainerTestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideUnitSymbols')]
+    #[DataProvider('provideUnitSymbols')]
     public function testGetUnitSymbol(string $expectedUnitSymbol, UnitSystem $unitSystem, string $unitName): void
     {
         $extension = $this->extensionFor($unitSystem);
@@ -69,7 +86,7 @@ class MeasurementTwigExtensionTest extends ContainerTestCase
         $extension->getUnitSymbol('invalid');
     }
 
-    #[DataProvider(methodName: 'provideProximityToMeterFactors')]
+    #[DataProvider('provideProximityToMeterFactors')]
     public function testGetProximityToMeterFactor(float $expectedFactor, UnitSystem $unitSystem): void
     {
         $extension = $this->extensionFor($unitSystem);
@@ -108,6 +125,9 @@ class MeasurementTwigExtensionTest extends ContainerTestCase
         return new MeasurementTwigExtension($settingsRepository);
     }
 
+    /**
+     * @return list<array{Unit, UnitSystem, Unit}>
+     */
     public static function provideConversions(): array
     {
         return [
@@ -118,6 +138,25 @@ class MeasurementTwigExtensionTest extends ContainerTestCase
         ];
     }
 
+    /**
+     * @return list<array{string, string, string, UnitSystem, Velocity}>
+     */
+    public static function provideVelocities(): array
+    {
+        return [
+            ['6:00', '/km', '6:00<span class="text-xxs ml-px">/km</span>', UnitSystem::METRIC, SecPerKm::from(360)],
+            ['9:39', '/mi', '9:39<span class="text-xxs ml-px">/mi</span>', UnitSystem::IMPERIAL, SecPerKm::from(360)],
+            ['1:35', '/100m', '1:35<span class="text-xxs ml-px">/100m</span>', UnitSystem::METRIC, SecPer100Meter::from(95)],
+            ['1:35', '/100m', '1:35<span class="text-xxs ml-px">/100m</span>', UnitSystem::IMPERIAL, SecPer100Meter::from(95)],
+            ['22.0', 'km/h', '22.0<span class="text-xxs ml-px whitespace-nowrap">km/h</span>', UnitSystem::METRIC, KmPerHour::from(22)],
+            ['13.7', 'mph', '13.7<span class="text-xxs ml-px whitespace-nowrap">mph</span>', UnitSystem::IMPERIAL, KmPerHour::from(22)],
+            ['10.0', 'kn', '10.0<span class="text-xxs ml-px whitespace-nowrap">kn</span>', UnitSystem::IMPERIAL, Knot::from(10)],
+        ];
+    }
+
+    /**
+     * @return list<array{string, UnitSystem, Unit}>
+     */
     public static function provideMeasurementSymbols(): array
     {
         return [
@@ -133,6 +172,9 @@ class MeasurementTwigExtensionTest extends ContainerTestCase
         ];
     }
 
+    /**
+     * @return list<array{float, UnitSystem}>
+     */
     public static function provideProximityToMeterFactors(): array
     {
         return [
@@ -141,6 +183,9 @@ class MeasurementTwigExtensionTest extends ContainerTestCase
         ];
     }
 
+    /**
+     * @return list<array{string, UnitSystem, string}>
+     */
     public static function provideUnitSymbols(): array
     {
         return [

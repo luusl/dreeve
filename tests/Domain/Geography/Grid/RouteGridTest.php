@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Geography\Grid;
 
 use App\Domain\Geography\Grid\RouteGrid;
@@ -23,8 +25,6 @@ class RouteGridTest extends TestCase
 
     public function testCellsForACoordinateOnAnExactGridBoundary(): void
     {
-        $this->assertSame(51031, (int) floor(51.032 / 0.001));
-
         $this->assertEquals(
             [141032 * 360001 + 183000],
             RouteGrid::cellsFor(EncodedPolyline::fromCoordinates([[51.032, 3.0]]))->toArray()

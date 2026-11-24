@@ -5,19 +5,20 @@ declare(strict_types=1);
 namespace App\Controller\Page\BestEffort;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityType;
-use App\Domain\Activity\BestEffort\BestEffortPeriod;
 use App\Domain\Activity\BestEffort\BestEffortsCalculator;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Measurement\Length\ConvertableToMeter;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
 #[AsController]
@@ -30,6 +31,7 @@ final readonly class BestEffortsHistoryRequestHandler
         private ActivityRepository $activityRepository,
         private PageRenderer $pageRenderer,
         private Environment $twig,
+        private TranslatorInterface $translator,
     ) {
     }
 
@@ -49,6 +51,8 @@ final readonly class BestEffortsHistoryRequestHandler
             throw new NotFoundHttpException('Not found');
         }
 
+        $distanceLabel = sprintf('%s %s', $distance->isLowerThanOne() ? round($distance->toFloat(), 1) : $distance->toInt(), $distance->getSymbol());
+
         return $this->pageRenderer->render(
             cacheability: Cacheability::for(
                 cacheKey: sprintf('%s.%s.%d', self::BASE_PATH, $activityType->value, $distanceInMeter),
@@ -56,19 +60,24 @@ final readonly class BestEffortsHistoryRequestHandler
             ),
             render: fn (): string => $this->renderFor($activityType, $distance),
             navigationSection: NavigationSection::BEST_EFFORTS,
+            metadata: new PageMetadata(
+                title: sprintf('%s · %s · %s', $this->translator->trans('Best efforts'), $activityType->trans($this->translator), $distanceLabel),
+            ),
         );
     }
 
     private function renderFor(ActivityType $activityType, ConvertableToMeter $distance): string
     {
-        $bestEfforts = $this->bestEffortsCalculator->calculate();
+        $history = $this->bestEffortsCalculator->calculateHistory(
+            activityType: $activityType,
+            distance: $distance
+        );
 
         return $this->twig->load('html/best-efforts/best-efforts-history.html.twig')->render([
             'activityType' => $activityType,
-            'period' => BestEffortPeriod::ALL_TIME,
             'distance' => $distance,
-            'bestEfforts' => $bestEfforts,
-            'activitiesPerActivityId' => $this->activityRepository->findByIds($bestEfforts->getActivityIds())->keyByActivityId(),
+            'history' => $history,
+            'activitiesPerActivityId' => $this->activityRepository->findByIds($history->getActivityIds())->keyByActivityId(),
         ]);
     }
 }

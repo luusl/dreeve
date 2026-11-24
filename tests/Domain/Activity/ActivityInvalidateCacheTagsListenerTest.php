@@ -14,6 +14,8 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Calendar\Month;
 use App\Domain\Geography\ExplorerTile\ExplorerTiles;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\Render\RenderCache;
 use App\Infrastructure\Cache\Tag\CacheTag;
@@ -60,7 +62,8 @@ class ActivityInvalidateCacheTagsListenerTest extends ContainerTestCase
         $this->activityRepository->add(ActivityWithRawData::fromState($activity, []));
         $this->warmUpRenderCache();
 
-        $this->activityRepository->delete($activity->getId());
+        $activity->delete();
+        $this->activityRepository->delete($activity);
 
         $this->assertFalse($this->isServedFromCache(RootCacheTag::ACTIVITIES));
         $this->assertFalse($this->isServedFromCache(RootCacheTag::ACTIVITY_IMAGES));
@@ -191,7 +194,7 @@ class ActivityInvalidateCacheTagsListenerTest extends ContainerTestCase
         $this->warmUpRenderCache();
 
         $this->activityRepository->update(ActivityWithRawData::fromState(
-            $activity->withLocalImagePaths(['/image.jpg']),
+            $activity->withMediaItemIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('image')])),
             [],
         ));
 
@@ -206,7 +209,7 @@ class ActivityInvalidateCacheTagsListenerTest extends ContainerTestCase
         $this->warmUpRenderCache();
 
         $this->activityRepository->update(ActivityWithRawData::fromState(
-            $activity->withLocalImagePaths(['/image.jpg']),
+            $activity->withMediaItemIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('image')])),
             [],
         ));
 
@@ -240,7 +243,8 @@ class ActivityInvalidateCacheTagsListenerTest extends ContainerTestCase
         $this->activityRepository->add(ActivityWithRawData::fromState($activity, []));
         $this->warmUpRenderCache();
 
-        $this->activityRepository->delete($activity->getId());
+        $activity->delete();
+        $this->activityRepository->delete($activity);
 
         $this->assertFalse($this->isServedFromCache(RootCacheTag::ACTIVITIES->forYear(Year::fromInt(2023))));
         $this->assertFalse($this->isServedFromCache(RootCacheTag::ACTIVITY_IMAGES->forYear(Year::fromInt(2023))));
@@ -259,7 +263,7 @@ class ActivityInvalidateCacheTagsListenerTest extends ContainerTestCase
         $this->warmUpRenderCache();
 
         $this->activityRepository->update(ActivityWithRawData::fromState(
-            $activity->withLocalImagePaths(['/image.jpg']),
+            $activity->withMediaItemIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('image')])),
             [],
         ));
 
@@ -324,7 +328,8 @@ class ActivityInvalidateCacheTagsListenerTest extends ContainerTestCase
         $this->activityRepository->add(ActivityWithRawData::fromState($activity, []));
         $this->warmUpRenderCache();
 
-        $this->activityRepository->delete($activity->getId());
+        $activity->delete();
+        $this->activityRepository->delete($activity);
 
         $this->assertFalse($this->isServedFromCache(ActivityCacheTag::for($activity->getId())));
         $this->assertTrue($this->isServedFromCache(ActivityCacheTag::for(ActivityId::fromUnprefixed('1'))));

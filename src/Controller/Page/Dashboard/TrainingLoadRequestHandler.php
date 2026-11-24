@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Page\Dashboard;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\DailyTrainingLoad;
 use App\Domain\Activity\Stream\ActivityHeartRateRepository;
@@ -17,12 +18,13 @@ use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\Time\Clock\Clock;
 use App\Infrastructure\ValueObject\Time\DateRange;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -46,17 +48,24 @@ final readonly class TrainingLoadRequestHandler
         return $this->pageRenderer->render(
             cacheability: Cacheability::for(
                 cacheKey: 'dashboard.training-load',
-                cacheTags: CacheTags::of(RootCacheTag::ACTIVITIES, RootCacheTag::SETTINGS_GENERAL),
-                ttlInSeconds: $this->clock->getCurrentDateTimeImmutable()->getSecondsUntilMidnight(),
+                cacheTags: CacheTags::of(
+                    RootCacheTag::ACTIVITIES,
+                    RootCacheTag::SETTINGS_GENERAL,
+                    RootCacheTag::SETTINGS_ATHLETE_FTP
+                ),
+                ttl: $this->clock->now()->getDurationUntilMidnight(),
             ),
             render: fn (): string => $this->renderFor(),
             navigationSection: NavigationSection::DASHBOARD,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Training Load Analysis'),
+            ),
         );
     }
 
     private function renderFor(): string
     {
-        $now = $this->clock->getCurrentDateTimeImmutable();
+        $now = $this->clock->now();
 
         $trainingMetrics = TrainingMetrics::create($this->dailyTrainingLoad->calculateForDateRange(DateRange::fromDates(
             from: $now->modify('- '.(TrainingLoadChart::NUMBER_OF_DAYS_TO_DISPLAY + TrainingLoadChart::EMA_WARMUP_DAYS).' days'),

@@ -37,7 +37,7 @@ class GearTokenProviderTest extends TestCase
         }
     }
 
-    #[DataProvider(methodName: 'provideTokens')]
+    #[DataProvider('provideTokens')]
     public function testResolve(string $key, string $expectedValue): void
     {
         $provider = $this->buildProvider(UnitSystem::METRIC);
@@ -172,6 +172,9 @@ class GearTokenProviderTest extends TestCase
         )));
     }
 
+    /**
+     * @return list<array{string, string}>
+     */
     public static function provideTokens(): array
     {
         return [

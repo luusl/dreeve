@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Dashboard\Widget\TrainingGoals;
 
 use App\Domain\Activity\SportType\SportType;
@@ -101,6 +103,7 @@ class TrainingGoalsTest extends TestCase
 
         $goals = TrainingGoals::fromConfig($yml);
         $goal = $goals->getFirst();
+        $this->assertNotNull($goal);
 
         $this->assertTrue($goal->isActiveOn(SerializableDateTime::fromString('2026-01-01')));
         $this->assertTrue($goal->isActiveOn(SerializableDateTime::fromString('2026-02-15')));
@@ -120,18 +123,25 @@ class TrainingGoalsTest extends TestCase
         $yml['weekly'][0]['restrictToDateRange'] = ['from' => '', 'to' => ''];
 
         $goal = TrainingGoals::fromConfig($yml)->getFirst();
+        $this->assertNotNull($goal);
 
         $this->assertTrue($goal->isActiveOn(SerializableDateTime::fromString('2020-01-01')));
         $this->assertTrue($goal->isActiveOn(SerializableDateTime::fromString('2099-12-31')));
     }
 
-    #[DataProvider(methodName: 'provideInvalidConfig')]
+    /**
+     * @param array<string, mixed> $config
+     */
+    #[DataProvider('provideInvalidConfig')]
     public function testFromConfigurationItShouldThrow(array $config, string $expectedException): void
     {
         $this->expectExceptionObject(new InvalidDashboardLayout($expectedException));
         TrainingGoals::fromConfig($config);
     }
 
+    /**
+     * @return iterable<string, array{array<string, mixed>, string}>
+     */
     public static function provideInvalidConfig(): iterable
     {
         $yml = self::getValidYml();
@@ -213,6 +223,9 @@ class TrainingGoalsTest extends TestCase
         yield '"from" after "to" in "restrictToDateRange"' => [$yml, '"restrictToDateRange.from" must be before or equal to "restrictToDateRange.to"'];
     }
 
+    /**
+     * @return array<string, list<array<string, mixed>>>
+     */
     private static function getValidYml(): array
     {
         return [

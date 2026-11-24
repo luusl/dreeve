@@ -62,14 +62,14 @@ final readonly class Countries
             SELECT DISTINCT countryCode
             FROM (
                  SELECT JSON_EXTRACT(routeGeography, '$.country_code') AS countryCode
-                 FROM Activity WHERE totalImageCount > 0
+                 FROM Activity WHERE JSON_ARRAY_LENGTH(mediaItemIds) > 0
 
                  UNION ALL
 
                  SELECT value AS countryCode
                  FROM Activity,
                      JSON_EACH(JSON_EXTRACT(routeGeography, '{$passedThroughCountries}'))
-                 WHERE totalImageCount > 0
+                 WHERE JSON_ARRAY_LENGTH(mediaItemIds) > 0
                  )
             WHERE countryCode IS NOT NULL
             SQL
@@ -96,11 +96,26 @@ final readonly class Countries
 
     public function findCountryCodeByCountryName(string $countryName): ?string
     {
-        if (!$countryCode = array_search($countryName, $this->countriesKeyedByAlpha2codes)) {
+        if (!$countryCode = array_search($countryName, $this->countriesKeyedByAlpha2codes, true)) {
             return null;
         }
 
         return $countryCode;
+    }
+
+    public function getName(string $countryCode): string
+    {
+        if ('xk' === strtolower($countryCode)) {
+            // Currently Symfony does not support Kosovo as a country.
+            // Need to wait until this commit is released in Symfony 7.4:
+            // https://github.com/symfony/symfony/issues/40020
+            return 'Kosovo';
+        }
+
+        return SymfonyCountries::getName(
+            country: strtoupper($countryCode),
+            displayLocale: $this->localeSwitcher->getLocale()
+        );
     }
 
     /**
@@ -112,18 +127,7 @@ final readonly class Countries
     {
         $countries = [];
         foreach ($results as $countryCode) {
-            $countryCode = strtolower($countryCode);
-            if ('xk' === $countryCode) {
-                // Currently Symfony does not support Kosovo as a country.
-                // Need to wait until this commit is released in Symfony 7.4:
-                // https://github.com/symfony/symfony/issues/40020
-                $countries[$countryCode] = 'Kosovo';
-                continue;
-            }
-            $countries[$countryCode] = SymfonyCountries::getName(
-                country: strtoupper($countryCode),
-                displayLocale: $this->localeSwitcher->getLocale()
-            );
+            $countries[strtolower($countryCode)] = $this->getName($countryCode);
         }
 
         return $countries;

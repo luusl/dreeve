@@ -1,21 +1,11 @@
 {% extends "html/admin/page/template.html.twig" %}
 {% block main %}
-    {% autoescape false %}
     {% set gear = gear is defined ? gear : null %}
     {% set isReadOnly = gear ? gear.getType().isImported() : false %}
-    <div class="modal-like-form">
-        <div class="w-full max-w-lg overflow-y-auto p-6 bg-white border border-gray-200 rounded-lg shadow-xl">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">
-                    {{ gear ? "Edit gear"|trans({}, 'admin') : "Add gear"|trans({}, 'admin') }}
-                </h3>
-                <a href="{{ relativeUrl(path('admin_manage_gear_overview')) }}" aria-label="{{ "Close"|trans({}, 'admin') }}"
-                   class="grid place-items-center size-8 rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900">
-                    <svg class="size-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18 17.94 6M18 18 6.06 6"/>
-                    </svg>
-                </a>
-            </div>
+    {% embed 'html/admin/component/modal.html.twig' with {closeUrl: relativeUrl(path('admin_manage_gear_overview'))} %}
+        {% block title %}{{ gear ? "Edit gear"|trans({}, 'admin') : "Add gear"|trans({}, 'admin') }}{% endblock %}
+        {% block body %}
+            {% autoescape false %}
             <form data-dispatch-command="{{ dispatchCommand }}" data-redirect="{{ relativeUrl(path('admin_manage_gear_overview')) }}" class="flex flex-col gap-4">
             {% if gear %}
                 <input type="hidden" name="gearId" value="{{ gear.getId() }}">
@@ -56,13 +46,13 @@
                 {% endblock %}
             {% endembed %}
             <div>
+                <label for="gear-notes">{{ "Notes"|trans({}, 'admin') }}</label>
+                <textarea id="gear-notes" name="notes" rows="3"
+                          placeholder="{{ "Serial number, size, where you bought it, ..."|trans({}, 'admin') }}">{{ gear ? gear.getNotes()|e }}</textarea>
+            </div>
+            <div>
                 <label>{{ "Image"|trans({}, 'admin') }}</label>
-                {% set existingImages = [] %}
-                {% if gear and gear.getLocalImagePath() %}
-                    {% set path = gear.getLocalImagePath() %}
-                    {% set existingImages = [{ url: path, name: path|split('/')|last, path: path }] %}
-                {% endif %}
-                {% include 'html/admin/component/image-dropzone-upload.html.twig' with { name: 'localImagePath', maxImages: 1, existingImages: existingImages } %}
+                {% include 'html/admin/component/image-dropzone-upload.html.twig' with { name: 'mediaItem', maxImages: 1, images: gear and gear.getMediaItem() ? [{mediaItem: gear.getMediaItem()}] : [] } %}
             </div>
             <div class="flex justify-end gap-2 border-t border-gray-200 pt-4">
                 {% if isDeletable %}
@@ -75,7 +65,7 @@
                 </button>
             </div>
         </form>
-        </div>
-    </div>
-    {% endautoescape %}
+            {% endautoescape %}
+        {% endblock %}
+    {% endembed %}
 {% endblock main %}

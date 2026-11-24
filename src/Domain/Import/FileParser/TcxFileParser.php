@@ -16,6 +16,7 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\Stream\StreamType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Import\SupportedFileExtension;
+use App\Domain\Media\MediaItemIds;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Velocity\MetersPerSecond;
@@ -103,6 +104,7 @@ final readonly class TcxFileParser implements ActivityFileParser
             description: null,
             distance: Kilometer::from(round($activityLaps->sum(static fn (ActivityLap $lap): float => $lap->getDistance()->toFloat()) / 1000, 3)),
             elevation: Meter::from(round($activityLaps->sum(static fn (ActivityLap $lap): float => $lap->getElevationDifference()->toFloat()))),
+            descent: Meter::from(round(StreamMath::descent($streams[StreamType::ALTITUDE->value]))),
             startingCoordinate: StreamMath::firstCoordinate($streams),
             calories: $this->sumCalories($activityXml),
             kilojoules: null,
@@ -117,8 +119,7 @@ final readonly class TcxFileParser implements ActivityFileParser
             elapsedTimeInSeconds: (int) $activityLaps->sum(static fn (ActivityLap $lap): int => $lap->getElapsedTimeInSeconds()),
             deviceName: $deviceName,
             connectedSensors: null,
-            totalImageCount: 0,
-            localImagePaths: [],
+            mediaItemIds: MediaItemIds::empty(),
             polyline: StreamMath::encodePolyline($streams),
             routeGeography: RouteGeography::create([]),
             weather: null,
@@ -126,6 +127,8 @@ final readonly class TcxFileParser implements ActivityFileParser
             isCommute: false,
             isGroupActivity: false,
             workoutType: null,
+            workoutRpe: null,
+            workoutFeel: null,
         );
 
         return ParsedActivityFile::create(

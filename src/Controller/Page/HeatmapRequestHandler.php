@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Page;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\Route\RouteRepository;
 use App\Domain\Settings\SettingsRepository;
@@ -13,9 +14,10 @@ use App\Infrastructure\Cache\Context\AuthenticatedCacheContext;
 use App\Infrastructure\Cache\Context\CacheContexts;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Twig\Environment;
 
 #[AsController]
@@ -40,6 +42,9 @@ final readonly class HeatmapRequestHandler
             ),
             render: fn (): string => $this->renderFor(),
             navigationSection: NavigationSection::HEATMAP,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Heatmap'),
+            ),
         );
     }
 

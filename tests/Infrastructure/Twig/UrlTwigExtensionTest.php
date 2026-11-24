@@ -4,7 +4,7 @@ namespace App\Tests\Infrastructure\Twig;
 
 use App\Application\AppUrl;
 use App\Domain\Activity\SportType\SportType;
-use App\Domain\Image\ImageOrientation;
+use App\Domain\Media\ImageOrientation;
 use App\Infrastructure\Twig\StringTwigExtension;
 use App\Infrastructure\Twig\SvgsTwigExtension;
 use App\Infrastructure\Twig\UrlTwigExtension;
@@ -124,6 +124,8 @@ class UrlTwigExtensionTest extends ContainerTestCase
     #[\Override]
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->stringTwigExtension = new StringTwigExtension();
         $this->svgsTwigExtension = new SvgsTwigExtension($this->getContainer()->get(KernelProjectDir::class));
         $this->urlGenerator = $this->getContainer()->get(UrlGeneratorInterface::class);

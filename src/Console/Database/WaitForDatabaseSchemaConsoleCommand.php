@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Console\Database;
 
 use App\Infrastructure\Doctrine\Migrations\MigrationRunner;
-use App\Infrastructure\Time\Sleep;
+use App\Infrastructure\Time\Clock\Clock;
 use Doctrine\DBAL\Exception as DbalException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Time\Duration;
 
 #[AsCommand(name: 'app:db:wait-for-schema', description: 'Wait until the database schema is up to date')]
 final class WaitForDatabaseSchemaConsoleCommand extends Command
@@ -21,7 +22,7 @@ final class WaitForDatabaseSchemaConsoleCommand extends Command
 
     public function __construct(
         private readonly MigrationRunner $migrationRunner,
-        private readonly Sleep $sleep,
+        private readonly Clock $clock,
     ) {
         parent::__construct();
     }
@@ -36,7 +37,7 @@ final class WaitForDatabaseSchemaConsoleCommand extends Command
                 return Command::SUCCESS;
             }
 
-            $this->sleep->sweetDreams(self::POLL_INTERVAL_IN_SECONDS);
+            $this->clock->sleep(Duration::fromSeconds(self::POLL_INTERVAL_IN_SECONDS));
         }
 
         $output->error(sprintf(

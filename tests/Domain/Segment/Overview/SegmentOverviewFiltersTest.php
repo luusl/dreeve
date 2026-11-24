@@ -32,7 +32,10 @@ class SegmentOverviewFiltersTest extends TestCase
         $this->assertFalse($filters->isEmpty());
     }
 
-    #[DataProvider(methodName: 'provideIgnoredValues')]
+    /**
+     * @param array<string, string> $query
+     */
+    #[DataProvider('provideIgnoredValues')]
     public function testItIgnoresBlankOrUnknownValues(array $query): void
     {
         $filters = SegmentOverviewFilters::fromRequest(new Request(query: ['filters' => $query]));
@@ -40,6 +43,9 @@ class SegmentOverviewFiltersTest extends TestCase
         $this->assertTrue($filters->isEmpty());
     }
 
+    /**
+     * @return iterable<string, array{array<string, string>}>
+     */
     public static function provideIgnoredValues(): iterable
     {
         yield 'blank name' => [['name' => '   ']];

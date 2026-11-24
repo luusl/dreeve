@@ -13,7 +13,7 @@ use App\Domain\Strava\StravaClientSecret;
 use App\Infrastructure\Serialization\Json;
 use App\Tests\ContainerTestCase;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\RequestOptions;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -29,8 +29,8 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
     use MatchesSnapshots;
 
     private StravaOAuthRequestHandler $stravaOAuthRequestHandler;
-    private MockObject $strava;
-    private MockObject $client;
+    private Strava&MockObject $strava;
+    private Client&MockObject $client;
 
     public function testHandleWithValidRefreshToken(): void
     {
@@ -69,7 +69,7 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ])
             ->willReturn(new Response(200, [], Json::encode(['refresh_token' => 'the-token'])));
 
-        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request(query: ['code' => 'the-code']))->getContent());
+        $this->assertMatchesHtmlSnapshot((string) $this->stravaOAuthRequestHandler->handle(new Request(query: ['code' => 'the-code']))->getContent());
     }
 
     public function testHandleWithCodeButAnError(): void
@@ -82,7 +82,7 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
         $this->client
             ->expects($this->once())
             ->method('post')
-            ->willThrowException(new RequestException(
+            ->willThrowException(new ResponseException(
                 message: 'The error',
                 request: new \GuzzleHttp\Psr7\Request('GET', 'uri'),
                 response: new Response(404, [], Json::encode(['error' => 'The error'])),
@@ -105,7 +105,7 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
             ->expects($this->never())
             ->method('post');
 
-        $this->assertMatchesHtmlSnapshot($this->stravaOAuthRequestHandler->handle(new Request())->getContent());
+        $this->assertMatchesHtmlSnapshot((string) $this->stravaOAuthRequestHandler->handle(new Request())->getContent());
     }
 
     public function testHandleWhenTheAccessTokenHasInsufficientScopes(): void
@@ -143,6 +143,9 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
         $this->assertSame($expectedError, $page->filter('.text-red-800')->text());
     }
 
+    /**
+     * @return iterable<string, array{\Throwable, string}>
+     */
     public static function provideVerificationErrors(): iterable
     {
         yield 'inactive application' => [
@@ -179,6 +182,8 @@ class StravaOAuthRequestHandlerTest extends ContainerTestCase
     #[\Override]
     protected function setUp(): void
     {
+        parent::setUp();
+
         $this->stravaOAuthRequestHandler = new StravaOAuthRequestHandler(
             StravaClientId::fromString('client'),
             StravaClientSecret::fromString('secret'),

@@ -12,15 +12,15 @@ class SecuritySettingsRequestHandlerTest extends AdminWebTestCase
 {
     public function testItRendersTheEnvironmentDrivenAccessWhenConfigured(): void
     {
-        $this->withApiKey((string) ApiToken::generate());
+        $this->withApiKey(ApiToken::generate().', '.ApiToken::generate());
         $this->withMcpKey((string) McpToken::generate());
-        $this->withOidc('https://idp.example.com/application/o/dreeve/', 'dreeve', 'oidc-client-secret', 'athlete-subject, athlete@example.com');
+        $this->withOidc('https://idp.example.com/application/o/dreeve/', 'dreeve', 'oidc-client-secret', 'athlete-subject, athlete@example.com', '/certs/ca.pem');
         $this->client->loginUser($this->adminUser());
 
         $crawler = $this->client->request('GET', '/admin/settings/security');
 
-        $this->assertSame('Configured', $crawler->filter('input#apiKeyState[disabled]')->attr('value'));
-        $this->assertSame('Configured', $crawler->filter('input#mcpKeyState[disabled]')->attr('value'));
+        $this->assertSame('2 key(s) configured', $crawler->filter('input#apiKeyState[disabled]')->attr('value'));
+        $this->assertSame('1 key(s) configured', $crawler->filter('input#mcpKeyState[disabled]')->attr('value'));
         $this->assertStringNotContainsString('drv', $crawler->filter('main')->text());
 
         $this->assertStringContainsString('Single sign-on (enabled)', $crawler->filter('main')->text());
@@ -28,6 +28,7 @@ class SecuritySettingsRequestHandlerTest extends AdminWebTestCase
         $this->assertSame('dreeve', $crawler->filter('input#oidcClientId[disabled]')->attr('value'));
         $this->assertSame('Configured', $crawler->filter('input#oidcClientSecretState[disabled]')->attr('value'));
         $this->assertSame('athlete-subject, athlete@example.com', $crawler->filter('input#oidcAllowedUsers[disabled]')->attr('value'));
+        $this->assertSame('/certs/ca.pem', $crawler->filter('input#oidcCaFilePath[disabled]')->attr('value'));
         $this->assertSame('http://localhost/admin/login/oidc/callback', $crawler->filter('input#oidcRedirectUri[readonly]')->attr('value'));
         $this->assertCount(0, $crawler->filter('a[href="https://docs.dreeve.app/integrations/single-sign-on/"]'));
         $this->assertStringNotContainsString('oidc-client-secret', (string) $this->client->getResponse()->getContent());
@@ -64,6 +65,17 @@ class SecuritySettingsRequestHandlerTest extends AdminWebTestCase
         $this->assertCount(1, $crawler->filter('input[name="data[visitorsCanDownloadOriginalFiles]"][checked]'));
     }
 
+    public function testItChecksTheRequireLoginOptionByDefaultOnManagedInstances(): void
+    {
+        $this->withManagedMode();
+        static::getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::SECURITY, []);
+        $this->client->loginUser($this->adminUser());
+
+        $crawler = $this->client->request('GET', '/admin/settings/security');
+
+        $this->assertCount(1, $crawler->filter('input[type="checkbox"][name="data[requiresAuthentication]"][checked]'));
+    }
+
     public function testItRendersTheSecuritySettingsPage(): void
     {
         $this->client->loginUser($this->adminUser());
@@ -75,7 +87,8 @@ class SecuritySettingsRequestHandlerTest extends AdminWebTestCase
         // The security settings form.
         $this->assertCount(1, $crawler->filter('form[data-dispatch-command="update-settings"]'));
         $this->assertCount(1, $crawler->filter('form[data-dispatch-command="update-settings"] input[name="group"][value="security"]'));
-        $this->assertCount(1, $crawler->filter('input[name="data[requiresAuthentication]"]'));
+        $this->assertCount(1, $crawler->filter('input[type="hidden"][name="data[requiresAuthentication]"][value="0"]'));
+        $this->assertCount(1, $crawler->filter('input[type="checkbox"][name="data[requiresAuthentication]"]:not([checked])'));
         $this->assertCount(1, $crawler->filter('input[name="data[visitorsCanDownloadOriginalFiles]"]:not([checked])'));
 
         // The environment driven credentials, shown for reference only.

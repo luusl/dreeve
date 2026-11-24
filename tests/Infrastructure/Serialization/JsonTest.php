@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Infrastructure\Serialization;
 
 use App\Infrastructure\Exception\CorruptedData;
@@ -17,6 +19,7 @@ class JsonTest extends TestCase
 
         $this->assertEquals($array, Json::decode($encoded));
         $this->assertEquals($array, Json::encodeAndDecode($array));
+        $this->assertSame(['id' => '18446744073709551615'], Json::decode('{"id":18446744073709551615}'));
     }
 
     public function testEncodePretty(): void
@@ -35,17 +38,6 @@ class JsonTest extends TestCase
         );
     }
 
-    public function testDecodeLazy(): void
-    {
-        $this->assertEquals(
-            ['first', 'second', 'third'],
-            $this->namesIn(Json::decodeLazy(
-                json: file_get_contents(__DIR__.'/fixtures/lazy-decode.json') ?: '',
-                pointer: '/items'
-            ))
-        );
-    }
-
     public function testDecodeLazyFromFile(): void
     {
         $this->assertEquals(
@@ -59,7 +51,7 @@ class JsonTest extends TestCase
 
     public function testDecodeWhenInvalidJson(): void
     {
-        $this->expectExceptionObject(new CorruptedData('Invalid JSON detected. This is usually caused by corrupted activity data.
+        $this->expectExceptionObject(new CorruptedData('Invalid JSON detected (Syntax error near location 1:33). This is usually caused by corrupted activity data.
 Please see the troubleshooting guide for steps to resolve the issue: https://docs.dreeve.app/troubleshooting/import-build-fails/ for more information.'));
 
         Json::decode('{"name": "Ride", "distance": 42,}');

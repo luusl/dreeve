@@ -82,7 +82,7 @@ class MilestoneCollectorTest extends ContainerTestCase
         $collector = $this->createCollector();
         $milestones = $collector->discoverAll()->toArray();
 
-        $dates = array_map(fn ($m) => $m->getAchievedOn()->format('Y-m-d'), $milestones);
+        $dates = array_map(fn (Milestone $m): string => $m->getAchievedOn()->format('Y-m-d'), $milestones);
 
         for ($i = 0; $i < count($dates) - 1; ++$i) {
             $this->assertGreaterThanOrEqual(
@@ -102,7 +102,7 @@ class MilestoneCollectorTest extends ContainerTestCase
 
         $this->assertGreaterThan(1, count($milestones));
 
-        $dates = array_map(fn ($m) => $m->getAchievedOn()->format('Y-m-d'), $milestones);
+        $dates = array_map(fn (Milestone $m): string => $m->getAchievedOn()->format('Y-m-d'), $milestones);
         foreach ($dates as $date) {
             $this->assertEquals('2024-06-15', $date);
         }
@@ -117,7 +117,7 @@ class MilestoneCollectorTest extends ContainerTestCase
         $collector = $this->createCollector();
         $milestones = $collector->discoverAll()->toArray();
 
-        $dates = array_map(fn ($m) => $m->getAchievedOn()->format('Y-m-d'), $milestones);
+        $dates = array_map(fn (Milestone $m): string => $m->getAchievedOn()->format('Y-m-d'), $milestones);
 
         for ($i = 0; $i < count($dates) - 1; ++$i) {
             $this->assertGreaterThanOrEqual($dates[$i + 1], $dates[$i]);
@@ -135,10 +135,10 @@ class MilestoneCollectorTest extends ContainerTestCase
         $collector = $this->createCollector();
         $milestones = $collector->discoverAll()->toArray();
 
-        $categories = array_unique(array_map(fn ($m) => $m->getCategory()->value, $milestones));
+        $categories = array_unique(array_map(fn (Milestone $m) => $m->getCategory()->value, $milestones));
         $this->assertGreaterThan(1, count($categories));
 
-        $dates = array_map(fn ($m) => $m->getAchievedOn()->format('Y-m-d H:i:s'), $milestones);
+        $dates = array_map(fn (Milestone $m): string => $m->getAchievedOn()->format('Y-m-d H:i:s'), $milestones);
         for ($i = 0; $i < count($dates) - 1; ++$i) {
             $this->assertGreaterThanOrEqual($dates[$i + 1], $dates[$i]);
         }
@@ -153,7 +153,7 @@ class MilestoneCollectorTest extends ContainerTestCase
         $collector = $this->createCollector();
         $milestones = $collector->discoverAll()->toArray();
 
-        $dates = array_map(fn ($m) => $m->getAchievedOn()->format('Y-m-d'), $milestones);
+        $dates = array_map(fn (Milestone $m): string => $m->getAchievedOn()->format('Y-m-d'), $milestones);
         for ($i = 0; $i < count($dates) - 1; ++$i) {
             $this->assertGreaterThanOrEqual($dates[$i + 1], $dates[$i]);
         }
@@ -170,7 +170,7 @@ class MilestoneCollectorTest extends ContainerTestCase
     ): void {
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed($id))
+                ->withActivityId(ActivityId::fromUnprefixed((string) $id))
                 ->withStartDateTime(SerializableDateTime::fromString($date))
                 ->withSportType($sportType)
                 ->withDistance(Kilometer::from($distanceKm))
@@ -185,7 +185,7 @@ class MilestoneCollectorTest extends ContainerTestCase
     {
         $this->getContainer()->get(ActivityBestEffortRepository::class)->add(
             ActivityBestEffort::create(
-                activityId: ActivityId::fromUnprefixed($activityId),
+                activityId: ActivityId::fromUnprefixed((string) $activityId),
                 distanceInMeter: Meter::from($distanceInMeter),
                 sportType: $sportType,
                 timeInSeconds: $timeInSeconds,

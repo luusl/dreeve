@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Activity\Split;
 
 use App\Domain\Activity\Split\ActivitySplit;
@@ -9,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class ActivitySplitTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideRelativePacePercentages')]
+    #[DataProvider('provideRelativePacePercentages')]
     public function testGetRelativePacePercentage(
         ActivitySplit $activitySplit,
         float $expectedPercentage): void
@@ -17,6 +19,9 @@ class ActivitySplitTest extends TestCase
         $this->assertEquals($expectedPercentage, $activitySplit->getRelativePacePercentage());
     }
 
+    /**
+     * @return list<array{ActivitySplit, float}>
+     */
     public static function provideRelativePacePercentages(): array
     {
         return [

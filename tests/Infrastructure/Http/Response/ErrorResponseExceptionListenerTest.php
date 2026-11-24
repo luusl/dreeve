@@ -1,0 +1,183 @@
+<?php
+
+namespace App\Tests\Infrastructure\Http\Response;
+
+use App\Infrastructure\Config\PlatformEnvironment;
+use App\Infrastructure\Exception\EntityNotFound;
+use App\Infrastructure\Http\HttpStatusCode;
+use App\Infrastructure\Http\Response\ErrorResponseExceptionListener;
+use App\Infrastructure\Http\ServerErrorLogger;
+use App\Tests\ContainerTestCase;
+use App\Tests\Infrastructure\ValueObject\Identifier\FakeUuidFactory;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psr\Log\LoggerInterface;
+use Psr\Log\NullLogger;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpKernel\Event\ExceptionEvent;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\HttpKernel\HttpKernelInterface;
+use Twig\Environment;
+
+class ErrorResponseExceptionListenerTest extends ContainerTestCase
+{
+    private ErrorResponseExceptionListener $errorResponseExceptionListener;
+    private ServerErrorLogger $serverErrorLogger;
+
+    #[DataProvider('provideExceptions')]
+    public function testItRendersAnHtmlPageForTheMatchingStatusCode(\Throwable $exception, HttpStatusCode $expectedStatusCode): void
+    {
+        $event = $this->exceptionEvent($exception);
+
+        $this->errorResponseExceptionListener->onKernelException($event);
+
+        $response = $event->getResponse();
+        self::assertNotNull($response);
+        self::assertTrue($event->isAllowingCustomResponseCode());
+        self::assertEquals($expectedStatusCode->value, $response->getStatusCode());
+        self::assertEquals('text/html; charset=UTF-8', $response->headers->get('Content-Type'));
+        self::assertStringContainsString((string) $expectedStatusCode->value, (string) $response->getContent());
+    }
+
+    /**
+     * @return iterable<string, array{\Throwable, HttpStatusCode}>
+     */
+    public static function provideExceptions(): iterable
+    {
+        yield 'not found' => [new NotFoundHttpException('Unknown settings group "bogus"'), HttpStatusCode::NOT_FOUND];
+        yield 'entity not found' => [new EntityNotFound('Gear "gear-1" not found'), HttpStatusCode::NOT_FOUND];
+        yield 'invalid argument' => [new \InvalidArgumentException(), HttpStatusCode::BAD_REQUEST];
+        yield 'anything else' => [new \RuntimeException('A message'), HttpStatusCode::INTERNAL_SERVER_ERROR];
+    }
+
+    public function testItRendersTheNotFoundCopyForA404(): void
+    {
+        $event = $this->exceptionEvent(new NotFoundHttpException('Not found'));
+
+        $this->errorResponseExceptionListener->onKernelException($event);
+
+        $response = $event->getResponse();
+
+        self::assertNotNull($response);
+
+        self::assertStringContainsString('wandered off the map', (string) $response->getContent());
+    }
+
+    public function testItDoesNotLeakTheExceptionMessage(): void
+    {
+        $event = $this->exceptionEvent(new NotFoundHttpException('Unknown settings group "bogus"'));
+
+        $this->errorResponseExceptionListener->onKernelException($event);
+
+        $response = $event->getResponse();
+
+        self::assertNotNull($response);
+
+        self::assertStringNotContainsString('bogus', (string) $response->getContent());
+    }
+
+    public function testItRendersAndLogsAReferenceForAServerError(): void
+    {
+        $exception = new \RuntimeException('Something exploded');
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger
+            ->expects($this->once())
+            ->method('error')
+            ->with($this->anything(), ['exception' => $exception]);
+
+        $listener = new ErrorResponseExceptionListener(
+            PlatformEnvironment::PROD,
+            $this->getContainer()->get(Environment::class),
+            new ServerErrorLogger($logger, new FakeUuidFactory()),
+        );
+        $event = $this->exceptionEvent($exception);
+
+        $listener->onKernelException($event);
+
+        $response = $event->getResponse();
+
+        self::assertNotNull($response);
+
+        self::assertStringContainsString('0025176c', (string) $response->getContent());
+    }
+
+    public function testItDoesNotRenderAReferenceForA404(): void
+    {
+        $event = $this->exceptionEvent(new NotFoundHttpException('Not found'));
+
+        $this->errorResponseExceptionListener->onKernelException($event);
+
+        $response = $event->getResponse();
+
+        self::assertNotNull($response);
+
+        self::assertStringNotContainsString('Reference:', (string) $response->getContent());
+    }
+
+    public function testItStepsAsideInDevSoSymfonyRendersItsOwnErrorPage(): void
+    {
+        $listener = new ErrorResponseExceptionListener(
+            PlatformEnvironment::DEV,
+            $this->getContainer()->get(Environment::class),
+            $this->serverErrorLogger,
+        );
+        $event = $this->exceptionEvent(new \RuntimeException('A message'));
+
+        $listener->onKernelException($event);
+
+        self::assertNull($event->getResponse());
+    }
+
+    #[DataProvider('providePathsAnsweredWithAnEmptyBody')]
+    public function testItAnswersAsyncAndBadgeRequestsWithAnEmptyBody(string $path): void
+    {
+        $event = new ExceptionEvent(
+            $this->createStub(HttpKernelInterface::class),
+            Request::create($path),
+            HttpKernelInterface::MAIN_REQUEST,
+            new NotFoundHttpException('Not found'),
+        );
+
+        $this->errorResponseExceptionListener->onKernelException($event);
+
+        $response = $event->getResponse();
+        self::assertNotNull($response);
+        self::assertEquals(404, $response->getStatusCode());
+        self::assertEquals('', $response->getContent());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function providePathsAnsweredWithAnEmptyBody(): iterable
+    {
+        yield 'the internal api' => ['/api/internal/activities/activity-1/polylines'];
+        yield 'a badge' => ['/badge/zwift.svg'];
+    }
+
+    private function exceptionEvent(\Throwable $exception): ExceptionEvent
+    {
+        return new ExceptionEvent(
+            $this->createStub(HttpKernelInterface::class),
+            new Request(),
+            HttpKernelInterface::MAIN_REQUEST,
+            $exception
+        );
+    }
+
+    #[\Override]
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->serverErrorLogger = new ServerErrorLogger(
+            new NullLogger(),
+            new FakeUuidFactory(),
+        );
+
+        $this->errorResponseExceptionListener = new ErrorResponseExceptionListener(
+            PlatformEnvironment::PROD,
+            $this->getContainer()->get(Environment::class),
+            $this->serverErrorLogger,
+        );
+    }
+}

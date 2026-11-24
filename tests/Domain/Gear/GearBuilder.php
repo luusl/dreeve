@@ -7,6 +7,7 @@ namespace App\Tests\Domain\Gear;
 use App\Domain\Gear\Gear;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearType;
+use App\Domain\Media\MediaItemId;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Time\Seconds;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
@@ -24,8 +25,9 @@ final class GearBuilder
     private Meter $elevation;
     private int $numberOfActivities = 0;
     private int $totalCalories = 0;
-    private ?string $localImagePath = null;
+    private ?MediaItemId $mediaItemId = null;
     private ?Money $purchasePrice = null;
+    private ?string $notes = null;
 
     private function __construct()
     {
@@ -50,12 +52,13 @@ final class GearBuilder
             name: $this->name,
             isRetired: $this->isRetired,
             type: $this->type,
-            localImagePath: $this->localImagePath,
+            mediaItemId: $this->mediaItemId,
             movingTime: $this->movingTime,
             elevation: $this->elevation,
             numberOfActivities: $this->numberOfActivities,
             totalCalories: $this->totalCalories,
             purchasePrice: $this->purchasePrice,
+            notes: $this->notes,
         );
     }
 
@@ -67,7 +70,8 @@ final class GearBuilder
             name: $this->name,
             isRetired: $this->isRetired,
             type: $this->type,
-            localImagePath: $this->localImagePath,
+            notes: $this->notes,
+            mediaItemId: $this->mediaItemId,
         );
     }
 
@@ -78,9 +82,9 @@ final class GearBuilder
         return $this;
     }
 
-    public function withLocalImagePath(?string $localImagePath): self
+    public function withMediaItemId(?MediaItemId $mediaItemId): self
     {
-        $this->localImagePath = $localImagePath;
+        $this->mediaItemId = $mediaItemId;
 
         return $this;
     }
@@ -88,6 +92,13 @@ final class GearBuilder
     public function withPurchasePrice(?Money $purchasePrice): self
     {
         $this->purchasePrice = $purchasePrice;
+
+        return $this;
+    }
+
+    public function withNotes(?string $notes): self
+    {
+        $this->notes = $notes;
 
         return $this;
     }

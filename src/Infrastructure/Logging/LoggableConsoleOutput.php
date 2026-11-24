@@ -27,7 +27,7 @@ final readonly class LoggableConsoleOutput implements OutputInterface
 
         if (!$messages = array_filter(
             $messages,
-            fn (string $message): bool => !in_array($message, ['[1G', '[2K', "\r[2K", "\r [2K"])
+            fn (string $message): bool => !in_array($message, ['[1G', '[2K', "\r[2K", "\r [2K"], true)
         )) {
             return;
         }
@@ -65,11 +65,6 @@ final readonly class LoggableConsoleOutput implements OutputInterface
     public function isQuiet(): bool
     {
         return $this->output->isQuiet();
-    }
-
-    public function isSuccessful(): bool
-    {
-        return $this->output->isSilent();
     }
 
     public function isVerbose(): bool

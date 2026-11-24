@@ -14,7 +14,7 @@ class MostRecentMilestonesWidgetTest extends ContainerTestCase
 {
     private MostRecentMilestonesWidget $widget;
 
-    #[DataProvider(methodName: 'provideInvalidConfig')]
+    #[DataProvider('provideInvalidConfig')]
     public function testGuardValidConfigurationItShouldThrow(WidgetConfiguration $config, string $expectedException): void
     {
         $this->expectExceptionObject(new InvalidDashboardLayout($expectedException));
@@ -32,6 +32,9 @@ class MostRecentMilestonesWidgetTest extends ContainerTestCase
         );
     }
 
+    /**
+     * @return iterable<string, array{WidgetConfiguration, string}>
+     */
     public static function provideInvalidConfig(): iterable
     {
         yield 'missing "numberOfMilestonesToDisplay" key' => [WidgetConfiguration::empty(), 'Configuration item "numberOfMilestonesToDisplay" is required for MostRecentMilestonesWidget.'];

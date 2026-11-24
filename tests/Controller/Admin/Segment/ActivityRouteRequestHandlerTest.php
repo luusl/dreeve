@@ -35,10 +35,10 @@ class ActivityRouteRequestHandlerTest extends AdminWebTestCase
         }
         $this->client->loginUser($this->adminUser());
 
-        $this->client->request('GET', '/admin/activities/activity-1/route');
+        $this->client->request('GET', '/admin/activities/route?activityId='.urlencode('Morning Run / Commute (activity-1)'));
 
         $this->assertResponseIsSuccessful();
-        $route = Json::decode($this->client->getResponse()->getContent());
+        $route = Json::decode((string) $this->client->getResponse()->getContent());
         $this->assertEquals(
             [
                 'points' => [[51.0, 4.0], [51.001, 4.0], [51.002, 4.0]],
@@ -67,10 +67,10 @@ class ActivityRouteRequestHandlerTest extends AdminWebTestCase
         }
         $this->client->loginUser($this->adminUser());
 
-        $this->client->request('GET', '/admin/activities/activity-1/route');
+        $this->client->request('GET', '/admin/activities/route?activityId=activity-1');
 
         $this->assertResponseIsSuccessful();
-        $route = Json::decode($this->client->getResponse()->getContent());
+        $route = Json::decode((string) $this->client->getResponse()->getContent());
         $this->assertSame([], $route['altitude']);
         $this->assertNull($route['chart']);
     }
@@ -89,7 +89,7 @@ class ActivityRouteRequestHandlerTest extends AdminWebTestCase
             ->build());
         $this->client->loginUser($this->adminUser());
 
-        $this->client->request('GET', '/admin/activities/activity-1/route');
+        $this->client->request('GET', '/admin/activities/route?activityId=activity-1');
 
         $this->assertResponseStatusCodeSame(404);
     }
@@ -99,8 +99,10 @@ class ActivityRouteRequestHandlerTest extends AdminWebTestCase
         $this->withImportMode(ImportMode::FILES);
         $this->client->loginUser($this->adminUser());
 
-        $this->client->request('GET', '/admin/activities/activity-1/route');
+        $this->client->request('GET', '/admin/activities/route?activityId=activity-1');
+        $this->assertResponseStatusCodeSame(404);
 
+        $this->client->request('GET', '/admin/activities/route?activityId='.urlencode('Morning Run'));
         $this->assertResponseStatusCodeSame(404);
     }
 
@@ -109,7 +111,7 @@ class ActivityRouteRequestHandlerTest extends AdminWebTestCase
         $this->withImportMode(ImportMode::STRAVA_API);
         $this->client->loginUser($this->adminUser());
 
-        $this->client->request('GET', '/admin/activities/activity-1/route');
+        $this->client->request('GET', '/admin/activities/route?activityId=activity-1');
 
         $this->assertResponseStatusCodeSame(404);
     }

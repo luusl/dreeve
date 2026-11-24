@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\ValueObject\Time;
 
 use Carbon\Carbon;
+use Time\Duration;
 
 class SerializableDateTime extends \DateTimeImmutable implements \JsonSerializable, \Stringable
 {
@@ -42,6 +43,20 @@ class SerializableDateTime extends \DateTimeImmutable implements \JsonSerializab
         );
     }
 
+    /**
+     * @throws \InvalidArgumentException
+     */
+    public static function fromLocalDateTimeString(string $value): self
+    {
+        $value = trim($value);
+        // The datetime-local input omits the seconds when they are zero, trim them when present.
+        if (19 === strlen($value)) {
+            $value = substr($value, 0, 16);
+        }
+
+        return self::createFromFormat('Y-m-d\TH:i', $value);
+    }
+
     public static function some(): self
     {
         return self::fromString('2025-01-01 00:00:00');
@@ -77,9 +92,9 @@ class SerializableDateTime extends \DateTimeImmutable implements \JsonSerializab
         return $this->setTimezone($timezone);
     }
 
-    public function getSecondsUntilMidnight(): int
+    public function getDurationUntilMidnight(): Duration
     {
-        return $this->modify('tomorrow midnight')->getTimestamp() - $this->getTimestamp();
+        return Duration::fromSeconds($this->modify('tomorrow midnight')->getTimestamp() - $this->getTimestamp());
     }
 
     public function getHourWithoutLeadingZero(): int

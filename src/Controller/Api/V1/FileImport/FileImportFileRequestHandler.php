@@ -6,10 +6,9 @@ namespace App\Controller\Api\V1\FileImport;
 
 use App\Domain\Import\FileImportId;
 use App\Domain\Import\FileImportRepository;
-use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\Http\Api\ApiErrorCode;
 use App\Infrastructure\Http\Api\ApiErrorResponse;
-use App\Infrastructure\Http\AttachmentResponse;
+use App\Infrastructure\Http\Response\AttachmentResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -28,7 +27,7 @@ final readonly class FileImportFileRequestHandler
     {
         try {
             $fileImport = $this->fileImportRepository->find(FileImportId::fromString($fileImportId));
-        } catch (EntityNotFound|\InvalidArgumentException) {
+        } catch (\InvalidArgumentException) {
             throw new NotFoundHttpException(sprintf('File import "%s" not found', $fileImportId));
         }
 

@@ -6,7 +6,6 @@ namespace App\Controller\Api\V1\Activity\Update;
 
 use App\Application\AppUrl;
 use App\Controller\Api\V1\Activity\ActivityResponse;
-use App\Domain\Activity\ActivityExclusion;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\Stream\ActivityStreamRepository;
@@ -15,6 +14,7 @@ use App\Domain\Activity\UpdateActivity\UpdateActivity;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\MediaItemRepository;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\Exception\EntityNotFound;
@@ -36,6 +36,7 @@ final readonly class ActivityUpdateRequestHandler
         private GearRepository $gearRepository,
         private CommandBus $commandBus,
         private ImportMode $importMode,
+        private MediaItemRepository $mediaItemRepository,
         private AppUrl $appUrl,
     ) {
     }
@@ -53,7 +54,7 @@ final readonly class ActivityUpdateRequestHandler
 
         try {
             $activity = $this->activityRepository->find(ActivityId::fromString($activityId));
-        } catch (EntityNotFound|\InvalidArgumentException) {
+        } catch (\InvalidArgumentException) {
             throw new NotFoundHttpException(sprintf('Activity "%s" not found', $activityId));
         }
 
@@ -84,9 +85,7 @@ final readonly class ActivityUpdateRequestHandler
                 'calories' => $activity->getCalories(),
                 'isCommute' => $activity->isCommute(),
                 'isGroupActivity' => $activity->isGroupActivity(),
-                'excludedFrom' => array_fill_keys($activity->getExcludedFrom()->map(
-                    static fn (ActivityExclusion $exclusion): string => $exclusion->value
-                ), true),
+                'excludedFrom' => array_fill_keys($activity->getExcludedFrom()->toValues(), true),
                 ...$fields,
             ]);
         } catch (CouldNotDeserializeCommand $e) {
@@ -95,9 +94,12 @@ final readonly class ActivityUpdateRequestHandler
 
         $this->commandBus->dispatch($command);
 
+        $updatedActivity = $this->activityRepository->find($activity->getId());
+
         return ActivityResponse::detail(
-            activity: $this->activityRepository->find($activity->getId()),
+            activity: $updatedActivity,
             hasGpx: $this->activityStreamRepository->hasOneForActivityAndStreamType($activity->getId(), StreamType::LAT_LNG),
+            mediaItems: $this->mediaItemRepository->findByIds($updatedActivity->getMediaItemIds()),
             appUrl: $this->appUrl,
         );
     }

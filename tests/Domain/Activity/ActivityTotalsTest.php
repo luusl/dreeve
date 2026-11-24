@@ -13,7 +13,7 @@ use Symfony\Contracts\Translation\TranslatorInterface;
 
 class ActivityTotalsTest extends ContainerTestCase
 {
-    #[DataProvider(methodName: 'provideFirstActivityStartDates')]
+    #[DataProvider('provideFirstActivityStartDates')]
     public function testGetTotalDaysSinceFirstActivity(string $expectedResult, string $firstActivityStartDate, string $now): void
     {
         $this->assertEquals(
@@ -71,6 +71,7 @@ class ActivityTotalsTest extends ContainerTestCase
                 totalMovingTimeInSeconds: 7200,
                 totalDaysOfWorkingOut: 7,
                 firstActivityStartDate: $firstActivityStartDate,
+                lastActivityStartDate: null,
             ),
             now: $now ?? SerializableDateTime::fromString('2023-11-25'),
             translator: $this->getContainer()->get(TranslatorInterface::class),

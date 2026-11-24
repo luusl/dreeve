@@ -8,6 +8,7 @@ use App\Domain\Activity\ActivityWithRawData;
 use App\Domain\Activity\SportType\DbalSportTypeRepository;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\SportType\SportTypes;
+use App\Domain\Media\MediaItemId;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
 use App\Tests\ContainerTestCase;
@@ -60,7 +61,7 @@ class DbalSportTypeRepositoryTest extends ContainerTestCase
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::random())
                 ->withSportType(SportType::RUN)
-                ->withTotalImageCount(3)
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('1'))
                 ->build(),
             []
         ));
@@ -68,7 +69,7 @@ class DbalSportTypeRepositoryTest extends ContainerTestCase
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::random())
                 ->withSportType(SportType::RUN)
-                ->withTotalImageCount(3)
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('2'))
                 ->build(),
             []
         ));
@@ -76,7 +77,6 @@ class DbalSportTypeRepositoryTest extends ContainerTestCase
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::random())
                 ->withSportType(SportType::WALK)
-                ->withTotalImageCount(0)
                 ->build(),
             []
         ));
@@ -84,7 +84,7 @@ class DbalSportTypeRepositoryTest extends ContainerTestCase
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::random())
                 ->withSportType(SportType::RIDE)
-                ->withTotalImageCount(3)
+                ->withMediaItemIds(MediaItemId::fromUnprefixed('3'))
                 ->build(),
             []
         ));
@@ -97,6 +97,10 @@ class DbalSportTypeRepositoryTest extends ContainerTestCase
         );
     }
 
+    /**
+     * @param list<SportType> $sportTypesSortingOrder
+     * @param list<SportType> $hidePhotosForSportTypes
+     */
     private function sportTypeRepositoryFor(array $sportTypesSortingOrder, array $hidePhotosForSportTypes = []): DbalSportTypeRepository
     {
         $settingsRepository = $this->getContainer()->get(SettingsRepository::class);

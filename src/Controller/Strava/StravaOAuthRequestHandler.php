@@ -10,13 +10,12 @@ use App\Domain\Strava\InvalidStravaAccessToken;
 use App\Domain\Strava\Strava;
 use App\Domain\Strava\StravaClientId;
 use App\Domain\Strava\StravaClientSecret;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Serialization\Json;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\RequestOptions;
-use Psr\Http\Message\ResponseInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -80,10 +79,10 @@ final readonly class StravaOAuthRequestHandler
                         'refreshToken' => $refreshToken,
                         'url' => $request->getSchemeAndHttpHost(),
                     ]));
-                } catch (ClientException|RequestException $e) {
+                } catch (RequestException $e) {
                     $error = $e->getMessage();
-                    if (($response = $e->getResponse()) instanceof ResponseInterface) {
-                        $error = $response->getBody()->getContents();
+                    if ($e instanceof ResponseException) {
+                        $error = $e->getResponse()->getBody()->getContents();
                     }
                 }
             }

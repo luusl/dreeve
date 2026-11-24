@@ -12,13 +12,16 @@ class MostRecentActivitiesWidgetTest extends ContainerTestCase
 {
     private MostRecentActivitiesWidget $widget;
 
-    #[DataProvider(methodName: 'provideInvalidConfig')]
+    #[DataProvider('provideInvalidConfig')]
     public function testGuardValidConfigurationItShouldThrow(WidgetConfiguration $config, string $expectedException): void
     {
         $this->expectExceptionObject(new InvalidDashboardLayout($expectedException));
         $this->widget->guardValidConfiguration($config);
     }
 
+    /**
+     * @return iterable<string, array{WidgetConfiguration, string}>
+     */
     public static function provideInvalidConfig(): iterable
     {
         yield 'missing "numberOfActivitiesToDisplay" key' => [WidgetConfiguration::empty(), 'Configuration item "numberOfActivitiesToDisplay" is required for MostRecentActivitiesWidget.'];

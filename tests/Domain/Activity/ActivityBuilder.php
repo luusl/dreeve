@@ -12,10 +12,13 @@ use App\Domain\Activity\ActivityName;
 use App\Domain\Activity\ImportSource;
 use App\Domain\Activity\Route\RouteGeography;
 use App\Domain\Activity\SportType\SportType;
+use App\Domain\Activity\WorkoutRpe;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Activity\WorldType;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\Sensor\ConnectedSensors;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
 use App\Infrastructure\Measurement\Length\Kilometer;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Velocity\KmPerHour;
@@ -30,35 +33,36 @@ final class ActivityBuilder
     private SportType $sportType = SportType::RIDE;
     private WorldType $worldType = WorldType::REAL_WORLD;
     private ImportSource $importSource = ImportSource::STRAVA_API;
-    private ExternalReferenceId $externalReferenceId;
+    private ?ExternalReferenceId $externalReferenceId;
     private ActivityName $name;
-    private string $description;
+    private string $description = '';
     private Kilometer $distance;
     private Meter $elevation;
+    private ?Meter $descent = null;
     private ?Coordinate $startingCoordinate = null;
-    private ?int $calories;
+    private ?int $calories = 0;
     private ?int $kilojoules = null;
     private ?int $averagePower = null;
-    private ?int $maxPower;
+    private ?int $maxPower = null;
     private KmPerHour $averageSpeed;
     private KmPerHour $maxSpeed;
     private ?int $averageHeartRate = null;
-    private ?int $maxHeartRate;
-    private ?int $averageCadence;
+    private ?int $maxHeartRate = null;
+    private ?int $averageCadence = null;
     private int $movingTimeInSeconds = 10;
     private int $elapsedTimeInSeconds = 10;
-    private int $totalImageCount = 0;
     private ?string $deviceName = null;
     private ?ConnectedSensors $connectedSensors = null;
-    /** @var array<string> */
-    private array $localImagePaths = [];
+    /** @var array<MediaItemId> */
+    private array $mediaItemIds = [];
     private ?string $polyline = null;
     private RouteGeography $routeGeography;
-    private readonly ?string $weather;
     private ?GearId $gearId = null;
-    private bool $isCommute;
-    private bool $isGroupActivity;
-    private ?WorkoutType $workoutType;
+    private bool $isCommute = false;
+    private bool $isGroupActivity = false;
+    private ?WorkoutType $workoutType = null;
+    private ?WorkoutRpe $workoutRpe = null;
+    private ?int $workoutFeel = null;
     private ActivityExclusions $excludedFrom;
 
     private function __construct()
@@ -66,20 +70,11 @@ final class ActivityBuilder
         $this->activityId = ActivityId::fromUnprefixed('903645');
         $this->startDateTime = SerializableDateTime::fromString('2023-10-10');
         $this->name = ActivityName::fromString('Test activity');
-        $this->description = '';
         $this->distance = Kilometer::from(10);
         $this->elevation = Meter::from(0);
-        $this->calories = 0;
-        $this->maxPower = null;
         $this->averageSpeed = KmPerHour::from(0);
         $this->maxSpeed = KmPerHour::from(0);
-        $this->maxHeartRate = null;
-        $this->averageCadence = null;
-        $this->weather = null;
         $this->routeGeography = RouteGeography::create([]);
-        $this->isCommute = false;
-        $this->isGroupActivity = false;
-        $this->workoutType = null;
         $this->excludedFrom = ActivityExclusions::empty();
         $this->externalReferenceId = ExternalReferenceId::fromString('1234567');
     }
@@ -102,6 +97,7 @@ final class ActivityBuilder
             description: $this->description,
             distance: $this->distance,
             elevation: $this->elevation,
+            descent: $this->descent,
             startingCoordinate: $this->startingCoordinate,
             calories: $this->calories,
             kilojoules: $this->kilojoules,
@@ -116,15 +112,16 @@ final class ActivityBuilder
             elapsedTimeInSeconds: $this->elapsedTimeInSeconds,
             deviceName: $this->deviceName,
             connectedSensors: $this->connectedSensors,
-            totalImageCount: $this->totalImageCount,
-            localImagePaths: $this->localImagePaths,
+            mediaItemIds: MediaItemIds::fromArray($this->mediaItemIds),
             polyline: $this->polyline,
             routeGeography: $this->routeGeography,
-            weather: $this->weather,
+            weather: null,
             gearId: $this->gearId,
             isCommute: $this->isCommute,
             isGroupActivity: $this->isGroupActivity,
             workoutType: $this->workoutType,
+            workoutRpe: $this->workoutRpe,
+            workoutFeel: $this->workoutFeel,
         );
     }
 
@@ -141,6 +138,7 @@ final class ActivityBuilder
             description: $this->description,
             distance: $this->distance,
             elevation: $this->elevation,
+            descent: $this->descent,
             startingCoordinate: $this->startingCoordinate,
             calories: $this->calories,
             kilojoules: $this->kilojoules,
@@ -155,15 +153,16 @@ final class ActivityBuilder
             elapsedTimeInSeconds: $this->elapsedTimeInSeconds,
             deviceName: $this->deviceName,
             connectedSensors: $this->connectedSensors,
-            totalImageCount: $this->totalImageCount,
-            localImagePaths: $this->localImagePaths,
+            mediaItemIds: MediaItemIds::fromArray($this->mediaItemIds),
             polyline: $this->polyline,
             routeGeography: $this->routeGeography,
-            weather: $this->weather,
+            weather: null,
             gearId: $this->gearId,
             isCommute: $this->isCommute,
             isGroupActivity: $this->isGroupActivity,
             workoutType: $this->workoutType,
+            workoutRpe: $this->workoutRpe,
+            workoutFeel: $this->workoutFeel,
             excludedFrom: $this->excludedFrom,
         );
     }
@@ -322,13 +321,6 @@ final class ActivityBuilder
         return $this;
     }
 
-    public function withTotalImageCount(int $totalImageCount): self
-    {
-        $this->totalImageCount = $totalImageCount;
-
-        return $this;
-    }
-
     public function withDistance(Kilometer $distance): self
     {
         $this->distance = $distance;
@@ -343,16 +335,16 @@ final class ActivityBuilder
         return $this;
     }
 
-    public function withLocalImagePaths(string ...$localImagePaths): self
+    public function withDescent(?Meter $descent): self
     {
-        $this->localImagePaths = $localImagePaths;
+        $this->descent = $descent;
 
         return $this;
     }
 
-    public function withoutLocalImagePaths(): self
+    public function withMediaItemIds(MediaItemId ...$mediaItemIds): self
     {
-        $this->localImagePaths = [];
+        $this->mediaItemIds = $mediaItemIds;
 
         return $this;
     }
@@ -409,6 +401,20 @@ final class ActivityBuilder
     public function withWorkoutType(WorkoutType $workoutType): self
     {
         $this->workoutType = $workoutType;
+
+        return $this;
+    }
+
+    public function withWorkoutRpe(?WorkoutRpe $workoutRpe): self
+    {
+        $this->workoutRpe = $workoutRpe;
+
+        return $this;
+    }
+
+    public function withWorkoutFeel(?int $workoutFeel): self
+    {
+        $this->workoutFeel = $workoutFeel;
 
         return $this;
     }

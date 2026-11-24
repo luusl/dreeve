@@ -28,7 +28,7 @@ class ActivityBasedRouteRepositoryTest extends ContainerTestCase
     {
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(1))
+                ->withActivityId(ActivityId::fromUnprefixed('1'))
                 ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 14:00:34'))
                 ->withPolyline('tqafAua~y^vG{D')
                 ->withRouteGeography(RouteGeography::create(['country_code' => 'BE']))
@@ -38,25 +38,25 @@ class ActivityBasedRouteRepositoryTest extends ContainerTestCase
 
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(2))
+                ->withActivityId(ActivityId::fromUnprefixed('2'))
                 ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 14:00:34'))
                 ->withPolyline('')
-                ->withRouteGeography(RouteGeography::create(['waw']))
+                ->withRouteGeography(RouteGeography::create([]))
                 ->build(),
             rawData: []
         ));
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(3))
+                ->withActivityId(ActivityId::fromUnprefixed('3'))
                 ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 14:00:34'))
                 ->withPolyline(null)
-                ->withRouteGeography(RouteGeography::create(['waw']))
+                ->withRouteGeography(RouteGeography::create([]))
                 ->build(),
             rawData: []
         ));
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(4))
+                ->withActivityId(ActivityId::fromUnprefixed('4'))
                 ->withStartDateTime(SerializableDateTime::fromString('2023-10-10 14:00:34'))
                 ->withPolyline('line')
                 ->withRouteGeography(RouteGeography::create([]))
@@ -65,7 +65,7 @@ class ActivityBasedRouteRepositoryTest extends ContainerTestCase
         ));
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(5))
+                ->withActivityId(ActivityId::fromUnprefixed('5'))
                 ->withStartDateTime(SerializableDateTime::fromString('2025-01-02 09:12:00'))
                 ->withPolyline('tqafAua~y^vG{D')
                 ->withIsGroupActivity(true)
@@ -103,7 +103,7 @@ class ActivityBasedRouteRepositoryTest extends ContainerTestCase
         foreach ($routes as [$sportType, $routeGeography]) {
             $this->activityRepository->add(ActivityWithRawData::fromState(
                 activity: ActivityBuilder::fromDefaults()
-                    ->withActivityId(ActivityId::fromUnprefixed(++$index))
+                    ->withActivityId(ActivityId::fromUnprefixed((string) ++$index))
                     ->withSportType($sportType)
                     ->withWorldType(WorldType::REAL_WORLD)
                     ->withPolyline('tqafAua~y^vG{D')
@@ -116,7 +116,7 @@ class ActivityBasedRouteRepositoryTest extends ContainerTestCase
         // Excluded by the WHERE clause, so it must not show up in either.
         $this->activityRepository->add(ActivityWithRawData::fromState(
             activity: ActivityBuilder::fromDefaults()
-                ->withActivityId(ActivityId::fromUnprefixed(99))
+                ->withActivityId(ActivityId::fromUnprefixed('99'))
                 ->withPolyline(null)
                 ->withRouteGeography(RouteGeography::create(['country_code' => 'FR']))
                 ->build(),

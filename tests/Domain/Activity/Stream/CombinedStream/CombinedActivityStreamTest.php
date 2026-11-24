@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Activity\Stream\CombinedStream;
 
 use App\Domain\Activity\ActivityId;
@@ -14,7 +16,7 @@ class CombinedActivityStreamTest extends TestCase
     public function testGetters(): void
     {
         $stream = CombinedActivityStream::fromState(
-            activityId: ActivityId::fromUnprefixed(1),
+            activityId: ActivityId::fromUnprefixed('1'),
             unitSystem: UnitSystem::METRIC,
             streamTypes: CombinedStreamTypes::fromArray([CombinedStreamType::VELOCITY]),
             data: [],
@@ -26,7 +28,7 @@ class CombinedActivityStreamTest extends TestCase
         $this->assertEmpty($stream->getCoordinates());
 
         $stream = CombinedActivityStream::fromState(
-            activityId: ActivityId::fromUnprefixed(1),
+            activityId: ActivityId::fromUnprefixed('1'),
             unitSystem: UnitSystem::METRIC,
             streamTypes: CombinedStreamTypes::fromArray([
                 CombinedStreamType::TIME,

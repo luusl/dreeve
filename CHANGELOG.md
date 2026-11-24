@@ -1,3 +1,182 @@
+# [v5.9.1](https://github.com/dreeveapp/dreeve/releases/tag/v5.9.1) - 2026-11-20
+
+> [!WARNING]
+> This release migrates all existing images to media items with metadata.
+>
+> Make sure to back up your database before upgrading.
+
+## New features
+* Activity images are now stored as media items with metadata
+* Activity image metadata can be managed from the admin panel
+* Activity images with coordinates are displayed at their corresponding locations on route maps
+
+## Improvements
+* Added ETag revalidation for heatmaps, activity data and segment data tables to reduce unnecessary requests
+* Fixed support for oversized JSON integers, ensuring 64-bit Strava IDs are handled correctly
+
+## Technical details
+* Update German translations in admin+intl-icu.yaml by @effectpears in https://github.com/dreeveapp/dreeve/pull/3050
+* ISSUE #3054: Default to requiring login on managed instances by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3055
+* ISSUE #3056: Replace Symfony form in AI chat with plain HTML form by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3058
+* ISSUE #3060: Add curated sports photos for anonymized activity images in demo mode by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3061
+* ISSUE #3062: Store activity photos as media items with their metadata by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3068
+* ISSUE #3067: Decode oversized JSON integers as strings to support 64-bit Strava ids by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3069
+* ISSUE #3064: Revalidate heatmap routes with an ETag by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3070
+* ISSUE #3075: Clean up and deduplicate JS by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3076
+* ISSUE #3057: Raise image upload limit to 15 MB per file by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3077
+* ISSUE #3064: Add ETag revalidation to the activity and segment data tables by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3078
+* ISSUE #3073: Map EntityNotFound to a 404 in the API exception listener by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3079
+* ISSUE #3082: Remove dependency to Flowbite by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3083
+* ISSUE #3059: Show activity photos at their locations on the route map by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3080
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.9.0...v5.9.1
+
+# [v5.9.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.9.0) - 2026-11-15
+
+> [!NOTE]
+> We released a separate __Coros__ container to automatically sync your Coros FIT files
+> to Dreeve's watch folder. Read all about it in the docs: https://docs.dreeve.app/integrations/coros-connector/
+> A big thank you to @xballoy for setting this up 👏
+
+## Free Dreeve stickers
+
+Want a Dreeve sticker? Leave your address at [dreeve.app/stickers](https://dreeve.app/stickers) and we'll mail you one for free.
+
+Once it arrives, stick it anywhere you ride, run or work out, and send a photo with the coordinates to hello@dreeve.app. 
+Later on we'll use these to build a map of Dreeve stickers around the world.
+
+<img src="https://dreeve.app/assets/dreeve-stickers.jpg" alt="Dreeve stickers" width="300">
+
+## Activity collections and automated backups
+
+Alongside various improvements and bug fixes, this release introduces two major features.
+
+**Activity collections**: A way to bundle your activities into trips and events. Collections can be managed from the admin panel.
+
+**Automated backups**: You can now schedule regular backups of your Dreeve instance. 
+Find out more in the backup and restore documentation: https://docs.dreeve.app/maintenance/backup-and-restore
+
+## New features
+* Added collections to organise trips and multi-day events
+* Create and restore backups 
+* Added a notes field to gear
+* Exposed segments through the public API
+
+## Improvements
+* Added a sponsor message to the new-version modal
+
+## Bug fixes
+* Fixed photo gallery tiles not wrapping correctly in WebKit
+* Fixed negative values in the load activity heatmap
+
+## Technical details
+* ISSUE #3009: Sponsor nudge in the new-version modal by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3010
+* German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/3012
+* ISSUE #2978: Collections for trips and multi-day events by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2979
+* ISSUE #3011: Create and restore backups by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3013
+* German Translation for Collections by @effectpears in https://github.com/dreeveapp/dreeve/pull/3014
+* docs: add COROS connector page by @xballoy in https://github.com/dreeveapp/dreeve/pull/3018
+* ISSUE #3020: Note field for gear by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3021
+* German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/3022
+* ISSUE #3019: Expose segments in the public API by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3026
+* ISSUE #3023: Size photo gallery tiles by orientation so WebKit wraps them correctly by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3027
+* ISSUE #3041: Fix negative number in load activity heatmap by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3043
+* ISSUE #3044: Managed mode by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3045
+
+## New Contributors
+* @xballoy made their first contribution in https://github.com/dreeveapp/dreeve/pull/3018
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.8.2...v5.9.0
+
+# [v5.8.2](https://github.com/dreeveapp/dreeve/releases/tag/v5.8.2) - 2026-11-08
+
+## New features
+* Added a configurable long date format setting
+* Exposed heart rate zones and value distributions to AI tools
+
+## Improvements
+* Allow to sort similar activity matching based on average speed
+* Made manual equipment selection easier
+* Reduced the Docker image size.
+
+## Technical details
+* ISSUE #2983: Rank similar activities by average speed by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2984
+* ISSUE #2986: Delete the leftover appearance heatmap setting before dropping the settings group column by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2987
+* ISSUE #2988: Truncate sidebar labels with CSS instead of a character limit by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2989
+* ISSUE #2985: Make manual selection of equipment easier by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2992
+* ISSUE #2995: Slim down Docker image by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2998
+* ISSUE #2997: Add a configurable long date format setting by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2999
+* ISSUE #3002: Verify AppVersion matches the git tag with a console command by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3003
+* German Translation by @effectpears in https://github.com/dreeveapp/dreeve/pull/3005
+* ISSUE #3004: Expose heart rate zones and value distributions to the AI tools by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/3006
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.8.1...v.5.8.2
+
+# [v5.8.1](https://github.com/dreeveapp/dreeve/releases/tag/v5.8.1) - 2026-11-03
+
+## New features
+*  Added support for custom CA certificates in OIDC configurations
+
+## Improvements
+* Added logging for failed OIDC login attempts
+* Improved autocomplete suggestions with clearer labels
+* Added distinct navigation icons for activities and monthly statistics
+
+## Bug fixes
+* Skip reverse geocoding for Zwift activities recorded as regular rides
+
+## Technical details
+* ISSUE #2960: Never reverse geocode Zwift activities recorded as a regular ride by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2961
+* ISSUE #2959: Log OIDC login failures by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2962
+* ISSUE #2964: Back SystemClock with Symfony's clock service by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2965
+* ISSUE #2966: Support custom CA certificates for OIDC by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2967
+* ISSUE #2968: Improve the autocomplete widget by including a sensible label by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2969
+* ISSUE #2970: Use distinct icons for activities and monthly stats in the navigation by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2971
+* ISSUE #2972: Delete activity related data through a tagged interface by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2974
+* ISSUE #2975: Harden PHPstan by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2976
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.8.0...v5.8.1
+
+# [v5.8.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.8.0) - 2026-10-31
+
+> [!NOTE]
+> Dreeve now supports single sign-on (OIDC), so you can log in to the admin panel with your own identity provider.
+> See the [single sign-on documentation](https://docs.dreeve.app/integrations/single-sign-on/) for setup instructions.
+
+## New features
+* Added support for OpenID Connect (OIDC) authentication
+* Added support for the new Zwift video routes
+
+## Improvements
+* Updated the Watopia map to include the Wild Isles expansion
+* Improved the power curve chart on the peak power outputs page
+* Redesigned the monthly statistics page
+* Improved activity search with start city and region
+* Improved the best efforts history page
+* Improved page metadata and meta tags
+* Grouped settings in the admin panel for easier navigation
+
+## Technical details
+* ISSUE #2927: Update Watopia map with the Wild Isles expansion by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2928
+* ISSUE #2929: Improve power curve chart by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2930
+* ISSUE #2931: Improve Echarts callbacks by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2932
+* ISSUE #2925: Provide support for OICD authentication by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2933
+* ISSUE #2925: Show the SSO configuration on the security settings page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2934
+* ISSUE #2935: Confirm Strava webhook deletions with the Strava API by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2936
+* ISSUE #2937: Redesign the monthly stats page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2938
+* ISSUE #2937: Fix font weight and color by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2939
+* ISSUE #2940: Make activities searchable by start city and region by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2941
+* ISSUE #2942: Improve best effort history page by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2943
+* ISSUE #2942: Show best efforts as a speed/pace curve by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2944
+* ISSUE #2937: Show the moving time share bar on md screens by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2945
+* ISSUE #2947: Improve page meta tags by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2948
+* ISSUE #2947: Improve page meta tags - BIS by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2949
+* ISSUE #2950: 404 for missing records, deprecation fixes and dead code cleanup by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2951
+* ISSUE #2952: Group settings in the admin panel by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2953
+* ISSUE #2954: Render a real-world map for Zwift video routes by @robiningelbrecht in https://github.com/dreeveapp/dreeve/pull/2955
+
+**Full Changelog**: https://github.com/dreeveapp/dreeve/compare/v5.7.0...v5.8.0
+
 # [v5.7.0](https://github.com/dreeveapp/dreeve/releases/tag/v5.7.0) - 2026-10-26
 
 > [!NOTE]

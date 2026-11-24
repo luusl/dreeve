@@ -1,24 +1,202 @@
-[
-    {
-        "activityId": "123456789",
-        "streamType": "watts",
-        "totalPoints": 4253,
-        "maxPower": 540,
-        "minPower": 7,
-        "avgPower": 219
+{
+    "streams": [
+        {
+            "streamType": "watts",
+            "maxPower": 540,
+            "minPower": 7,
+            "avgPower": 219
+        },
+        {
+            "streamType": "cadence",
+            "maxCadence": 540,
+            "minCadence": 7,
+            "avgCadence": 219
+        },
+        {
+            "streamType": "heartrate",
+            "maxHeartRate": 190,
+            "minHeartRate": 163,
+            "avgHeartRate": 178
+        },
+        {
+            "streamType": "velocity_smooth",
+            "maxMeterPerSecond": 540,
+            "minMeterPerSecond": 7,
+            "avgMeterPerSecond": 219
+        }
+    ],
+    "timeInHeartRateZones": {
+        "zone1": {
+            "rangeInBpm": [
+                92,
+                111
+            ],
+            "timeInSeconds": 60,
+            "percentage": 2.8
+        },
+        "zone2": {
+            "rangeInBpm": [
+                112,
+                130
+            ],
+            "timeInSeconds": 300,
+            "percentage": 13.9
+        },
+        "zone3": {
+            "rangeInBpm": [
+                131,
+                148
+            ],
+            "timeInSeconds": 600,
+            "percentage": 27.8
+        },
+        "zone4": {
+            "rangeInBpm": [
+                149,
+                167
+            ],
+            "timeInSeconds": 900,
+            "percentage": 41.7
+        },
+        "zone5": {
+            "rangeInBpm": [
+                168,
+                18500
+            ],
+            "timeInSeconds": 300,
+            "percentage": 13.9
+        }
     },
-    {
-        "activityId": "123456789",
-        "streamType": "cadence",
-        "totalPoints": 4253
-    },
-    [],
-    {
-        "activityId": "123456789",
-        "streamType": "velocity_smooth",
-        "totalPoints": 4253,
-        "maxMeterPerSecond": 540,
-        "minMeterPerSecond": 7,
-        "avgMeterPerSecond": 219
+    "valueDistributions": {
+        "watts": {
+            "unit": "watts",
+            "columns": [
+                "from",
+                "to",
+                "timeInSeconds"
+            ],
+            "buckets": [
+                [
+                    90,
+                    109,
+                    120
+                ],
+                [
+                    150,
+                    169,
+                    600
+                ],
+                [
+                    210,
+                    229,
+                    900
+                ],
+                [
+                    250,
+                    269,
+                    360
+                ],
+                [
+                    470,
+                    489,
+                    15
+                ]
+            ]
+        },
+        "heartrate": {
+            "unit": "bpm",
+            "columns": [
+                "from",
+                "to",
+                "timeInSeconds"
+            ],
+            "buckets": [
+                [
+                    100,
+                    103,
+                    60
+                ],
+                [
+                    120,
+                    123,
+                    300
+                ],
+                [
+                    140,
+                    143,
+                    600
+                ],
+                [
+                    160,
+                    163,
+                    900
+                ],
+                [
+                    172,
+                    175,
+                    300
+                ]
+            ]
+        },
+        "velocity_smooth": {
+            "unit": "kilometerPerHour",
+            "columns": [
+                "from",
+                "to",
+                "timeInSeconds"
+            ],
+            "buckets": [
+                [
+                    18,
+                    19,
+                    120
+                ],
+                [
+                    24,
+                    25,
+                    900
+                ],
+                [
+                    30,
+                    31,
+                    1200
+                ],
+                [
+                    32,
+                    33,
+                    600
+                ],
+                [
+                    44,
+                    45,
+                    60
+                ]
+            ]
+        },
+        "cadence": {
+            "unit": "rpm",
+            "columns": [
+                "from",
+                "to",
+                "timeInSeconds"
+            ],
+            "buckets": [
+                [
+                    0,
+                    4,
+                    30
+                ],
+                [
+                    85,
+                    89,
+                    1500
+                ],
+                [
+                    90,
+                    94,
+                    1500
+                ]
+            ]
+        }
     }
-]
+}

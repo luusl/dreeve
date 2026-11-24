@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller\Admin\Settings;
 
 use App\Tests\Controller\Admin\AdminWebTestCase;
@@ -19,10 +21,14 @@ class GenerateTokenRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString($title, $crawler->filter('h3')->text());
         $this->assertMatchesRegularExpression($keyPattern, $crawler->filter('.modal-like-form code')->first()->text());
         $this->assertStringContainsString('Set '.$envVar.' in your .env file', $crawler->filter('main')->text());
+        $this->assertStringContainsString('Paste the value above, separated by a comma from any keys you want to keep.', $crawler->filter('main')->text());
         // Nothing is submitted anywhere, the value only becomes real once it is in .env.
         $this->assertCount(0, $crawler->filter('.modal-like-form form'));
     }
 
+    /**
+     * @return iterable<string, array{string, string, string, string}>
+     */
     public static function provideKeys(): iterable
     {
         yield 'API key' => ['/admin/settings/token/generate/api', 'Generate an API key', '/^drv_[a-f0-9]{64}$/', 'DREEVE_API_KEY'];

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Infrastructure\Time\Format;
 
 use App\Infrastructure\Time\Format\ProvideTimeFormats;
@@ -10,7 +12,7 @@ class ProvideTimeFormatsTest extends TestCase
 {
     use ProvideTimeFormats;
 
-    #[DataProvider(methodName: 'provideTimeFormatsForHumans')]
+    #[DataProvider('provideTimeFormatsForHumans')]
     public function testFormatDurationForHumans(int $timeInSeconds, string $expectedResult): void
     {
         $this->assertEquals(
@@ -19,7 +21,7 @@ class ProvideTimeFormatsTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideTimeFormatsForHumansForChartLabel')]
+    #[DataProvider('provideTimeFormatsForHumansForChartLabel')]
     public function testFormatDurationForChartLabel(int $timeInSeconds, string $expectedResult): void
     {
         $this->assertEquals(
@@ -28,7 +30,7 @@ class ProvideTimeFormatsTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideTimeFormatsForHumansWithoutTrimming')]
+    #[DataProvider('provideTimeFormatsForHumansWithoutTrimming')]
     public function testFormatDurationForHumansWithoutTrimming(int $timeInSeconds, string $expectedResult): void
     {
         $this->assertEquals(
@@ -37,6 +39,9 @@ class ProvideTimeFormatsTest extends TestCase
         );
     }
 
+    /**
+     * @return list<array{int, string}>
+     */
     public static function provideTimeFormatsForHumans(): array
     {
         return [
@@ -47,6 +52,9 @@ class ProvideTimeFormatsTest extends TestCase
         ];
     }
 
+    /**
+     * @return list<array{int, string}>
+     */
     public static function provideTimeFormatsForHumansForChartLabel(): array
     {
         return [
@@ -57,6 +65,9 @@ class ProvideTimeFormatsTest extends TestCase
         ];
     }
 
+    /**
+     * @return list<array{int, string}>
+     */
     public static function provideTimeFormatsForHumansWithoutTrimming(): array
     {
         return [

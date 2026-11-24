@@ -8,10 +8,9 @@ use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\GpxFileName;
 use App\Domain\Activity\GpxSerializer;
-use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\Http\Api\ApiErrorCode;
 use App\Infrastructure\Http\Api\ApiErrorResponse;
-use App\Infrastructure\Http\AttachmentResponse;
+use App\Infrastructure\Http\Response\AttachmentResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -33,7 +32,7 @@ final readonly class ActivityGpxRequestHandler
     {
         try {
             $activity = $this->activityRepository->find(ActivityId::fromString($activityId));
-        } catch (EntityNotFound|\InvalidArgumentException) {
+        } catch (\InvalidArgumentException) {
             throw new NotFoundHttpException(sprintf('Activity "%s" not found', $activityId));
         }
 

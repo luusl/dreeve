@@ -4,23 +4,28 @@ declare(strict_types=1);
 
 namespace App\Controller\File;
 
-use App\Domain\Image\ImageDirectory;
+use App\Domain\Media\MediaItemDirectory;
+use App\Infrastructure\Http\Response\CachePolicy;
 use App\Infrastructure\Security\Visitor;
 use App\Infrastructure\ValueObject\String\Path;
 use League\Flysystem\FilesystemOperator;
+use Symfony\Component\DependencyInjection\Attribute\Target;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Time\Duration;
 
 #[AsController]
 final readonly class LocalImageRequestHandler
 {
     /** @var list<string> */
     private const array ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'];
+    private const int ANONYMIZED_IMAGE_COUNT = 20;
 
     public function __construct(
+        #[Target('file.storage')]
         private FilesystemOperator $fileStorage,
         private Visitor $visitor,
     ) {
@@ -35,36 +40,33 @@ final readonly class LocalImageRequestHandler
             return new Response('', Response::HTTP_NOT_FOUND);
         }
 
-        $isActivityPhoto = str_starts_with($path, ImageDirectory::ACTIVITIES->value.'/');
-        $cachingHeaders = [
-            // Activity photos are the only ones that get anonymized, so the same URL can answer with
-            // the real photo or with a placeholder depending on state the browser cannot observe.
-            // Storing them would keep serving the real photo after demo mode is switched on.
-            // Every other file is written once under a unique name and never changes in place.
-            'Cache-Control' => $isActivityPhoto ? 'private, no-store' : 'private, max-age=31536000, immutable',
-            'Vary' => 'Cookie',
-        ];
+        $isActivityPhoto = str_starts_with($path, MediaItemDirectory::ACTIVITIES->value.'/');
+        // Activity photos are the only ones that get anonymized, so the same URL can answer with
+        // the real photo or with a placeholder depending on state the browser cannot observe.
+        // Storing them would keep serving the real photo after demo mode is switched on.
+        // Every other file is written once under a unique name and never changes in place.
+        $cachePolicy = $isActivityPhoto ? CachePolicy::private()->noStore() : CachePolicy::private()->maxAge(Duration::fromHours(365 * 24))->immutable();
+        $cachingHeaders = ['Vary' => 'Cookie'];
 
         if ($isActivityPhoto && !$this->visitor->isTrusted()) {
-            // Not a trusted visitor: serve an anonymized, stable random photo instead of the real one.
+            // Not a trusted visitor: serve a stable photo from the bundled anonymized set instead of the real one.
             $seed = Path::fromString($path)->getFilenameWithoutExtension();
-            [$width, $height] = 0 === crc32($seed) % 2 ? [800, 1200] : [1200, 800];
 
-            return new RedirectResponse(
-                sprintf('https://picsum.photos/seed/%s/%d/%d', urlencode($seed), $width, $height),
-                Response::HTTP_FOUND,
-                $cachingHeaders
-            );
+            return $cachePolicy->applyTo(new RedirectResponse(
+                url: sprintf('/assets/images/anonymized/%02d.webp', crc32($seed) % self::ANONYMIZED_IMAGE_COUNT + 1),
+                status: Response::HTTP_FOUND,
+                headers: $cachingHeaders
+            ));
         }
 
         $stream = $this->fileStorage->readStream($path);
 
-        return new StreamedResponse(
+        return $cachePolicy->applyTo(new StreamedResponse(
             function () use ($stream): void {
                 fpassthru($stream);
             },
             Response::HTTP_OK,
             [...$cachingHeaders, 'Content-Type' => $this->fileStorage->mimeType($path)]
-        );
+        ));
     }
 }

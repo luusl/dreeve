@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Geography\Country;
 
 use App\Domain\Geography\Country\CountryGeographyAssets;
@@ -79,6 +81,10 @@ class RouteGeographyAnalyzerTest extends TestCase
         );
     }
 
+    /**
+     * @param list<array{float, float}> $coordinates
+     * @param list<string>              $expected
+     */
     #[TestWith([[[35.6762, 139.6503], [35.6800, 139.6600]], ['JP'], 'Tokyo'])]
     #[TestWith([[[-33.8688, 151.2093], [-33.8600, 151.2200]], ['AU'], 'Sydney'])]
     #[TestWith([[[39.7392, -104.9903], [39.7500, -104.9800]], ['US'], 'Denver'])]

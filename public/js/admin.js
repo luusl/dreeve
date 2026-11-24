@@ -9,20 +9,19 @@ import initDependentSelects from "./components/form/dependent-select";
 import initDependentFormInputs from "./components/form/dependent-form-input";
 import initCoordinatePickers from "./components/form/coordinate-picker";
 import initRouteRangePickers from "./components/form/route-range-picker";
-import initDropdowns from "./components/dropdown";
-import initImportStatus from "./components/import-status";
+import initDropdowns from "./components/overlay/dropdown";
+import initImportStatus from "./features/import-status/import-status";
 import initSearchAutocompletes from "./components/form/search-autocomplete";
 import initToasts from "./components/toast";
 import FileDropzoneUpload from "./features/file-upload/file-dropzone-upload";
 import {initImageDropZones} from "./features/file-upload/image-dropzone-upload";
 import initDashboardLayout from "./features/dashboard/dashboard-layout";
-import initSortableLists from "./components/sortable-list";
+import initSortableLists from "./components/sorting/sortable-list";
 import initAsyncContent from "./components/async-content";
 import {eventBus, Events} from "./core/event-bus";
-import {initDrawers, initCollapses} from "flowbite";
+import initDrawers from "./components/overlay/drawer";
 
 initDrawers();
-initCollapses();
 
 initPasswordToggle();
 initFormLoadingState();
@@ -51,7 +50,6 @@ eventBus.on(Events.ASYNC_CONTENT_LOADED, ({node}) => {
     initComboboxes(node);
     initCoordinatePickers(node);
     initDropdowns(node);
-    initDispatchCommandForm(node);
     initImageDropZones(node);
     initDashboardLayout(node);
     initSortableLists(node);

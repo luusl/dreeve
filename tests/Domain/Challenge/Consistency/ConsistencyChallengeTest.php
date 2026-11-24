@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Challenge\Consistency;
 
 use App\Domain\Activity\SportType\SportTypes;
@@ -25,7 +27,7 @@ class ConsistencyChallengeTest extends TestCase
         ConsistencyChallenge::createUnitFromScalars(0, 'gram');
     }
 
-    #[DataProvider(methodName: 'provideDataForUnitConversion')]
+    #[DataProvider('provideDataForUnitConversion')]
     public function testConvertKilometerToUnit(ConsistencyChallenge $challenge, Unit $expectedConversion): void
     {
         $this->assertEquals(
@@ -46,7 +48,7 @@ class ConsistencyChallengeTest extends TestCase
         )->convertKilometerToGoalUnit(Kilometer::zero());
     }
 
-    #[DataProvider(methodName: 'provideDataForUnitConversion')]
+    #[DataProvider('provideDataForUnitConversion')]
     public function testConvertMeterToUnit(ConsistencyChallenge $challenge, Unit $expectedConversion): void
     {
         $this->assertEquals(
@@ -67,7 +69,7 @@ class ConsistencyChallengeTest extends TestCase
         )->convertMeterToGoalUnit(Meter::zero());
     }
 
-    #[DataProvider(methodName: 'provideDataForSecondsToUnitConversion')]
+    #[DataProvider('provideDataForSecondsToUnitConversion')]
     public function testConvertSecondsToUnit(ConsistencyChallenge $challenge, Unit $expectedConversion): void
     {
         $this->assertEquals(
@@ -88,6 +90,9 @@ class ConsistencyChallengeTest extends TestCase
         )->convertSecondsToGoalUnit(Seconds::zero());
     }
 
+    /**
+     * @return iterable<string, array{ConsistencyChallenge, Unit}>
+     */
     public static function provideDataForUnitConversion(): iterable
     {
         yield 'kilometer' => [
@@ -132,6 +137,9 @@ class ConsistencyChallengeTest extends TestCase
         ];
     }
 
+    /**
+     * @return iterable<string, array{ConsistencyChallenge, Unit}>
+     */
     public static function provideDataForSecondsToUnitConversion(): iterable
     {
         yield 'hour' => [

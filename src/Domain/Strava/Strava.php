@@ -13,16 +13,16 @@ use App\Infrastructure\Console\ConsoleOutputAware;
 use App\Infrastructure\Logging\Monolog;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\Time\Clock\Clock;
-use App\Infrastructure\Time\Sleep;
 use App\Infrastructure\ValueObject\String\Url;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\RequestOptions;
 use League\Flysystem\FilesystemOperator;
 use Monolog\Attribute\WithMonologChannel;
 use Psr\Log\LoggerInterface;
+use Time\Duration;
 
 #[WithMonologChannel('strava-api')]
 class Strava
@@ -43,7 +43,6 @@ class Strava
         #[\SensitiveParameter]
         private readonly StravaRefreshToken $stravaRefreshToken,
         private readonly FilesystemOperator $filesystemOperator,
-        private readonly Sleep $sleep,
         private readonly LoggerInterface $logger,
         private readonly Clock $clock,
     ) {
@@ -61,17 +60,16 @@ class Strava
             'base_uri' => 'https://www.strava.com/',
         ], $options);
         // An application's 15-minute limit is reset at natural 15-minute intervals corresponding to 0, 15, 30 and 45 minutes after the hour.
-        $minutesUntilNextFifteenMinuteInterval = (15 - ($this->clock->getCurrentDateTimeImmutable()->getMinutesWithoutLeadingZero() % 15)) + 1;
-        $secondsUntilNextFifteenMinuteInterval = $minutesUntilNextFifteenMinuteInterval * 60;
+        $minutesUntilNextFifteenMinuteInterval = (15 - ($this->clock->now()->getMinutesWithoutLeadingZero() % 15)) + 1;
 
         try {
             $response = $this->client->request($method, $path, $options);
-        } catch (RequestException $e) {
+        } catch (ResponseException $e) {
             $response = $e->getResponse();
-            if (429 !== $response?->getStatusCode()) {
+            if (429 !== $response->getStatusCode()) {
                 // Rethrow exception if it's not a rate limit error.
-                if ($error = $response?->getBody()->getContents()) {
-                    throw new RequestException(message: $error, request: $e->getRequest(), response: $e->getResponse());
+                if ($error = $response->getBody()->getContents()) {
+                    throw new ResponseException(message: $error, request: $e->getRequest(), response: $response);
                 }
                 throw $e;
             }
@@ -109,7 +107,7 @@ class Strava
                     '<comment>Whoa there! We are about to hit Strava’s 15-minute API rate limit. Taking a short %s-minute breather before getting back on track. Please be patient</comment>',
                     $minutesUntilNextFifteenMinuteInterval
                 ));
-                $this->sleep->sweetDreams($secondsUntilNextFifteenMinuteInterval);
+                $this->clock->sleep(Duration::fromMinutes($minutesUntilNextFifteenMinuteInterval));
             }
         }
 
@@ -125,7 +123,7 @@ class Strava
     {
         try {
             $accessToken = $this->getAccessToken();
-        } catch (ClientException|RequestException $e) {
+        } catch (RequestException $e) {
             throw new InvalidStravaAccessToken(message: $e->getMessage(), code: $e->getCode(), previous: $e);
         }
 
@@ -144,13 +142,13 @@ class Strava
                     ],
                 ]
             );
-        } catch (ClientException|RequestException $e) {
+        } catch (ResponseException $e) {
             $response = $e->getResponse();
-            if (401 === $response?->getStatusCode()) {
+            if (401 === $response->getStatusCode()) {
                 throw new InsufficientStravaAccessTokenScopes();
             }
 
-            if (403 === $response?->getStatusCode()) {
+            if (403 === $response->getStatusCode()) {
                 $body = (string) $response->getBody();
                 if (str_contains($body, '"Forbidden"') && str_contains($body, '"Inactive"')) {
                     throw StravaApplicationIsInactive::create();
@@ -246,18 +244,6 @@ class Strava
     /**
      * @return array<mixed>
      */
-    public function getActivityZones(ActivityId $activityId): array
-    {
-        return Json::decode($this->request('api/v3/activities/'.$activityId->toUnprefixedString().'/zones', 'GET', [
-            RequestOptions::HEADERS => [
-                'Authorization' => 'Bearer '.$this->getAccessToken(),
-            ],
-        ]));
-    }
-
-    /**
-     * @return array<mixed>
-     */
     public function getAllActivityStreams(ActivityId $activityId): array
     {
         return Json::decode($this->request('api/v3/activities/'.$activityId->toUnprefixedString().'/streams', 'GET', [
@@ -310,7 +296,7 @@ class Strava
     }
 
     /**
-     * @return array<string, mixed>
+     * @return list<array<string, mixed>>
      */
     public function getWebhookSubscription(): array
     {

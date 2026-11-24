@@ -8,17 +8,18 @@ use App\Application\AppUrl;
 use App\Domain\Activity\ActivityId;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\AddActivityImage\AddActivityImage;
-use App\Domain\Image\ImageDirectory;
-use App\Domain\Image\ImageExtension;
-use App\Domain\Image\ImagePath;
 use App\Domain\Import\ImportMode;
+use App\Domain\Media\ImageExtension;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemRepository;
+use App\Domain\Media\NewMediaItem;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
-use App\Infrastructure\Exception\EntityNotFound;
 use App\Infrastructure\Http\Api\ApiErrorCode;
 use App\Infrastructure\Http\Api\ApiErrorResponse;
 use App\Infrastructure\Http\Api\CouldNotReadUploadedFilePart;
 use App\Infrastructure\Http\Api\UploadedFilePart;
 use App\Infrastructure\ValueObject\Identifier\UuidFactory;
+use App\Infrastructure\ValueObject\String\Path;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Attribute\AsController;
@@ -32,6 +33,7 @@ final readonly class ActivityImageAddRequestHandler
 
     public function __construct(
         private ActivityRepository $activityRepository,
+        private MediaItemRepository $mediaItemRepository,
         private CommandBus $commandBus,
         private ImportMode $importMode,
         private UuidFactory $uuidFactory,
@@ -52,7 +54,7 @@ final readonly class ActivityImageAddRequestHandler
 
         try {
             $activity = $this->activityRepository->find(ActivityId::fromString($activityId));
-        } catch (EntityNotFound|\InvalidArgumentException) {
+        } catch (\InvalidArgumentException) {
             throw new NotFoundHttpException(sprintf('Activity "%s" not found', $activityId));
         }
 
@@ -80,18 +82,20 @@ final readonly class ActivityImageAddRequestHandler
             );
         }
 
-        $path = ImagePath::fromFileSystemPath(sprintf(
-            '%s/%s.%s',
-            ImageDirectory::ACTIVITIES->value,
-            $this->uuidFactory->random(),
-            $extension->value,
-        ));
+        $mediaItemId = MediaItemId::fromUnprefixed($this->uuidFactory->random());
         $this->commandBus->dispatch(new AddActivityImage(
             activityId: $activity->getId(),
-            path: $path,
-            content: $filePart->getContents(),
+            mediaItemId: $mediaItemId,
+            newMediaItem: new NewMediaItem(
+                filename: Path::fromString(sprintf('%s.%s', $mediaItemId->toUnprefixedString(), $extension->value)),
+                content: $filePart->getContents(),
+            ),
         ));
 
-        return ActivityImageResponse::created($path, $this->appUrl);
+        return ActivityImageResponse::created(
+            mediaItemId: $mediaItemId,
+            path: $this->mediaItemRepository->find($mediaItemId)->getPath(),
+            appUrl: $this->appUrl,
+        );
     }
 }

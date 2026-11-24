@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Domain\Activity\SportType;
 
-use App\Infrastructure\ValueObject\Collection;
+use App\Infrastructure\ValueObject\BackedEnumCollection;
 
-class SportTypesSortingOrder extends Collection
+/**
+ * @extends BackedEnumCollection<SportType>
+ */
+class SportTypesSortingOrder extends BackedEnumCollection
 {
     public function getItemClassName(): string
     {
@@ -31,7 +34,7 @@ class SportTypesSortingOrder extends Collection
         }
 
         foreach ($allSportTypes as $type) {
-            if (in_array($type, $sortedSportTypes)) {
+            if (in_array($type, $sortedSportTypes, true)) {
                 continue;
             }
 

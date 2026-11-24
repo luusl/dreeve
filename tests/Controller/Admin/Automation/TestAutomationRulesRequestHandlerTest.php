@@ -20,6 +20,7 @@ use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
 use App\Tests\Domain\Automation\AutomationRuleBuilder;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\DomCrawler\Crawler;
 
 class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
 {
@@ -75,6 +76,7 @@ class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
         static::getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
             ActivityBuilder::fromDefaults()
                 ->withActivityId(ActivityId::fromUnprefixed('1'))
+                ->withName('Zwift - Morning Ride')
                 ->withSportType(SportType::RIDE)
                 ->build(),
             [],
@@ -94,9 +96,10 @@ class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
 
         $this->client->loginUser($this->adminUser());
 
-        $crawler = $this->client->request('GET', '/admin/automation-rules/test?activityId=activity-1');
+        $crawler = $this->client->request('GET', '/admin/automation-rules/test?activityId='.urlencode('Morning Ride (activity-1)'));
 
         $this->assertResponseIsSuccessful();
+        $this->assertSame('Morning Ride (activity-1)', $crawler->filter('input[name="activityId"]')->attr('value'));
         $body = $crawler->filter('body')->text();
         $this->assertStringContainsString('Name my rides', $body);
         $this->assertStringContainsString('A rule applies', $body);
@@ -105,7 +108,7 @@ class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
         $this->assertStringContainsString('Automated ride name', $body);
 
         $matchedConditionPills = $crawler->filter('.rounded-full.pill--success')->reduce(
-            fn ($node): bool => str_contains($node->text(), 'is one of Ride'),
+            fn (Crawler $node): bool => str_contains($node->text(), 'is one of Ride'),
         );
         $this->assertCount(1, $matchedConditionPills);
         $this->assertStringContainsString('Sport type', $matchedConditionPills->text());
@@ -121,15 +124,20 @@ class TestAutomationRulesRequestHandlerTest extends AdminWebTestCase
 
         $this->client->loginUser($this->adminUser());
 
-        $crawler = $this->client->request('GET', '/admin/automation-rules/test?activityId='.$activityId);
+        $crawler = $this->client->request('GET', '/admin/automation-rules/test?activityId='.urlencode($activityId));
 
         $this->assertResponseIsSuccessful();
         $this->assertStringContainsString('No activity found for that ID.', $crawler->filter('body')->text());
+        $this->assertSame($activityId, $crawler->filter('input[name="activityId"]')->attr('value'));
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
     public static function provideUnknownActivityIds(): iterable
     {
         yield 'an unknown activity' => ['activity-does-not-exist'];
         yield 'an id without prefix' => ['1'];
+        yield 'a name without an id' => ['Morning Ride'];
     }
 }

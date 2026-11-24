@@ -17,13 +17,16 @@ final readonly class FindAthleteProfileMetricsQueryHandler implements QueryHandl
     ) {
     }
 
+    /**
+     * @param Query<Response> $query
+     */
     public function handle(Query $query): Response
     {
         assert($query instanceof FindAthleteProfileMetrics);
 
         $queryParams = [
-            'startDate' => (string) $query->getFrom()->format('Y-m-d'),
-            'endDate' => (string) $query->getTo()->format('Y-m-d'),
+            'startDate' => $query->getFrom()->format('Y-m-d'),
+            'endDate' => $query->getTo()->format('Y-m-d'),
         ];
 
         $aggregatedResult = $this->connection->executeQuery(

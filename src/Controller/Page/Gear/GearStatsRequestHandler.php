@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Page\Gear;
 
 use App\Application\Navigation\NavigationSection;
+use App\Application\PageMetadata\PageMetadata;
 use App\Application\PageRenderer;
 use App\Domain\Activity\Activity;
 use App\Domain\Activity\ActivityRepository;
@@ -26,7 +27,7 @@ use App\Infrastructure\Cache\Context\CacheContexts;
 use App\Infrastructure\Cache\Tag\CacheTags;
 use App\Infrastructure\Cache\Tag\RootCacheTag;
 use App\Infrastructure\CQRS\Query\Bus\QueryBus;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Measurement\Length\Meter;
 use App\Infrastructure\Measurement\Time\Seconds;
 use App\Infrastructure\Serialization\Json;
@@ -34,6 +35,7 @@ use App\Infrastructure\Time\Clock\Clock;
 use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use Symfony\Component\HttpKernel\Attribute\AsController;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Twig\Environment;
 
@@ -64,16 +66,19 @@ final readonly class GearStatsRequestHandler
                     RootCacheTag::ACTIVITIES,
                 ),
                 cacheContexts: CacheContexts::of(AuthenticatedCacheContext::class),
-                ttlInSeconds: $this->clock->getCurrentDateTimeImmutable()->getSecondsUntilMidnight(),
+                ttl: $this->clock->now()->getDurationUntilMidnight(),
             ),
             render: fn (): string => $this->renderFor(),
             navigationSection: NavigationSection::GEAR,
+            metadata: new PageMetadata(
+                title: new TranslatableMessage('Gear'),
+            ),
         );
     }
 
     private function renderFor(): string
     {
-        $now = $this->clock->getCurrentDateTimeImmutable();
+        $now = $this->clock->now();
         $unitSystem = $this->settingsRepository->appearance()->getUnitSystem();
         $activities = $this->activityRepository->findAll();
         $allUsedGear = $this->gearRepository->findAllUsed();
@@ -94,12 +99,13 @@ final readonly class GearStatsRequestHandler
                 name: 'Unspecified',
                 isRetired: false,
                 type: GearType::IMPORTED,
-                localImagePath: null,
+                mediaItemId: null,
                 movingTime: Seconds::from((int) $activitiesWithoutGear->sum(fn (Activity $activity): int => $activity->getMovingTimeInSeconds())),
                 elevation: Meter::from($activitiesWithoutGear->sum(fn (Activity $activity): float => $activity->getElevation()->toFloat())),
                 numberOfActivities: count($activitiesWithoutGear),
                 totalCalories: (int) $activitiesWithoutGear->sum(fn (Activity $activity): int => $activity->getCalories() ?? 0),
                 purchasePrice: null,
+                notes: null,
             ));
         }
 

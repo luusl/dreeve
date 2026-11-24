@@ -10,6 +10,7 @@ use App\Infrastructure\Measurement\Length\NauticalMile;
 use App\Infrastructure\Measurement\UnitSystem;
 use App\Infrastructure\Measurement\Velocity\KmPerHour;
 use App\Infrastructure\Measurement\Velocity\Knot;
+use App\Infrastructure\Measurement\Velocity\Pace;
 use App\Infrastructure\Measurement\Velocity\SecPer100Meter;
 use App\Infrastructure\Measurement\Velocity\SecPerKm;
 use App\Infrastructure\Measurement\Velocity\Velocity;
@@ -79,6 +80,7 @@ enum SportType: string implements TranslatableInterface
     case PHYSICAL_THERAPY = 'PhysicalTherapy';
     // Outdoor Sports.
     case GOLF = 'Golf';
+    case DISC_GOLF = 'DiscGolf';
     case ROCK_CLIMBING = 'RockClimbing';
     case SAIL = 'Sail';
     // Team Sports.
@@ -96,7 +98,7 @@ enum SportType: string implements TranslatableInterface
             self::SAIL,
             self::WIND_SURF,
             self::KITE_SURF,
-        ]);
+        ], true);
     }
 
     public function getVelocityDisplayPreference(): Velocity
@@ -122,6 +124,20 @@ enum SportType: string implements TranslatableInterface
         }
 
         return $distance;
+    }
+
+    public function displaysPace(): bool
+    {
+        return $this->getVelocityDisplayPreference() instanceof Pace;
+    }
+
+    public function toDisplayVelocity(KmPerHour $speed): Velocity
+    {
+        return match (true) {
+            $this->getVelocityDisplayPreference() instanceof SecPer100Meter => $speed->toMetersPerSecond()->toSecPerKm()->toSecPer100Meter(),
+            $this->getVelocityDisplayPreference() instanceof SecPerKm => $speed->toMetersPerSecond()->toSecPerKm(),
+            default => $this->toDisplaySpeed($speed),
+        };
     }
 
     public function toDisplaySpeed(KmPerHour $speed): Knot|KmPerHour
@@ -152,8 +168,20 @@ enum SportType: string implements TranslatableInterface
         return $this->getActivityType()->getDistancePrecision();
     }
 
+    public function displaysDescent(): bool
+    {
+        return in_array($this, [
+            self::ALPINE_SKI,
+            self::SNOWBOARD,
+        ], true);
+    }
+
     public function getTemplateName(): string
     {
+        if ($this->displaysDescent()) {
+            return 'activity--sport-type--alpine';
+        }
+
         if (ActivityType::RUN === self::getActivityType() || ActivityType::WALK === self::getActivityType()) {
             return 'activity--sport-type--run';
         }
@@ -202,6 +230,7 @@ enum SportType: string implements TranslatableInterface
             self::CROSSFIT => $translator->trans('Crossfit', locale: $locale),
             self::ELLIPTICAL => $translator->trans('Elliptical', locale: $locale),
             self::GOLF => $translator->trans('Golf', locale: $locale),
+            self::DISC_GOLF => $translator->trans('Disc Golf', locale: $locale),
             self::HAND_CYCLE => $translator->trans('Hand Cycle', locale: $locale),
             self::HIIT => $translator->trans('HIIT', locale: $locale),
             self::PICKLE_BALL => $translator->trans('Pickle Ball', locale: $locale),
@@ -267,6 +296,7 @@ enum SportType: string implements TranslatableInterface
             self::CROSSFIT => $translator->trans('Crossfit', locale: $locale),
             self::ELLIPTICAL => $translator->trans('Elliptical', locale: $locale),
             self::GOLF => $translator->trans('Golf', locale: $locale),
+            self::DISC_GOLF => $translator->trans('Disc Golf', locale: $locale),
             self::HAND_CYCLE => $translator->trans('Hand Cycle', locale: $locale),
             self::HIIT => $translator->trans('HIIT', locale: $locale),
             self::PICKLE_BALL => $translator->trans('Pickle Ball', locale: $locale),
@@ -325,7 +355,7 @@ enum SportType: string implements TranslatableInterface
             // MIND_BODY_SPORTS.
             SportType::PILATES, SportType::YOGA, SportType::PHYSICAL_THERAPY => ActivityType::MIND_BODY_SPORTS,
             // OUTDOOR_SPORTS.
-            SportType::GOLF, SportType::ROCK_CLIMBING, SportType::SAIL => ActivityType::OUTDOOR_SPORTS,
+            SportType::GOLF, SportType::DISC_GOLF, SportType::ROCK_CLIMBING, SportType::SAIL => ActivityType::OUTDOOR_SPORTS,
             // TEAM SPORTS.
             SportType::SOCCER, SportType::BASKETBALL, SportType::VOLLEYBALL, SportType::CRICKET => ActivityType::TEAM_SPORTS,
             // ADAPTIVE_INCLUSIVE_SPORTS
@@ -345,19 +375,19 @@ enum SportType: string implements TranslatableInterface
             self::RUN,
             self::TRAIL_RUN,
             self::VIRTUAL_RUN,
-        ]);
+        ], true);
     }
 
     public function supportsSplits(): bool
     {
-        if (in_array($this->getActivityType(), [ActivityType::RUN, ActivityType::WALK])) {
+        if (in_array($this->getActivityType(), [ActivityType::RUN, ActivityType::WALK], true)) {
             return true;
         }
 
         return in_array($this, [
             self::POOL_SWIM,
             self::OPEN_WATER_SWIM,
-        ]);
+        ], true);
     }
 
     public function supportsShiftingStats(): bool
@@ -369,7 +399,7 @@ enum SportType: string implements TranslatableInterface
             self::E_BIKE_RIDE,
             self::E_MOUNTAIN_BIKE_RIDE,
             self::VELO_MOBILE,
-        ]);
+        ], true);
     }
 
     public function supportsReverseGeocoding(): bool
@@ -399,7 +429,7 @@ enum SportType: string implements TranslatableInterface
             self::BOXING,
             self::PADEL,
             self::PHYSICAL_THERAPY,
-        ]);
+        ], true);
     }
 
     public function supportsWeather(): bool
@@ -428,11 +458,20 @@ enum SportType: string implements TranslatableInterface
             self::BOXING,
             self::PADEL,
             self::PHYSICAL_THERAPY,
-        ]);
+        ], true);
     }
 
     public function isVirtualRide(): bool
     {
         return self::VIRTUAL_RIDE === $this;
+    }
+
+    public function isVirtual(): bool
+    {
+        return in_array($this, [
+            self::VIRTUAL_RIDE,
+            self::VIRTUAL_RUN,
+            self::VIRTUAL_ROW,
+        ], true);
     }
 }

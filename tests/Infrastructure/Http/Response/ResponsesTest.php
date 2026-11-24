@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Infrastructure\Http\Response;
+
+use App\Infrastructure\Http\Response\HtmlResponse;
+use App\Infrastructure\Http\Response\PngResponse;
+use App\Infrastructure\Http\Response\SvgResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\HttpFoundation\Response;
+
+class ResponsesTest extends TestCase
+{
+    /**
+     * @param array<string, string> $expectedHeaders
+     */
+    #[DataProvider('provideResponses')]
+    public function testItAddsTheGivenHeaders(Response $response, array $expectedHeaders): void
+    {
+        foreach ($expectedHeaders as $name => $value) {
+            $this->assertEquals($value, $response->headers->get($name), $name);
+        }
+    }
+
+    /**
+     * @return iterable<string, array{Response, array<string, string>}>
+     */
+    public static function provideResponses(): iterable
+    {
+        yield 'html' => [
+            new HtmlResponse('<p>html</p>', ['X-Dreeve-Cache' => 'HIT', 'Cache-Control' => 'private, no-store']),
+            ['Content-Type' => 'text/html; charset=UTF-8', 'X-Dreeve-Cache' => 'HIT', 'Cache-Control' => 'no-store, private'],
+        ];
+        yield 'svg' => [
+            new SvgResponse('<svg></svg>', ['X-Dreeve-Cache' => 'MISS']),
+            ['Content-Type' => 'image/svg+xml; charset=UTF-8', 'X-Dreeve-Cache' => 'MISS'],
+        ];
+        yield 'png' => [
+            new PngResponse('png', ['X-Dreeve-Cache' => 'MISS']),
+            ['Content-Type' => 'image/png', 'X-Dreeve-Cache' => 'MISS'],
+        ];
+    }
+}

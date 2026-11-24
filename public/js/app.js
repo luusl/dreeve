@@ -1,7 +1,7 @@
 import "./core/public-path";
 import {eventBus, Events} from "./core/event-bus";
 import {fetchAvailableUpdate, showLatestVersion, showReleaseAnnouncement} from "./services/latest-release";
-import initSidebar from "./components/sidebar";
+import initSidebar from "./layout/sidebar";
 import ChartManager from "./features/charts/chart-manager";
 import {registerEchartsCallbacks} from "./features/charts/echarts-callbacks";
 import PhotoWall from "./features/photos/photo-wall";
@@ -15,9 +15,10 @@ import initAsyncContent from "./components/async-content";
 import initKeyboardShortcuts from "./components/keyboard-shortcut";
 import ScrollTo from "./components/scroll-to";
 import MilestoneFilter from "./features/milestones/milestone-filter";
-import DarkModeManager from "./components/dark-mode";
-import initDropdowns from "./components/dropdown";
-import {initAccordions, initPopovers, initDrawers} from "flowbite";
+import DarkModeManager, {isDarkModeEnabled} from "./layout/dark-mode";
+import initDropdowns from "./components/overlay/dropdown";
+import initPopovers from "./components/overlay/popover";
+import initDrawers from "./components/overlay/drawer";
 
 registerEchartsCallbacks();
 initDrawers();
@@ -37,11 +38,10 @@ const initElements = (rootNode) => {
 
     initTabs(rootNode);
     initDropdowns(rootNode);
-    initPopovers();
-    initAccordions();
+    initPopovers(rootNode);
 
     initDataTables(rootNode);
-    chartManager.init(rootNode, darkModeManager.isDarkModeEnabled());
+    chartManager.init(rootNode, isDarkModeEnabled());
     initLeafletMaps(rootNode);
     initFullscreen(rootNode);
     initLightGalleries(rootNode);

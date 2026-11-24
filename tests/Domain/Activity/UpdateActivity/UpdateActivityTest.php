@@ -12,6 +12,7 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\UpdateActivity\UpdateActivity;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Gear\GearId;
+use App\Domain\Media\MediaItemId;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -55,8 +56,8 @@ class UpdateActivityTest extends TestCase
             'sportType' => 'Ride',
         ]);
 
-        $this->assertSame([], $command->getNewImages());
-        $this->assertSame([], $command->getRemovedImages());
+        $this->assertSame([], $command->getNewMediaItems());
+        $this->assertSame([], $command->getRemovedMediaItems());
         $this->assertEquals(ActivityExclusions::empty(), $command->getExcludedFrom());
     }
 
@@ -66,34 +67,34 @@ class UpdateActivityTest extends TestCase
             'activityId' => 'activity-1',
             'name' => 'My custom activity',
             'sportType' => 'Ride',
-            'images' => '[]',
+            'mediaItems' => '[]',
         ]);
 
-        $this->assertSame([], $command->getNewImages());
-        $this->assertSame([], $command->getRemovedImages());
+        $this->assertSame([], $command->getNewMediaItems());
+        $this->assertSame([], $command->getRemovedMediaItems());
     }
 
-    public function testFromPayloadParsesNewAndRemovedImagesAndIgnoresUnchanged(): void
+    public function testFromPayloadParsesNewAndRemovedMediaItemsAndIgnoresUnchanged(): void
     {
         $command = UpdateActivity::fromPayload([
             'activityId' => 'activity-1',
             'name' => 'My custom activity',
             'sportType' => 'Ride',
-            'images' => json_encode([
+            'mediaItems' => json_encode([
                 ['status' => 'new', 'filename' => 'photo.jpg', 'content' => base64_encode('binary-content')],
-                ['status' => 'unchanged', 'path' => '/files/activities/existing.png'],
-                ['status' => 'removed', 'path' => '/files/activities/gone.png'],
+                ['status' => 'unchanged', 'id' => 'mediaItem-existing'],
+                ['status' => 'removed', 'id' => 'mediaItem-gone'],
             ]),
         ]);
 
-        $newImages = $command->getNewImages();
-        $this->assertCount(1, $newImages);
-        $this->assertSame('jpg', $newImages[0]->getFilename()->getExtension());
-        $this->assertSame('binary-content', $newImages[0]->getContent());
+        $newMediaItems = $command->getNewMediaItems();
+        $this->assertCount(1, $newMediaItems);
+        $this->assertSame('jpg', $newMediaItems[0]->getFilename()->getExtension());
+        $this->assertSame('binary-content', $newMediaItems[0]->getContent());
 
-        $removedImages = $command->getRemovedImages();
-        $this->assertCount(1, $removedImages);
-        $this->assertSame('files/activities/gone.png', $removedImages[0]->getPath()->toLocalImagePath());
+        $removedMediaItems = $command->getRemovedMediaItems();
+        $this->assertCount(1, $removedMediaItems);
+        $this->assertEquals(MediaItemId::fromString('mediaItem-gone'), $removedMediaItems[0]->getId());
     }
 
     #[DataProvider('provideInvalidImagePayloads')]
@@ -105,7 +106,7 @@ class UpdateActivityTest extends TestCase
             'activityId' => 'activity-1',
             'name' => 'My custom activity',
             'sportType' => 'Ride',
-            'images' => $images,
+            'mediaItems' => $images,
         ]);
     }
 
@@ -137,12 +138,12 @@ class UpdateActivityTest extends TestCase
 
         yield 'images is not a string' => [
             ['not', 'a', 'string'],
-            'The "images" field is invalid.',
+            'The "mediaItems" field is invalid.',
         ];
 
         yield 'images does not decode to an array' => [
             '123',
-            'The "images" field is invalid.',
+            'The "mediaItems" field is invalid.',
         ];
 
         yield 'new image missing filename and content' => [
@@ -152,11 +153,18 @@ class UpdateActivityTest extends TestCase
             'A new image requires a "filename" and "content".',
         ];
 
-        yield 'removed image missing path' => [
+        yield 'removed image missing id' => [
             json_encode([
                 ['status' => 'removed'],
             ]),
-            'A removed image requires a "path".',
+            'A removed image requires an "id".',
+        ];
+
+        yield 'removed image with an invalid id' => [
+            json_encode([
+                ['status' => 'removed', 'id' => 'activityImage-1'],
+            ]),
+            'A removed image has an invalid "id".',
         ];
     }
 

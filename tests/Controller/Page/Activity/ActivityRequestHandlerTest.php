@@ -3,8 +3,11 @@
 namespace App\Tests\Controller\Page\Activity;
 
 use App\Domain\Activity\ActivityId;
+use App\Domain\Activity\ActivityIds;
 use App\Domain\Activity\ActivityRepository;
 use App\Domain\Activity\ActivityWithRawData;
+use App\Domain\Activity\Collection\ActivityCollectionId;
+use App\Domain\Activity\Collection\ActivityCollectionRepository;
 use App\Domain\Activity\ImportSource;
 use App\Domain\Activity\Lap\ActivityLapId;
 use App\Domain\Activity\Lap\ActivityLapRepository;
@@ -17,19 +20,29 @@ use App\Domain\Activity\Stream\Metric\ActivityStreamMetric;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricRepository;
 use App\Domain\Activity\Stream\Metric\ActivityStreamMetricType;
 use App\Domain\Activity\Stream\StreamType;
+use App\Domain\Activity\WorkoutRpe;
 use App\Domain\Import\FileImportId;
 use App\Domain\Import\FileImportRepository;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemPath;
+use App\Domain\Media\MediaItemRepository;
 use App\Domain\Settings\SettingsGroup;
 use App\Domain\Settings\SettingsRepository;
 use App\Infrastructure\Config\DemoMode;
 use App\Infrastructure\Measurement\Velocity\SecPerKm;
+use App\Infrastructure\ValueObject\Geography\Coordinate;
+use App\Infrastructure\ValueObject\Geography\EncodedPolyline;
+use App\Infrastructure\ValueObject\Geography\Latitude;
+use App\Infrastructure\ValueObject\Geography\Longitude;
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use App\Tests\Domain\Activity\ActivityBuilder;
+use App\Tests\Domain\Activity\Collection\ActivityCollectionBuilder;
 use App\Tests\Domain\Activity\Lap\ActivityLapBuilder;
 use App\Tests\Domain\Activity\Shifting\ActivityDrivetrainUsageBuilder;
 use App\Tests\Domain\Activity\Split\ActivitySplitBuilder;
 use App\Tests\Domain\Activity\Stream\ActivityStreamBuilder;
 use App\Tests\Domain\Import\FileImportBuilder;
+use App\Tests\Domain\Media\MediaItemBuilder;
 use App\Tests\ProvideTestData;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Snapshots\MatchesSnapshots;
@@ -42,6 +55,28 @@ class ActivityRequestHandlerTest extends AdminWebTestCase
     public function testRender(): void
     {
         $this->provideFullTestSet();
+        $activityRepository = $this->getContainer()->get(ActivityRepository::class);
+        $activityWithRawData = $activityRepository->findWithRawData(ActivityId::fromUnprefixed('9756441741'));
+        $activityRepository->update(ActivityWithRawData::fromState(
+            activity: $activityWithRawData->getActivity()->withPolyline((string) EncodedPolyline::fromCoordinates([[51.51, -0.08], [51.52, -0.07]])),
+            rawData: $activityWithRawData->getRawData(),
+        ));
+        $activityCollectionRepository = $this->getContainer()->get(ActivityCollectionRepository::class);
+        $activityCollectionRepository->add(ActivityCollectionBuilder::fromDefaults()
+            ->withActivityCollectionId(ActivityCollectionId::fromUnprefixed('1'))
+            ->withName('Summer trip')
+            ->withActivityIds(ActivityIds::fromArray([ActivityId::fromUnprefixed('9756441741')]))
+            ->build());
+        $activityCollectionRepository->add(ActivityCollectionBuilder::fromDefaults()
+            ->withActivityCollectionId(ActivityCollectionId::fromUnprefixed('2'))
+            ->withName('Zwift league')
+            ->withActivityIds(ActivityIds::fromArray([ActivityId::fromUnprefixed('9542782314'), ActivityId::fromUnprefixed('9756441741')]))
+            ->build());
+        $activityCollectionRepository->add(ActivityCollectionBuilder::fromDefaults()
+            ->withActivityCollectionId(ActivityCollectionId::fromUnprefixed('3'))
+            ->withName('Not this one')
+            ->withActivityIds(ActivityIds::fromArray([ActivityId::fromUnprefixed('9542782314')]))
+            ->build());
 
         $this->client->request('GET', '/activities/activity-9756441741');
 
@@ -53,8 +88,9 @@ class ActivityRequestHandlerTest extends AdminWebTestCase
         );
         $this->assertResponseHeaderSame(
             'X-Dreeve-Cache-Tags',
-            'settings.appearance, activities.9756441741, gear, settings.security, settings.general, settings.athleteWeight',
+            'settings.appearance, activities.9756441741, gear, activity.collections, settings.security, settings.general, settings.athleteWeight, settings.athleteFtp, media.items.aea2d7b4-53a7-11ee-a5e1-9a34a3268d74',
         );
+        $this->assertStringNotContainsString('Not this one', (string) $this->client->getResponse()->getContent());
         $this->assertMatchesHtmlSnapshot((string) $this->client->getResponse()->getContent());
     }
 
@@ -72,6 +108,15 @@ class ActivityRequestHandlerTest extends AdminWebTestCase
     public function testItRendersTheTemplateOfTheSportType(SportType $sportType): void
     {
         $this->provideFullTestSet();
+        $this->getContainer()->get(MediaItemRepository::class)->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('b3c1e0f2-53a7-11ee-a5e1-9a34a3268d74'))
+            ->withPath(MediaItemPath::fromString('activities/b3c1e0f2-53a7-11ee-a5e1-9a34a3268d74.jpg'))
+            ->withCoordinate(Coordinate::createFromLatAndLng(
+                latitude: Latitude::fromString('51.53'),
+                longitude: Longitude::fromString('-0.08'),
+            ))
+            ->build()
+        );
 
         $activityId = ActivityId::fromUnprefixed('123456789');
         $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
@@ -80,6 +125,13 @@ class ActivityRequestHandlerTest extends AdminWebTestCase
                 ->withSportType($sportType)
                 ->withIsCommute(true)
                 ->withIsGroupActivity(true)
+                ->withWorkoutRpe(WorkoutRpe::fromFitValue(68))
+                ->withWorkoutFeel(80)
+                ->withPolyline((string) EncodedPolyline::fromCoordinates([[51.51, -0.08], [51.52, -0.07]]))
+                ->withMediaItemIds(
+                    MediaItemId::fromUnprefixed('aea2d7b4-53a7-11ee-a5e1-9a34a3268d74'),
+                    MediaItemId::fromUnprefixed('b3c1e0f2-53a7-11ee-a5e1-9a34a3268d74'),
+                )
                 ->build(),
             [],
         ));
@@ -205,6 +257,9 @@ class ActivityRequestHandlerTest extends AdminWebTestCase
         );
     }
 
+    /**
+     * @param non-empty-string $expectedCacheKeySuffix
+     */
     #[DataProvider('provideStartTimeVisibility')]
     public function testItOnlyShowsTheStartTimeToTrustedVisitors(bool $demoModeIsEnabled, bool $loggedIn, bool $expectStartTime, string $expectedCacheKeySuffix): void
     {

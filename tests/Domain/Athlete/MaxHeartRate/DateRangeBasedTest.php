@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Domain\Athlete\MaxHeartRate;
 
 use App\Domain\Athlete\InvalidHeartRateFormula;
@@ -10,7 +12,7 @@ use PHPUnit\Framework\TestCase;
 
 class DateRangeBasedTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideCalculateData')]
+    #[DataProvider('provideCalculateData')]
     public function testCalculate(SerializableDateTime $on, int $expectedHeartRate): void
     {
         $dateRangeBased = DateRangeBased::empty()
@@ -48,6 +50,9 @@ class DateRangeBasedTest extends TestCase
             ->addRange(SerializableDateTime::fromString('2021-01-01'), 120);
     }
 
+    /**
+     * @return list<array{SerializableDateTime, int}>
+     */
     public static function provideCalculateData(): array
     {
         return [

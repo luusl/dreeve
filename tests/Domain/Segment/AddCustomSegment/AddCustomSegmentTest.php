@@ -10,13 +10,14 @@ use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\ValueObject\String\Name;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Translation\TranslatableMessage;
 
 class AddCustomSegmentTest extends TestCase
 {
     public function testFromPayload(): void
     {
         $command = AddCustomSegment::fromPayload([
-            'activityId' => 'activity-1',
+            'activityId' => 'Morning Run (activity-1)',
             'startIndex' => '10',
             'endIndex' => 120,
             'name' => '  Kwaremont  ',
@@ -28,6 +29,10 @@ class AddCustomSegmentTest extends TestCase
         $this->assertSame(120, $command->getEndIndex());
         $this->assertEquals(Name::fromString('Kwaremont'), $command->getName());
         $this->assertTrue($command->isFavourite());
+        $this->assertEquals(
+            new TranslatableMessage('The segment has been created. Its efforts will show up after the next import run.', domain: 'admin'),
+            $command->getFlashMessage(),
+        );
     }
 
     public function testFromPayloadDefaultsToNotFavourite(): void
@@ -42,7 +47,10 @@ class AddCustomSegmentTest extends TestCase
         $this->assertFalse($command->isFavourite());
     }
 
-    #[DataProvider(methodName: 'provideInvalidPayloads')]
+    /**
+     * @param array<string, mixed> $payload
+     */
+    #[DataProvider('provideInvalidPayloads')]
     public function testFromPayloadThrowsOnInvalidPayload(array $payload, string $expectedReason): void
     {
         $this->expectExceptionObject(CouldNotDeserializeCommand::invalidPayload($expectedReason));
@@ -50,11 +58,15 @@ class AddCustomSegmentTest extends TestCase
         AddCustomSegment::fromPayload($payload);
     }
 
+    /**
+     * @return iterable<string, array{array<string, mixed>, string}>
+     */
     public static function provideInvalidPayloads(): iterable
     {
         $valid = ['activityId' => 'activity-1', 'startIndex' => 0, 'endIndex' => 10, 'name' => 'Kwaremont'];
 
         yield 'missing activity' => [array_diff_key($valid, ['activityId' => true]), 'An "activityId" is required.'];
+        yield 'activity without an id' => [[...$valid, 'activityId' => 'Morning Run'], 'The "activityId" does not contain a valid activity id.'];
         yield 'missing name' => [array_diff_key($valid, ['name' => true]), 'A "name" is required.'];
         yield 'blank name' => [[...$valid, 'name' => '   '], 'A "name" is required.'];
         yield 'missing start' => [array_diff_key($valid, ['startIndex' => true]), 'The "startIndex" must be a positive whole number.'];

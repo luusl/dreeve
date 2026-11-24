@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Domain\Activity\Stream\CombinedStream;
 
 use App\Domain\Activity\ActivityType;
-use App\Infrastructure\ValueObject\Collection;
+use App\Infrastructure\ValueObject\BackedEnumCollection;
 
 /**
- * @extends Collection<CombinedStreamType>
+ * @extends BackedEnumCollection<CombinedStreamType>
  */
-final class CombinedStreamTypes extends Collection
+final class CombinedStreamTypes extends BackedEnumCollection
 {
     public function getItemClassName(): string
     {
@@ -19,7 +19,7 @@ final class CombinedStreamTypes extends Collection
 
     public static function othersFor(ActivityType $activityType): self
     {
-        if (in_array($activityType, [ActivityType::RUN, ActivityType::WALK])) {
+        if (in_array($activityType, [ActivityType::RUN, ActivityType::WALK], true)) {
             return self::fromArray([
                 CombinedStreamType::ALTITUDE,
                 CombinedStreamType::HEART_RATE,

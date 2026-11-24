@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Tests\Controller\Admin\Settings;
 
 use App\Tests\Controller\Admin\AdminWebTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
+use Symfony\Component\DomCrawler\Crawler;
 
 class SettingsRequestHandlerTest extends AdminWebTestCase
 {
@@ -26,7 +29,7 @@ class SettingsRequestHandlerTest extends AdminWebTestCase
         $this->assertSame(
             ['50', '61', '71', '81', '91'],
             $crawler->filter('input[name^="data[heartRateZones][zones]"][name$="[from]"]')
-                ->each(fn ($node) => $node->attr('value')),
+                ->each(fn (Crawler $node): ?string => $node->attr('value')),
         );
     }
 

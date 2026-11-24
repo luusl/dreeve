@@ -49,12 +49,7 @@ class DailyTrainingLoadTest extends ContainerTestCase
     public function testCalculateWhenFtpNotFound(): void
     {
         // Remove the FTP history so the power-based calculation falls back to heart rate.
-        $this->getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::GENERAL, [
-            'birthday' => '1989-08-14',
-            'firstName' => 'Robin',
-            'lastName' => 'Ingelbrecht',
-            'maxHeartRateFormula' => 'fox',
-        ]);
+        $this->getContainer()->get(SettingsRepository::class)->saveGroup(SettingsGroup::ATHLETE_FTP, []);
 
         $activity = ActivityBuilder::fromDefaults()
             ->withAveragePower(250)
@@ -95,6 +90,25 @@ class DailyTrainingLoadTest extends ContainerTestCase
 
         $this->assertEquals(
             105,
+            $this->loadOn('2023-10-10'),
+        );
+    }
+
+    public function testCalculateWithHeartRateBelowRestingHeartRate(): void
+    {
+        $activity = ActivityBuilder::fromDefaults()
+            ->withAverageHeartRate(40)
+            ->withMovingTimeInSeconds(3600)
+            ->withStartDateTime(SerializableDateTime::fromString('2023-10-10'))
+            ->build();
+
+        $this->getContainer()->get(ActivityRepository::class)->add(ActivityWithRawData::fromState(
+            $activity,
+            []
+        ));
+
+        $this->assertEquals(
+            0,
             $this->loadOn('2023-10-10'),
         );
     }

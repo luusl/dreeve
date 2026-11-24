@@ -10,7 +10,7 @@ use App\Domain\Dashboard\Widget\ConfiguredWidgets;
 use App\Domain\Dashboard\Widget\DependsOnCurrentDay;
 use App\Infrastructure\Cache\Cacheability;
 use App\Infrastructure\Cache\CacheableRenderer;
-use App\Infrastructure\Http\HtmlResponse;
+use App\Infrastructure\Http\Response\HtmlResponse;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\Time\Clock\Clock;
 use Symfony\Component\HttpKernel\Attribute\AsController;
@@ -37,7 +37,7 @@ final readonly class DashboardWidgetRequestHandler
             throw new NotFoundHttpException('Not found');
         }
 
-        $now = $this->clock->getCurrentDateTimeImmutable();
+        $now = $this->clock->now();
         $widget = $configuredWidget->getWidget();
 
         $render = $this->cacheableRenderer->render(
@@ -48,7 +48,7 @@ final readonly class DashboardWidgetRequestHandler
                     sha1(Json::encode($configuredWidget->getConfiguration()->toArray())),
                 ),
                 cacheTags: $widget->getCacheTags(),
-                ttlInSeconds: $widget instanceof DependsOnCurrentDay ? $now->getSecondsUntilMidnight() : null,
+                ttl: $widget instanceof DependsOnCurrentDay ? $now->getDurationUntilMidnight() : null,
             ),
             render: fn (): ?string => $widget->render(
                 dashboardWidgetId: $dashboardWidgetId,

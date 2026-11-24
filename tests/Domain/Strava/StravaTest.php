@@ -16,11 +16,12 @@ use App\Domain\Strava\StravaClientSecret;
 use App\Domain\Strava\StravaRefreshToken;
 use App\Infrastructure\Serialization\Json;
 use App\Infrastructure\ValueObject\String\Url;
+use App\Infrastructure\ValueObject\Time\SerializableDateTime;
 use App\Tests\Infrastructure\Time\Clock\PausedClock;
-use App\Tests\Infrastructure\Time\Sleep\NullSleep;
 use App\Tests\SpyOutput;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
+use GuzzleHttp\Exception\ResponseException;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\RequestOptions;
@@ -55,7 +56,7 @@ class StravaTest extends TestCase
      * @var MockObject&FilesystemOperator
      */
     private MockObject $filesystemOperator;
-    private NullSleep $sleep;
+    private PausedClock $clock;
     /**
      * @var MockObject&LoggerInterface
      */
@@ -134,9 +135,10 @@ class StravaTest extends TestCase
         $this->client
             ->expects($this->once())
             ->method('request')
-            ->willThrowException(RequestException::wrapException(
-                new Request('GET', 'uri'),
-                new \RuntimeException()
+            ->willThrowException(new RequestException(
+                message: '',
+                request: new Request('GET', 'uri'),
+                previous: new \RuntimeException(),
             ));
 
         $this->expectExceptionObject(new InvalidStravaAccessToken());
@@ -169,7 +171,7 @@ class StravaTest extends TestCase
                 $this->assertEquals('GET', $method);
                 $this->assertEquals('api/v3/athlete/activities', $path);
 
-                throw new RequestException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(401, [], Json::encode(['error' => 'The error'])));
+                throw new ResponseException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(401, [], Json::encode(['error' => 'The error'])));
             });
 
         $this->expectExceptionObject(new InsufficientStravaAccessTokenScopes());
@@ -202,7 +204,7 @@ class StravaTest extends TestCase
                 $this->assertEquals('GET', $method);
                 $this->assertEquals('api/v3/athlete/activities', $path);
 
-                throw new RequestException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(403, [], Json::encode(['message' => 'Forbidden', 'errors' => [['resource' => 'Application', 'field' => 'Status', 'code' => 'Inactive']]])));
+                throw new ResponseException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(403, [], Json::encode(['message' => 'Forbidden', 'errors' => [['resource' => 'Application', 'field' => 'Status', 'code' => 'Inactive']]])));
             });
 
         $this->expectExceptionObject(StravaApplicationIsInactive::create());
@@ -220,7 +222,7 @@ class StravaTest extends TestCase
             ->expects($this->never())
             ->method('log');
 
-        $exception = new RequestException(
+        $exception = new ResponseException(
             message: 'The error',
             request: new Request('GET', 'uri'),
             response: new Response(403, [], Json::encode(['message' => 'Forbidden']))
@@ -303,7 +305,7 @@ class StravaTest extends TestCase
                     return new Response(200, [], Json::encode(['access_token' => 'theAccessToken']));
                 }
 
-                throw new RequestException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(500, [], Json::encode(['error' => 'The error'])));
+                throw new ResponseException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(500, [], Json::encode(['error' => 'The error'])));
             });
 
         $this->logger
@@ -365,7 +367,7 @@ class StravaTest extends TestCase
                     return new Response(200, [], Json::encode(['access_token' => 'theAccessToken']));
                 }
 
-                throw new RequestException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(429, [], Json::encode(['error' => 'The error'])));
+                throw new ResponseException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(429, [], Json::encode(['error' => 'The error'])));
             });
 
         $this->logger
@@ -395,7 +397,7 @@ class StravaTest extends TestCase
                     return new Response(200, [], Json::encode(['access_token' => 'theAccessToken']));
                 }
 
-                throw new RequestException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(429, ['x-ratelimit-limit' => '200,2000', 'x-ratelimit-usage' => '1,2', 'x-readratelimit-limit' => '100,1000', 'x-readratelimit-usage' => '99,1001'], Json::encode(['error' => 'The error'])));
+                throw new ResponseException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(429, ['x-ratelimit-limit' => '200,2000', 'x-ratelimit-usage' => '1,2', 'x-readratelimit-limit' => '100,1000', 'x-readratelimit-usage' => '99,1001'], Json::encode(['error' => 'The error'])));
             });
 
         $this->logger
@@ -425,7 +427,7 @@ class StravaTest extends TestCase
                     return new Response(200, [], Json::encode(['access_token' => 'theAccessToken']));
                 }
 
-                throw new RequestException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(429, ['x-ratelimit-limit' => '200,2000', 'x-ratelimit-usage' => '1,2', 'x-readratelimit-limit' => '100,1000', 'x-readratelimit-usage' => '101,998'], Json::encode(['error' => 'The error'])));
+                throw new ResponseException(message: 'The error', request: new Request('GET', 'uri'), response: new Response(429, ['x-ratelimit-limit' => '200,2000', 'x-ratelimit-usage' => '1,2', 'x-readratelimit-limit' => '100,1000', 'x-readratelimit-usage' => '101,998'], Json::encode(['error' => 'The error'])));
             });
 
         $this->logger
@@ -475,8 +477,8 @@ class StravaTest extends TestCase
         );
 
         $this->assertEquals(
-            180,
-            $this->sleep->getTotalSleptInSeconds(),
+            SerializableDateTime::fromString('2025-11-02 12:46:20'),
+            $this->clock->now(),
         );
     }
 
@@ -534,8 +536,8 @@ class StravaTest extends TestCase
             ],
         );
         $this->assertEquals(
-            0,
-            $this->sleep->getTotalSleptInSeconds(),
+            SerializableDateTime::fromString('2025-11-02 12:43:20'),
+            $this->clock->now(),
         );
     }
 
@@ -597,7 +599,7 @@ class StravaTest extends TestCase
         ];
 
         yield 'activity' => [
-            static fn (Strava $strava) => $strava->getActivity(ActivityId::fromUnprefixed(3)),
+            static fn (Strava $strava): array => $strava->getActivity(ActivityId::fromUnprefixed('3')),
             'api/v3/activities/3',
             [
                 'base_uri' => 'https://www.strava.com/',
@@ -605,17 +607,8 @@ class StravaTest extends TestCase
             ],
         ];
 
-        yield 'activity zones' => [
-            static fn (Strava $strava) => $strava->getActivityZones(ActivityId::fromUnprefixed(3)),
-            'api/v3/activities/3/zones',
-            [
-                'base_uri' => 'https://www.strava.com/',
-                'headers' => ['Authorization' => 'Bearer theAccessToken'],
-            ],
-        ];
-
         yield 'activity streams' => [
-            static fn (Strava $strava) => $strava->getAllActivityStreams(ActivityId::fromUnprefixed(3)),
+            static fn (Strava $strava): array => $strava->getAllActivityStreams(ActivityId::fromUnprefixed('3')),
             'api/v3/activities/3/streams',
             [
                 'base_uri' => 'https://www.strava.com/',
@@ -627,7 +620,7 @@ class StravaTest extends TestCase
         ];
 
         yield 'activity photos' => [
-            static fn (Strava $strava) => $strava->getActivityPhotos(ActivityId::fromUnprefixed(3)),
+            static fn (Strava $strava): array => $strava->getActivityPhotos(ActivityId::fromUnprefixed('3')),
             'api/v3/activities/3/photos',
             [
                 'base_uri' => 'https://www.strava.com/',
@@ -637,7 +630,7 @@ class StravaTest extends TestCase
         ];
 
         yield 'gear' => [
-            static fn (Strava $strava) => $strava->getGear(GearId::fromUnprefixed(3)),
+            static fn (Strava $strava): array => $strava->getGear(GearId::fromUnprefixed('3')),
             'api/v3/gear/3',
             [
                 'base_uri' => 'https://www.strava.com/',
@@ -646,7 +639,7 @@ class StravaTest extends TestCase
         ];
 
         yield 'segment' => [
-            static fn (Strava $strava) => $strava->getSegment(SegmentId::fromUnprefixed(3)),
+            static fn (Strava $strava): array => $strava->getSegment(SegmentId::fromUnprefixed('3')),
             'api/v3/segments/3',
             [
                 'base_uri' => 'https://www.strava.com/',
@@ -935,9 +928,8 @@ class StravaTest extends TestCase
             stravaClientSecret: StravaClientSecret::fromString('clientSecret'),
             stravaRefreshToken: StravaRefreshToken::fromString('refreshToken'),
             filesystemOperator: $this->filesystemOperator,
-            sleep: $this->sleep = new NullSleep(),
             logger: $this->logger,
-            clock: PausedClock::fromString('2025-11-02 12:43:20')
+            clock: $this->clock = PausedClock::fromString('2025-11-02 12:43:20')
         );
         $this->strava::$cachedAccessToken = null;
         $this->strava::$cachedActivitiesResponse = null;

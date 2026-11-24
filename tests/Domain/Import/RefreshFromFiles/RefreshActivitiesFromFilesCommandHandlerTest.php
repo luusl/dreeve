@@ -1,0 +1,109 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Domain\Import\RefreshFromFiles;
+
+use App\Domain\Activity\ActivityId;
+use App\Domain\Activity\ActivityRepository;
+use App\Domain\Activity\ActivityWithRawData;
+use App\Domain\Activity\WorkoutRpe;
+use App\Domain\Import\FileImportId;
+use App\Domain\Import\FileImportRepository;
+use App\Domain\Import\RefreshFromFiles\ActivityFieldsToRefresh;
+use App\Domain\Import\RefreshFromFiles\RefreshActivitiesFromFiles;
+use App\Domain\Import\RefreshFromFiles\RefreshActivitiesFromFilesCommandHandler;
+use App\Infrastructure\KeyValue\Key;
+use App\Infrastructure\KeyValue\KeyValue;
+use App\Infrastructure\KeyValue\KeyValueStore;
+use App\Infrastructure\KeyValue\Value;
+use App\Infrastructure\ValueObject\Time\SerializableDateTime;
+use App\Tests\ContainerTestCase;
+use App\Tests\Domain\Activity\ActivityBuilder;
+use App\Tests\Domain\Import\FileImportBuilder;
+use App\Tests\SpyOutput;
+
+class RefreshActivitiesFromFilesCommandHandlerTest extends ContainerTestCase
+{
+    public function testHandle(): void
+    {
+        $activityRepository = $this->getContainer()->get(ActivityRepository::class);
+        foreach (['fit', 'broken', 'gpx', 'untouched'] as $activityId) {
+            $activityRepository->add(ActivityWithRawData::fromState(
+                activity: ActivityBuilder::fromDefaults()
+                    ->withActivityId(ActivityId::fromUnprefixed($activityId))
+                    ->withName(sprintf('Activity %s', $activityId))
+                    ->withStartDateTime(SerializableDateTime::fromString('2026-06-01 08:00:00'))
+                    ->withDescent(null)
+                    ->withWorkoutRpe(WorkoutRpe::fromFitValue(70))
+                    ->withWorkoutFeel(75)
+                    ->build(),
+                rawData: ['raw' => $activityId],
+            ));
+        }
+
+        $fileImportRepository = $this->getContainer()->get(FileImportRepository::class);
+        $imports = [
+            ['1', 'morning-run.fit', (string) file_get_contents(__DIR__.'/../FileParser/fixtures/activity.fit'), 'fit'],
+            ['2', 'broken.fit', 'not a fit file', 'broken'],
+            ['3', 'lake-loop.gpx', (string) file_get_contents(__DIR__.'/../FileParser/fixtures/activity-metadata-name-and-description.gpx'), 'gpx'],
+            ['4', 'deleted.gpx', (string) file_get_contents(__DIR__.'/../FileParser/fixtures/activity.gpx'), 'deleted'],
+        ];
+        foreach ($imports as $i => [$fileImportId, $originalFilename, $fileContents, $activityId]) {
+            $fileImportRepository->add(
+                FileImportBuilder::fromDefaults()
+                    ->withFileImportId(FileImportId::fromUnprefixed($fileImportId))
+                    ->withOriginalFilename($originalFilename)
+                    ->withFileContents($fileContents)
+                    ->withActivityId(ActivityId::fromUnprefixed($activityId))
+                    ->withImportedOn(SerializableDateTime::fromString(sprintf('2026-06-04 10:%02d:00', $i)))
+                    ->build()
+            );
+        }
+
+        $this->getContainer()->get(KeyValueStore::class)->save(KeyValue::fromState(
+            key: Key::ACTIVITY_FILE_REFRESH,
+            value: Value::fromString('["descent", "workoutRpe", "workoutFeel", "droppedField"]'),
+        ));
+
+        $output = new SpyOutput();
+        $this->getContainer()->get(RefreshActivitiesFromFilesCommandHandler::class)->handle(new RefreshActivitiesFromFiles($output));
+
+        $lines = explode("\n", (string) $output);
+        $this->assertSame('Refreshing activities from stored files...', $lines[0]);
+        $this->assertSame('  => Refreshed activity "Activity fit - 01-06-2026"', $lines[1]);
+        $this->assertStringStartsWith('  => <error>Could not refresh activity-broken (broken.fit): ', $lines[2]);
+        $this->assertStringEndsWith('</error>', $lines[2]);
+        $this->assertSame(
+            [
+                '  => Refreshed activity "Activity gpx - 01-06-2026"',
+                '  => Refreshed 2 activities from stored files',
+            ],
+            array_slice($lines, 3),
+        );
+
+        $fit = $activityRepository->findWithRawData(ActivityId::fromUnprefixed('fit'));
+        $this->assertSame(0, $fit->getActivity()->getDescent()?->toInt());
+        $this->assertNull($fit->getActivity()->getWorkoutRpe());
+        $this->assertNull($fit->getActivity()->getWorkoutFeel());
+        $this->assertSame(['raw' => 'fit'], $fit->getRawData());
+        $this->assertSame(10, $activityRepository->find(ActivityId::fromUnprefixed('gpx'))->getDescent()?->toInt());
+        $this->assertNull($activityRepository->find(ActivityId::fromUnprefixed('broken'))->getDescent());
+        $this->assertNull($activityRepository->find(ActivityId::fromUnprefixed('untouched'))->getDescent());
+        $this->assertSame(70, $activityRepository->find(ActivityId::fromUnprefixed('untouched'))->getWorkoutRpe()?->toInt());
+        $this->assertSame(75, $activityRepository->find(ActivityId::fromUnprefixed('untouched'))->getRawWorkoutFeel());
+
+        $this->assertFalse($this->getContainer()->get(ActivityFieldsToRefresh::class)->hasAny());
+    }
+
+    #[\Override]
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->getConnection()->executeStatement(
+            'INSERT INTO KeyValue (`key`, `value`) VALUES (:key, :value)',
+            ['key' => 'lock.importData', 'value' => '{"lockAcquiredBy": "test"}']
+        );
+    }
+}

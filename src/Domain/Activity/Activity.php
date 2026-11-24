@@ -8,6 +8,8 @@ use App\Domain\Gear\GearId;
 use App\Domain\Gear\RecordingDevice\RecordingDeviceId;
 use App\Domain\Gear\Sensor\ConnectedSensors;
 use App\Domain\Integration\Weather\OpenMeteo\Weather;
+use App\Domain\Media\MediaItem;
+use App\Domain\Media\MediaItemIds;
 use App\Domain\Zwift\CouldNotDetermineZwiftMap;
 use App\Domain\Zwift\ZwiftMap;
 use App\Infrastructure\Eventing\RecordsEvents;
@@ -56,9 +58,6 @@ final class Activity
     // @phpstan-ignore-next-line
     private readonly bool $markedForDeletion;
 
-    /**
-     * @param array<string> $localImagePaths
-     */
     private function __construct(
         #[ORM\Id, ORM\Column(type: 'string', unique: true)]
         private readonly ActivityId $activityId,
@@ -80,6 +79,8 @@ final class Activity
         private readonly Kilometer $distance,
         #[ORM\Column(type: 'integer')]
         private readonly Meter $elevation,
+        #[ORM\Column(type: 'integer', nullable: true)]
+        private readonly ?Meter $descent,
         #[ORM\Embedded(class: Coordinate::class)]
         private readonly ?Coordinate $startingCoordinate,
         #[ORM\Column(type: 'integer', nullable: true)]
@@ -108,10 +109,8 @@ final class Activity
         private readonly ?string $deviceName,
         #[ORM\Column(type: 'json', nullable: true)]
         private readonly ?ConnectedSensors $connectedSensors,
-        #[ORM\Column(type: 'integer')]
-        private readonly int $totalImageCount,
-        #[ORM\Column(type: 'text', nullable: true)]
-        private readonly array $localImagePaths,
+        #[ORM\Column(type: 'json', nullable: true)]
+        private readonly MediaItemIds $mediaItemIds,
         #[ORM\Column(type: 'text', nullable: true)]
         private readonly ?string $polyline,
         #[ORM\Column(type: 'json', nullable: true)]
@@ -126,6 +125,10 @@ final class Activity
         private readonly bool $isGroupActivity,
         #[ORM\Column(type: 'string', nullable: true)]
         private readonly ?WorkoutType $workoutType,
+        #[ORM\Column(type: 'integer', nullable: true)]
+        private readonly ?WorkoutRpe $workoutRpe,
+        #[ORM\Column(type: 'integer', nullable: true)]
+        private readonly ?int $workoutFeel,
         #[ORM\Column(type: 'json', nullable: true)]
         private readonly ActivityExclusions $excludedFrom,
     ) {
@@ -155,6 +158,7 @@ final class Activity
             description: $rawData['description'],
             distance: Kilometer::from(round($rawData['distance'] / 1000, 3)),
             elevation: Meter::from(round($rawData['total_elevation_gain'])),
+            descent: null,
             startingCoordinate: Coordinate::createFromOptionalLatAndLng(
                 Latitude::fromOptionalString($rawData['start_latlng'][0] ?? null),
                 Longitude::fromOptionalString($rawData['start_latlng'][1] ?? null),
@@ -172,8 +176,7 @@ final class Activity
             elapsedTimeInSeconds: $rawData['elapsed_time'] ?? 0,
             deviceName: $deviceName,
             connectedSensors: null,
-            totalImageCount: $rawData['total_photo_count'] ?? 0,
-            localImagePaths: [],
+            mediaItemIds: MediaItemIds::empty(),
             polyline: $rawData['map']['summary_polyline'] ?? null,
             routeGeography: RouteGeography::create([]),
             weather: null,
@@ -181,12 +184,11 @@ final class Activity
             isCommute: $rawData['commute'] ?? false,
             isGroupActivity: ($rawData['athlete_count'] ?? 1) > 1,
             workoutType: WorkoutType::fromStravaInt($rawData['workout_type'] ?? null),
+            workoutRpe: null,
+            workoutFeel: null,
         );
     }
 
-    /**
-     * @param array<string> $localImagePaths
-     */
     public static function create(
         ActivityId $activityId,
         SerializableDateTime $startDateTime,
@@ -198,6 +200,7 @@ final class Activity
         ?string $description,
         Kilometer $distance,
         Meter $elevation,
+        ?Meter $descent,
         ?Coordinate $startingCoordinate,
         ?int $calories,
         ?int $kilojoules,
@@ -212,8 +215,7 @@ final class Activity
         int $elapsedTimeInSeconds,
         ?string $deviceName,
         ?ConnectedSensors $connectedSensors,
-        int $totalImageCount,
-        array $localImagePaths,
+        MediaItemIds $mediaItemIds,
         ?string $polyline,
         RouteGeography $routeGeography,
         ?string $weather,
@@ -221,6 +223,8 @@ final class Activity
         bool $isCommute,
         bool $isGroupActivity,
         ?WorkoutType $workoutType,
+        ?WorkoutRpe $workoutRpe,
+        ?int $workoutFeel,
     ): self {
         $activity = self::fromState(
             activityId: $activityId,
@@ -233,6 +237,7 @@ final class Activity
             description: $description,
             distance: $distance,
             elevation: $elevation,
+            descent: $descent,
             startingCoordinate: $startingCoordinate,
             calories: $calories,
             kilojoules: $kilojoules,
@@ -247,8 +252,7 @@ final class Activity
             elapsedTimeInSeconds: $elapsedTimeInSeconds,
             deviceName: $deviceName,
             connectedSensors: $connectedSensors,
-            totalImageCount: $totalImageCount,
-            localImagePaths: $localImagePaths,
+            mediaItemIds: $mediaItemIds,
             polyline: $polyline,
             routeGeography: $routeGeography,
             weather: $weather,
@@ -256,6 +260,8 @@ final class Activity
             isCommute: $isCommute,
             isGroupActivity: $isGroupActivity,
             workoutType: $workoutType,
+            workoutRpe: $workoutRpe,
+            workoutFeel: $workoutFeel,
             excludedFrom: ActivityExclusions::empty(),
         );
         $activity->recordThat(new ActivityWasAdded($activity->getStartDate()));
@@ -266,9 +272,6 @@ final class Activity
         return $activity;
     }
 
-    /**
-     * @param array<string> $localImagePaths
-     */
     public static function fromState(
         ActivityId $activityId,
         SerializableDateTime $startDateTime,
@@ -280,6 +283,7 @@ final class Activity
         ?string $description,
         Kilometer $distance,
         Meter $elevation,
+        ?Meter $descent,
         ?Coordinate $startingCoordinate,
         ?int $calories,
         ?int $kilojoules,
@@ -294,8 +298,7 @@ final class Activity
         int $elapsedTimeInSeconds,
         ?string $deviceName,
         ?ConnectedSensors $connectedSensors,
-        int $totalImageCount,
-        array $localImagePaths,
+        MediaItemIds $mediaItemIds,
         ?string $polyline,
         RouteGeography $routeGeography,
         ?string $weather,
@@ -303,6 +306,8 @@ final class Activity
         bool $isCommute,
         bool $isGroupActivity,
         ?WorkoutType $workoutType,
+        ?WorkoutRpe $workoutRpe,
+        ?int $workoutFeel,
         ActivityExclusions $excludedFrom,
     ): self {
         return new self(
@@ -316,6 +321,7 @@ final class Activity
             description: $description,
             distance: $distance,
             elevation: $elevation,
+            descent: $descent,
             startingCoordinate: $startingCoordinate,
             calories: $calories,
             kilojoules: $kilojoules,
@@ -330,8 +336,7 @@ final class Activity
             elapsedTimeInSeconds: $elapsedTimeInSeconds,
             deviceName: $deviceName,
             connectedSensors: $connectedSensors,
-            totalImageCount: $totalImageCount,
-            localImagePaths: $localImagePaths,
+            mediaItemIds: $mediaItemIds,
             polyline: $polyline,
             routeGeography: $routeGeography,
             weather: $weather,
@@ -339,8 +344,18 @@ final class Activity
             isCommute: $isCommute,
             isGroupActivity: $isGroupActivity,
             workoutType: $workoutType,
+            workoutRpe: $workoutRpe,
+            workoutFeel: $workoutFeel,
             excludedFrom: $excludedFrom,
         );
+    }
+
+    public function delete(): void
+    {
+        $this->recordThat(new ActivityWasDeleted(
+            activityId: $this->getId(),
+            startDate: $this->getStartDate(),
+        ));
     }
 
     public function getId(): ActivityId
@@ -450,37 +465,22 @@ final class Activity
         ]));
     }
 
-    /**
-     * @return array<string>
-     */
-    public function getLocalImagePaths(): array
+    public function getMediaItemIds(): MediaItemIds
     {
-        return array_map(
-            fn (string $path): string => str_starts_with($path, '/') ? $path : '/'.$path,
-            $this->localImagePaths
-        );
+        return $this->mediaItemIds;
     }
 
-    /**
-     * @param array<string> $localImagePaths
-     */
-    public function withLocalImagePaths(array $localImagePaths): self
+    public function withMediaItemIds(MediaItemIds $mediaItemIds): self
     {
         $clone = clone ($this, [
-            'localImagePaths' => $localImagePaths,
-            'totalImageCount' => count($localImagePaths),
+            'mediaItemIds' => $mediaItemIds,
         ]);
 
-        if ($this->getLocalImagePaths() !== $clone->getLocalImagePaths()) {
+        if (Json::encode($this->getMediaItemIds()) !== Json::encode($clone->getMediaItemIds())) {
             $clone->recordThat(new ActivityImagesHaveBeenUpdated($clone->getId(), $clone->getStartDate()));
         }
 
         return $clone;
-    }
-
-    public function getTotalImageCount(): int
-    {
-        return $this->totalImageCount;
     }
 
     public function getOriginalName(): string
@@ -490,11 +490,7 @@ final class Activity
 
     public function getName(): string
     {
-        $name = str_replace('Zwift - ', '', $this->getOriginalName());
-        // Strip legacy gear-maintenance hashtags (e.g. "#sfs-chain-lubed") from the display name.
-        $name = (string) preg_replace('/\s*#sfs-\S+/', '', $name);
-
-        return trim($name);
+        return ActivityName::forDisplay($this->getOriginalName());
     }
 
     public function getSanitizedName(): string
@@ -547,6 +543,18 @@ final class Activity
     {
         return $this->recordUpdate(clone ($this, [
             'elevation' => $elevation,
+        ]));
+    }
+
+    public function getDescent(): ?Meter
+    {
+        return $this->descent;
+    }
+
+    public function withDescent(?Meter $descent): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'descent' => $descent,
         ]));
     }
 
@@ -775,6 +783,35 @@ final class Activity
         ]));
     }
 
+    public function getWorkoutRpe(): ?WorkoutRpe
+    {
+        return $this->workoutRpe;
+    }
+
+    public function withWorkoutRpe(?WorkoutRpe $workoutRpe): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'workoutRpe' => $workoutRpe,
+        ]));
+    }
+
+    public function getWorkoutFeel(): ?WorkoutFeel
+    {
+        return null !== $this->workoutFeel ? WorkoutFeel::fromRaw($this->workoutFeel) : null;
+    }
+
+    public function getRawWorkoutFeel(): ?int
+    {
+        return $this->workoutFeel;
+    }
+
+    public function withWorkoutFeel(?int $workoutFeel): self
+    {
+        return $this->recordUpdate(clone ($this, [
+            'workoutFeel' => $workoutFeel,
+        ]));
+    }
+
     public function getExcludedFrom(): ActivityExclusions
     {
         return $this->excludedFrom;
@@ -817,10 +854,8 @@ final class Activity
         try {
             return ZwiftMap::forStartingCoordinate($startingCoordinate);
         } catch (CouldNotDetermineZwiftMap) {
-            // Very old Zwift activities have routes that we don't have corresponding maps for.
+            return new RealWorldMap();
         }
-
-        return null;
     }
 
     public function getRouteGeography(): RouteGeography
@@ -852,9 +887,32 @@ final class Activity
     public function hasMappableRoute(): bool
     {
         return $this->sportType->supportsReverseGeocoding()
-            && WorldType::REAL_WORLD === $this->worldType
-            && !in_array($this->polyline, [null, '', '0'], true)
+            && $this->hasRealWorldRoute()
             && !is_null($this->routeGeography->getStartingPointCountryCode());
+    }
+
+    public function allowsPhotoMarkerAt(?Coordinate $coordinate): bool
+    {
+        if (!$coordinate instanceof Coordinate) {
+            return false;
+        }
+        if ($this->getSportType()->isVirtual()) {
+            return false;
+        }
+        if (!$this->hasRealWorldRoute()) {
+            return false;
+        }
+
+        return $this->getEncodedPolyline()->distanceInMeterTo($coordinate) <= MediaItem::MAX_DISTANCE_FROM_ROUTE_IN_METER;
+    }
+
+    /**
+     * @phpstan-assert-if-true !null $this->getEncodedPolyline()
+     */
+    public function hasRealWorldRoute(): bool
+    {
+        return WorldType::REAL_WORLD === $this->worldType
+            && $this->getEncodedPolyline() instanceof EncodedPolyline;
     }
 
     /**
@@ -899,6 +957,7 @@ final class Activity
             'movingTimeInSeconds' => $this->movingTimeInSeconds,
             'elapsedTimeInSeconds' => $this->elapsedTimeInSeconds,
             'elevation' => $this->elevation->toFloat(),
+            'descent' => $this->descent?->toFloat(),
             'calories' => $this->calories,
             'kilojoules' => $this->kilojoules,
             'polyline' => $this->polyline,
@@ -910,7 +969,9 @@ final class Activity
             'isCommute' => $this->isCommute,
             'isGroupActivity' => $this->isGroupActivity,
             'workoutType' => $this->workoutType?->value,
-            'excludedFrom' => $this->excludedFrom->map(static fn (ActivityExclusion $exclusion): string => $exclusion->value),
+            'workoutRpe' => $this->workoutRpe?->toInt(),
+            'workoutFeel' => $this->workoutFeel,
+            'excludedFrom' => $this->excludedFrom->toValues(),
         ];
     }
 

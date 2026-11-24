@@ -12,9 +12,9 @@ use App\Domain\Activity\ProvideCaloriesFromPayload;
 use App\Domain\Activity\SportType\SportType;
 use App\Domain\Activity\WorkoutType;
 use App\Domain\Gear\GearId;
-use App\Domain\Image\NewImage;
-use App\Domain\Image\ProvideLocalImageFromDropZonePayload;
-use App\Domain\Image\RemovedImage;
+use App\Domain\Media\DropZone\ProvideMediaItemsFromDropZonePayload;
+use App\Domain\Media\DropZone\RemovedMediaItem;
+use App\Domain\Media\NewMediaItem;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\DeserializableCommand;
 use App\Infrastructure\CQRS\Command\Deserialize\ProvidesCommandName;
@@ -23,12 +23,12 @@ use App\Infrastructure\CQRS\Command\DomainCommand;
 final readonly class UpdateActivity extends DomainCommand implements DeserializableCommand
 {
     use ProvideCaloriesFromPayload;
-    use ProvideLocalImageFromDropZonePayload;
+    use ProvideMediaItemsFromDropZonePayload;
     use ProvidesCommandName;
 
     /**
-     * @param array<NewImage>     $newImages
-     * @param array<RemovedImage> $removedImages
+     * @param array<NewMediaItem>     $newMediaItems
+     * @param array<RemovedMediaItem> $removedMediaItems
      */
     private function __construct(
         private ActivityId $activityId,
@@ -42,8 +42,8 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
         private bool $isCommute,
         private bool $isGroupActivity,
         private ActivityExclusions $excludedFrom,
-        private array $newImages,
-        private array $removedImages,
+        private array $newMediaItems,
+        private array $removedMediaItems,
     ) {
     }
 
@@ -77,7 +77,7 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
             ? GearId::fromString(trim($payload['gearId']))
             : null;
 
-        [$newImages, $removedImages] = self::parseImages($payload, 'images');
+        [$newMediaItems, $removedMediaItems] = self::parseMediaItems($payload, 'mediaItems');
 
         $excludedFrom = is_array($payload['excludedFrom'] ?? null) ? $payload['excludedFrom'] : [];
         $exclusions = array_values(array_filter(
@@ -97,8 +97,8 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
             isCommute: filter_var($payload['isCommute'] ?? false, FILTER_VALIDATE_BOOLEAN),
             isGroupActivity: filter_var($payload['isGroupActivity'] ?? false, FILTER_VALIDATE_BOOLEAN),
             excludedFrom: ActivityExclusions::fromArray($exclusions),
-            newImages: $newImages,
-            removedImages: $removedImages,
+            newMediaItems: $newMediaItems,
+            removedMediaItems: $removedMediaItems,
         );
     }
 
@@ -158,18 +158,18 @@ final readonly class UpdateActivity extends DomainCommand implements Deserializa
     }
 
     /**
-     * @return array<NewImage>
+     * @return array<NewMediaItem>
      */
-    public function getNewImages(): array
+    public function getNewMediaItems(): array
     {
-        return $this->newImages;
+        return $this->newMediaItems;
     }
 
     /**
-     * @return array<RemovedImage>
+     * @return array<RemovedMediaItem>
      */
-    public function getRemovedImages(): array
+    public function getRemovedMediaItems(): array
     {
-        return $this->removedImages;
+        return $this->removedMediaItems;
     }
 }

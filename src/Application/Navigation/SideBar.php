@@ -6,7 +6,8 @@ namespace App\Application\Navigation;
 
 use App\Domain\Activity\ActivityIdRepository;
 use App\Domain\Activity\BestEffort\ActivityBestEffortRepository;
-use App\Domain\Activity\Image\ImageRepository;
+use App\Domain\Activity\Collection\ActivityCollectionRepository;
+use App\Domain\Activity\Media\ActivityMediaRepository;
 use App\Domain\Challenge\ChallengeRepository;
 use App\Domain\Gear\GearRepository;
 use App\Infrastructure\Cache\Cacheability;
@@ -22,7 +23,8 @@ final readonly class SideBar
         private GearRepository $gearRepository,
         private ChallengeRepository $challengeRepository,
         private ActivityBestEffortRepository $activityBestEffortRepository,
-        private ImageRepository $imageRepository,
+        private ActivityMediaRepository $activityMediaRepository,
+        private ActivityCollectionRepository $activityCollectionRepository,
         private CacheableRenderer $cacheableRenderer,
         private Environment $twig,
     ) {
@@ -36,6 +38,7 @@ final readonly class SideBar
                 cacheTags: CacheTags::of(
                     RootCacheTag::ACTIVITIES,
                     RootCacheTag::ACTIVITY_IMAGES,
+                    RootCacheTag::ACTIVITY_COLLECTIONS,
                     RootCacheTag::CHALLENGES,
                     RootCacheTag::GEAR,
                 ),
@@ -44,9 +47,10 @@ final readonly class SideBar
                 'activeSection' => $activeSection?->value,
                 'totalActivityCount' => $this->activityIdRepository->count(),
                 'completedChallenges' => $this->challengeRepository->count(),
-                'totalPhotoCount' => $this->imageRepository->count(),
+                'totalPhotoCount' => $this->activityMediaRepository->count(),
                 'hasGear' => $this->gearRepository->hasGear(),
                 'hasBestEfforts' => $this->activityBestEffortRepository->hasData(),
+                'hasActivityCollections' => $this->activityCollectionRepository->hasActivityCollectionsWithActivities(),
             ]),
         )->getContent();
     }

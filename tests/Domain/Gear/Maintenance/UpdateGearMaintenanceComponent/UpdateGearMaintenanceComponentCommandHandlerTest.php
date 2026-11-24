@@ -4,26 +4,55 @@ declare(strict_types=1);
 
 namespace App\Tests\Domain\Gear\Maintenance\UpdateGearMaintenanceComponent;
 
+use App\Domain\Activity\SportType\SportTypes;
+use App\Domain\Gear\GearId;
+use App\Domain\Gear\Maintenance\GearComponentId;
 use App\Domain\Gear\Maintenance\GearComponentRepository;
+use App\Domain\Gear\Maintenance\GearMaintenanceRepository;
+use App\Domain\Gear\Maintenance\Installation\GearComponentInstallation;
+use App\Domain\Gear\Maintenance\Installation\InstallationParent;
+use App\Domain\Gear\Maintenance\Task\IntervalUnit;
+use App\Domain\Gear\Maintenance\Task\MaintenanceTask;
+use App\Domain\Gear\Maintenance\Task\MaintenanceTaskId;
 use App\Domain\Gear\Maintenance\UpdateGearMaintenanceComponent\UpdateGearMaintenanceComponent;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemIds;
+use App\Domain\Media\MediaItemPath;
+use App\Domain\Media\MediaItemRepository;
+use App\Domain\Media\MediaItems;
 use App\Infrastructure\CQRS\Command\Bus\CommandBus;
 use App\Infrastructure\CQRS\Command\CouldNotProcessCommand;
 use App\Infrastructure\Serialization\Json;
+use App\Infrastructure\ValueObject\String\Name;
 use App\Tests\ContainerTestCase;
-use App\Tests\ProvideGearMaintenanceConfig;
+use App\Tests\Domain\Gear\Maintenance\GearComponentBuilder;
+use App\Tests\Domain\Media\MediaItemBuilder;
 use League\Flysystem\FilesystemOperator;
 use PHPUnit\Framework\Attributes\DataProvider;
 
 class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
 {
-    use ProvideGearMaintenanceConfig;
-
     private CommandBus $commandBus;
     private FilesystemOperator $fileStorage;
 
     public function testItUpdatesExistingComponentAndLeavesOthersUntouched(): void
     {
-        $this->importGearMaintenanceConfig();
+        $gearComponentRepository = $this->getContainer()->get(GearComponentRepository::class);
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withLabel('Some cool chain')
+            ->withMediaItemId(MediaItemId::fromUnprefixed('chain'))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
+                label: Name::fromString('Lube'),
+                intervalValue: 500,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->build());
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('di-2'))
+            ->withLabel('DI2 Battery')
+            ->build());
 
         $this->commandBus->dispatch(UpdateGearMaintenanceComponent::fromPayload([
             'gearComponentId' => 'gearComponent-chain',
@@ -34,7 +63,7 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
             ],
         ]));
 
-        $components = Json::decode(Json::encode($this->getContainer()->get(GearComponentRepository::class)->findAll()));
+        $components = Json::decode(Json::encode($gearComponentRepository->findAll()));
 
         $this->assertCount(2, $components);
 
@@ -45,7 +74,7 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
             ['parent' => 'gear:gear-b9', 'from' => null, 'until' => null, 'sportTypes' => []],
         ], $chain['installations']);
 
-        $this->assertSame('files/gear-maintenance/chain.png', $chain['localImagePath']);
+        $this->assertSame('mediaItem-chain', $chain['mediaItemId']);
         $this->assertCount(1, $chain['maintenance']);
         $this->assertSame('maintenanceTask-chain-lubed', $chain['maintenance'][0]['id']);
         $this->assertSame(600, $chain['maintenance'][0]['interval']['value']);
@@ -57,7 +86,17 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
 
     public function testItRemovesAllMaintenanceTasks(): void
     {
-        $this->importGearMaintenanceConfig();
+        $gearComponentRepository = $this->getContainer()->get(GearComponentRepository::class);
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withLabel('Some cool chain')
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
+                label: Name::fromString('Lube'),
+                intervalValue: 500,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->build());
 
         $this->commandBus->dispatch(UpdateGearMaintenanceComponent::fromPayload([
             'gearComponentId' => 'gearComponent-chain',
@@ -65,7 +104,7 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
             'installations' => [['parent' => 'gear:gear-b9']],
         ]));
 
-        $components = Json::decode(Json::encode($this->getContainer()->get(GearComponentRepository::class)->findAll()));
+        $components = Json::decode(Json::encode($gearComponentRepository->findAll()));
 
         $chain = $this->findComponentById($components, 'gearComponent-chain');
         $this->assertNotNull($chain);
@@ -88,7 +127,15 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
 
     public function testItInstallsAComponentOnAnotherComponent(): void
     {
-        $this->importGearMaintenanceConfig();
+        $gearComponentRepository = $this->getContainer()->get(GearComponentRepository::class);
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withLabel('Some cool chain')
+            ->build());
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('di-2'))
+            ->withLabel('DI2 Battery')
+            ->build());
 
         $this->commandBus->dispatch(UpdateGearMaintenanceComponent::fromPayload([
             'gearComponentId' => 'gearComponent-di-2',
@@ -99,10 +146,12 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
             ],
         ]));
 
-        $components = Json::decode(Json::encode($this->getContainer()->get(GearComponentRepository::class)->findAll()));
+        $components = Json::decode(Json::encode($gearComponentRepository->findAll()));
+        $di2 = $this->findComponentById($components, 'gearComponent-di-2');
+        $this->assertNotNull($di2);
         $this->assertSame(
             [['parent' => 'component:gearComponent-chain', 'from' => null, 'until' => null, 'sportTypes' => []]],
-            $this->findComponentById($components, 'gearComponent-di-2')['installations'],
+            $di2['installations'],
         );
     }
 
@@ -112,7 +161,15 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
     #[DataProvider('provideInstallationLoops')]
     public function testItRejectsInstallationLoops(array $chainInstallations): void
     {
-        $this->importGearMaintenanceConfig();
+        $gearComponentRepository = $this->getContainer()->get(GearComponentRepository::class);
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withLabel('Some cool chain')
+            ->build());
+        $gearComponentRepository->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('di-2'))
+            ->withLabel('DI2 Battery')
+            ->build());
         $this->commandBus->dispatch(UpdateGearMaintenanceComponent::fromPayload([
             'gearComponentId' => 'gearComponent-di-2',
             'label' => 'DI2 Battery',
@@ -121,7 +178,7 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
                 ['id' => 'maintenanceTask-di-2-charged', 'label' => 'Charge', 'interval' => ['value' => 11, 'unit' => 'hours']],
             ],
         ]));
-        $componentsBefore = Json::encode($this->getContainer()->get(GearComponentRepository::class)->findAll());
+        $componentsBefore = Json::encode($gearComponentRepository->findAll());
 
         try {
             $this->commandBus->dispatch(UpdateGearMaintenanceComponent::fromPayload([
@@ -137,7 +194,7 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
             $this->assertSame('A component cannot be installed on itself or on one of its own parts.', $exception->getMessage());
         }
 
-        $this->assertSame($componentsBefore, Json::encode($this->getContainer()->get(GearComponentRepository::class)->findAll()));
+        $this->assertSame($componentsBefore, Json::encode($gearComponentRepository->findAll()));
     }
 
     /**
@@ -151,15 +208,39 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
 
     public function testItReplacesImageAndDeletesPreviousFile(): void
     {
-        $this->seedComponentWithImage('files/gear-maintenance/old.png');
+        $this->getContainer()->get(GearMaintenanceRepository::class)->updateConfig(
+            isFeatureEnabled: true,
+            ignoreRetiredGear: false,
+        );
+        $this->getContainer()->get(GearComponentRepository::class)->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withMediaItemId(MediaItemId::fromUnprefixed('old'))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('b1')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
+                label: Name::fromString('Lube'),
+                intervalValue: 500,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->build());
         $this->fileStorage->write('gear-maintenance/old.png', 'old-content');
+        $mediaItemRepository = $this->getContainer()->get(MediaItemRepository::class);
+        $mediaItemRepository->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('old'))
+            ->withPath(MediaItemPath::fromString('gear-maintenance/old.png'))
+            ->build());
 
         $this->commandBus->dispatch(UpdateGearMaintenanceComponent::fromPayload([
             'gearComponentId' => 'gearComponent-chain',
             'label' => 'Chain',
             'installations' => [['parent' => 'gear:gear-b1']],
-            'localImagePath' => json_encode([
-                ['status' => 'removed', 'path' => '/files/gear-maintenance/old.png'],
+            'mediaItem' => json_encode([
+                ['status' => 'removed', 'id' => 'mediaItem-old'],
                 ['status' => 'new', 'filename' => 'new.png', 'content' => base64_encode('new-content')],
             ]),
             'maintenanceTasks' => [
@@ -169,23 +250,59 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
 
         $components = Json::decode(Json::encode($this->getContainer()->get(GearComponentRepository::class)->findAll()));
 
-        $this->assertSame('files/gear-maintenance/0025176c-5652-11ee-923d-02424dd627d5.png', $components[0]['localImagePath']);
+        $this->assertSame('mediaItem-0025176c-5652-11ee-923d-02424dd627d5', $components[0]['mediaItemId']);
         $this->assertFalse($this->fileStorage->fileExists('gear-maintenance/old.png'));
         $this->assertTrue($this->fileStorage->fileExists('gear-maintenance/0025176c-5652-11ee-923d-02424dd627d5.png'));
         $this->assertSame('new-content', $this->fileStorage->read('gear-maintenance/0025176c-5652-11ee-923d-02424dd627d5.png'));
+        $this->assertEquals(
+            MediaItems::fromArray([
+                MediaItemBuilder::fromDefaults()
+                    ->withMediaItemId(MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'))
+                    ->withPath(MediaItemPath::fromString('gear-maintenance/0025176c-5652-11ee-923d-02424dd627d5.png'))
+                    ->build(),
+            ]),
+            $mediaItemRepository->findByIds(MediaItemIds::fromArray([
+                MediaItemId::fromUnprefixed('0025176c-5652-11ee-923d-02424dd627d5'),
+                MediaItemId::fromUnprefixed('old'),
+            ])),
+        );
     }
 
     public function testItRemovesImageAndDeletesFile(): void
     {
-        $this->seedComponentWithImage('files/gear-maintenance/old.png');
+        $this->getContainer()->get(GearMaintenanceRepository::class)->updateConfig(
+            isFeatureEnabled: true,
+            ignoreRetiredGear: false,
+        );
+        $this->getContainer()->get(GearComponentRepository::class)->add(GearComponentBuilder::fromDefaults()
+            ->withGearComponentId(GearComponentId::fromUnprefixed('chain'))
+            ->withMediaItemId(MediaItemId::fromUnprefixed('old'))
+            ->withInstallation(GearComponentInstallation::create(
+                parent: InstallationParent::gear(GearId::fromUnprefixed('b1')),
+                from: null,
+                until: null,
+                sportTypes: SportTypes::empty(),
+            ))
+            ->withMaintenanceTask(MaintenanceTask::create(
+                id: MaintenanceTaskId::fromUnprefixed('chain-lubed'),
+                label: Name::fromString('Lube'),
+                intervalValue: 500,
+                intervalUnit: IntervalUnit::EVERY_X_KILOMETERS_USED,
+            ))
+            ->build());
         $this->fileStorage->write('gear-maintenance/old.png', 'old-content');
+        $mediaItemRepository = $this->getContainer()->get(MediaItemRepository::class);
+        $mediaItemRepository->add(MediaItemBuilder::fromDefaults()
+            ->withMediaItemId(MediaItemId::fromUnprefixed('old'))
+            ->withPath(MediaItemPath::fromString('gear-maintenance/old.png'))
+            ->build());
 
         $this->commandBus->dispatch(UpdateGearMaintenanceComponent::fromPayload([
             'gearComponentId' => 'gearComponent-chain',
             'label' => 'Chain',
             'installations' => [['parent' => 'gear:gear-b1']],
-            'localImagePath' => json_encode([
-                ['status' => 'removed', 'path' => '/files/gear-maintenance/old.png'],
+            'mediaItem' => json_encode([
+                ['status' => 'removed', 'id' => 'mediaItem-old'],
             ]),
             'maintenanceTasks' => [
                 ['id' => 'maintenanceTask-chain-lubed', 'label' => 'Lube', 'interval' => ['value' => 500, 'unit' => 'km']],
@@ -194,26 +311,9 @@ class UpdateGearMaintenanceComponentCommandHandlerTest extends ContainerTestCase
 
         $components = Json::decode(Json::encode($this->getContainer()->get(GearComponentRepository::class)->findAll()));
 
-        $this->assertNull($components[0]['localImagePath']);
+        $this->assertNull($components[0]['mediaItemId']);
         $this->assertFalse($this->fileStorage->fileExists('gear-maintenance/old.png'));
-    }
-
-    private function seedComponentWithImage(string $localImagePath): void
-    {
-        $this->importGearMaintenanceConfigFromArray([
-            'enabled' => true,
-            'components' => [[
-                'id' => 'gearComponent-chain',
-                'label' => 'Chain',
-                'localImagePath' => $localImagePath,
-                'isRetired' => false,
-                'notes' => null,
-                'installations' => [['parent' => 'gear:gear-b1', 'from' => null, 'until' => null, 'sportTypes' => []]],
-                'maintenance' => [
-                    ['id' => 'maintenanceTask-chain-lubed', 'label' => 'Lube', 'interval' => ['value' => 500, 'unit' => 'km']],
-                ],
-            ]],
-        ]);
+        $this->assertTrue($mediaItemRepository->findByIds(MediaItemIds::fromArray([MediaItemId::fromUnprefixed('old')]))->isEmpty());
     }
 
     /**

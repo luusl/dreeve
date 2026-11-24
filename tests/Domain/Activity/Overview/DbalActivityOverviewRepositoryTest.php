@@ -20,6 +20,8 @@ use App\Domain\Activity\SportType\SportType;
 use App\Domain\Gear\DbalGearRepository;
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\GearRepository;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemRepository;
 use App\Infrastructure\Eventing\EventBus;
 use App\Infrastructure\Repository\Pagination;
 use App\Infrastructure\ValueObject\Geography\Coordinate;
@@ -58,7 +60,11 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
                 ->withGearId(GearId::fromUnprefixed('99'))
                 ->withDeviceName('Garmin Forerunner')
                 ->withIsCommute(true)
-                ->withTotalImageCount(3)
+                ->withMediaItemIds(
+                    MediaItemId::fromUnprefixed('1'),
+                    MediaItemId::fromUnprefixed('2'),
+                    MediaItemId::fromUnprefixed('3'),
+                )
                 ->build(),
             ['raw' => 'data'],
         ));
@@ -101,6 +107,9 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         $this->assertSame($expected, $overview->getItems()[0]->canBeEnriched());
     }
 
+    /**
+     * @return iterable<string, array{ActivityBuilder, bool}>
+     */
     public static function provideEnrichableActivities(): iterable
     {
         $withStartingCoordinate = fn (): ActivityBuilder => ActivityBuilder::fromDefaults()
@@ -128,6 +137,9 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         ];
     }
 
+    /**
+     * @param list<string> $expectedNames
+     */
     #[DataProvider('providePaginationScenarios')]
     public function testFindOrdersByStartDateDescAndPaginates(
         Pagination $pagination,
@@ -141,7 +153,7 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         $this->assertSame(
             $expectedNames,
             array_map(
-                static fn (ActivityOverviewItem $item): string => (string) $item->getName(),
+                static fn (ActivityOverviewItem $item): string => $item->getName(),
                 $overview->getItems()
             )
         );
@@ -149,6 +161,9 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         $this->assertEquals($pagination, $overview->getPagination());
     }
 
+    /**
+     * @return iterable<string, array{Pagination, list<string>, int}>
+     */
     public static function providePaginationScenarios(): iterable
     {
         yield 'first page is ordered most recent first' => [
@@ -195,7 +210,11 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
                 ->withGearId(GearId::fromUnprefixed('99'))
                 ->withDeviceName('Garmin Forerunner')
                 ->withIsCommute(true)
-                ->withTotalImageCount(3)
+                ->withMediaItemIds(
+                    MediaItemId::fromUnprefixed('1'),
+                    MediaItemId::fromUnprefixed('2'),
+                    MediaItemId::fromUnprefixed('3'),
+                )
                 ->build(),
             ['raw' => 'data'],
         ));
@@ -219,6 +238,9 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         );
     }
 
+    /**
+     * @param list<string> $expectedNames
+     */
     #[DataProvider('provideSearchQueries')]
     public function testSearchMatchesTokensAcrossFields(string $query, array $expectedNames): void
     {
@@ -227,12 +249,15 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         $this->assertSame(
             $expectedNames,
             array_map(
-                static fn (ActivityOverviewItem $item): string => (string) $item->getName(),
+                static fn (ActivityOverviewItem $item): string => $item->getName(),
                 $this->activityOverviewRepository->search($query, 10)
             )
         );
     }
 
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     */
     public static function provideSearchQueries(): iterable
     {
         yield 'matches on name, case-insensitively, most recent first' => [
@@ -283,7 +308,7 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         $this->assertSame(
             ['Morning Swim'],
             array_map(
-                static fn (ActivityOverviewItem $item): string => (string) $item->getName(),
+                static fn (ActivityOverviewItem $item): string => $item->getName(),
                 $this->activityOverviewRepository->search('morning', 1)
             )
         );
@@ -301,6 +326,10 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         $this->assertEquals(0, $overview->getTotal());
     }
 
+    /**
+     * @param array<string, string> $filters
+     * @param list<string>          $expectedNames
+     */
     #[DataProvider('provideFilterScenarios')]
     public function testFindAppliesFilters(
         array $filters,
@@ -318,13 +347,16 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         $this->assertSame(
             $expectedNames,
             array_map(
-                static fn (ActivityOverviewItem $item): string => (string) $item->getName(),
+                static fn (ActivityOverviewItem $item): string => $item->getName(),
                 $overview->getItems()
             )
         );
         $this->assertEquals($expectedTotal, $overview->getTotal());
     }
 
+    /**
+     * @return iterable<string, array{array<string, string>, Pagination, list<string>, int}>
+     */
     public static function provideFilterScenarios(): iterable
     {
         yield 'a sport type filter narrows both the items and the total' => [
@@ -497,6 +529,7 @@ class DbalActivityOverviewRepositoryTest extends ContainerTestCase
         $this->gearRepository = new DbalGearRepository(
             $this->getConnection(),
             $this->getContainer()->get(EventBus::class),
+            $this->getContainer()->get(MediaItemRepository::class),
         );
     }
 }

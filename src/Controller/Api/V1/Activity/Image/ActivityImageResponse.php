@@ -5,18 +5,18 @@ declare(strict_types=1);
 namespace App\Controller\Api\V1\Activity\Image;
 
 use App\Application\AppUrl;
-use App\Domain\Activity\Image\ActivityImageId;
-use App\Domain\Image\ImagePath;
+use App\Domain\Media\MediaItemId;
+use App\Domain\Media\MediaItemPath;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 final class ActivityImageResponse extends JsonResponse
 {
-    public static function created(ImagePath $path, AppUrl $appUrl): self
+    public static function created(MediaItemId $mediaItemId, MediaItemPath $path, AppUrl $appUrl): self
     {
         return new self([
-            'id' => (string) ActivityImageId::fromImagePath($path),
-            'url' => rtrim((string) $appUrl, '/').'/'.$path->toLocalImagePath(),
+            'id' => (string) $mediaItemId,
+            'url' => (string) $appUrl->withPath($path->toUrlPath()),
         ], Response::HTTP_CREATED);
     }
 }

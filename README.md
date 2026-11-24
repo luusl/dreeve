@@ -21,7 +21,8 @@
 <p align="center">
   <a href="#-showcase">Showcase</a> •
   <a href="#-documentation">Docs</a> •
-  <a href="https://discord.gg/p4zpZyCHNc">Discord</a>
+  <a href="https://discord.gg/p4zpZyCHNc">Discord</a> •
+  <a href="https://dreeve.app/stickers">Free stickers</a>
 </p>
 
 <p align="center">
@@ -30,7 +31,7 @@
 
 ## 📸 Showcase
 
-https://github.com/user-attachments/assets/2789c961-f04f-4804-b6eb-88d45e62687c
+https://github.com/user-attachments/assets/251d1dfa-35f7-4df8-b0c3-3152de741dfd
 
 ### Key Features
 
@@ -39,6 +40,7 @@ https://github.com/user-attachments/assets/2789c961-f04f-4804-b6eb-88d45e62687c
 * **Import activities** - Use raw FIT/TCX/GPX files, sync from Garmin, Polar, Wahoo, Apple Health and more, or connect your Strava account
 * **Admin panel** - Manage activities, gear and every setting from your browser
 * **Automation rules** - Automatically fill in gear, commute flags, sport types and more
+* **Backup & restore** - Schedule nightly backups of your data
 
 **Analysis**
 
@@ -60,11 +62,13 @@ https://github.com/user-attachments/assets/2789c961-f04f-4804-b6eb-88d45e62687c
 * **Rewind** - A fun way to look back on your year in motion
 * **Challenges** - Browse the Strava challenges and trophies you have earned
 * **Activity photos** - Relive your moments with a photo archive
+* **Activity collections** - Bundle activities into trips and events
 
 **Integrations & more**
 
 * **AI workout assistant** - Get workout suggestions and insights from the AI provider of your choice, or a local Ollama model
 * **MCP server** - Connect Claude, Cursor or any other MCP client to your data
+* **Single sign-on** - Log in to the admin panel with your own OIDC identity provider, such as Authentik, Authelia or Pocket ID
 * **User badges** - Shareable badges you can embed on your website, blog, or forum profiles
 * **PWA support** - Use it like a native app on your phone
 

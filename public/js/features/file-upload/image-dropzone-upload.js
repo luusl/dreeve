@@ -17,6 +17,7 @@ class ImageDropzoneUpload {
         this.clearBtn = root.querySelector('[data-clear-btn]');
         this.field = root.querySelector('[data-images-field]');
         this.itemTemplate = root.querySelector('[data-item-template]');
+        this.metadataItemTemplate = root.querySelector('[data-metadata-item-template]');
 
         this.files = [];
         this.limitReached = false;
@@ -44,10 +45,12 @@ class ImageDropzoneUpload {
         const existing = JSON.parse(this.root.getAttribute('data-existing-images') || '[]');
         this.files = existing.map((image) => ({
             status: ImageStatus.Unchanged,
-            path: image.path,
+            id: image.id,
             name: image.name,
             ok: true,
             preview: image.url,
+            editUrl: image.editUrl ?? null,
+            metadata: image.metadata ?? [],
             content: null,
         }));
 
@@ -155,7 +158,7 @@ class ImageDropzoneUpload {
             .filter((f) => f.ok)
             .map((f) => f.status === ImageStatus.New
                 ? {status: f.status, filename: f.name, content: f.content}
-                : {status: f.status, path: f.path});
+                : {status: f.status, id: f.id});
         this.field.value = JSON.stringify(images);
     }
 
@@ -188,6 +191,23 @@ class ImageDropzoneUpload {
             li.querySelector('.meta').textContent = file.status === ImageStatus.New
                 ? metaFor(file, this.translations)
                 : this.translations.existingImage;
+            if (file.metadata?.length) {
+                const metadata = li.querySelector('[data-metadata]');
+                file.metadata.forEach((item) => {
+                    const element = this.metadataItemTemplate.content.firstElementChild.cloneNode(true);
+                    element.querySelector('[data-icon]').innerHTML = item.icon;
+                    element.querySelector('[data-label]').textContent = item.label;
+                    element.toggleAttribute('data-missing', item.missing);
+                    metadata.appendChild(element);
+                });
+                metadata.hidden = false;
+                li.querySelector('.meta').hidden = true;
+            }
+            const editLink = li.querySelector('[data-edit-file]');
+            if (file.editUrl) {
+                editLink.href = file.editUrl;
+                editLink.hidden = false;
+            }
             li.querySelector('[data-remove-file]').dataset.index = index;
             this.list.appendChild(li);
         });

@@ -26,6 +26,21 @@ jobs:
       - name: Validate PSR-4 compliance
         run: $PHP composer dump-autoload --dev --optimize --strict-psr
 
+      - name: Warm up test container for PHPStan
+        run: $PHP bin/console cache:warmup --env=test
+
+      - name: Cache static analysis results
+        uses: actions/cache@v6
+        with:
+          path: |
+            var/cache/phpstan
+            var/cache/rector
+            .php-cs-fixer.cache
+          key: ${{ runner.os }}-static-analysis-${{ hashFiles('composer.lock', 'phpstan.dist.neon', 'rector.php', '.php-cs-fixer.dist.php') }}-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-static-analysis-${{ hashFiles('composer.lock', 'phpstan.dist.neon', 'rector.php', '.php-cs-fixer.dist.php') }}-
+            ${{ runner.os }}-static-analysis-
+
       - name: Run PHPStan
         run: $PHP vendor/bin/phpstan analyse
 

@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class AthleteTest extends TestCase
 {
-    #[DataProvider(methodName: 'provideDataAthleteAgeData')]
+    #[DataProvider('provideDataAthleteAgeData')]
     public function testGetAthleteAge(
         SerializableDateTime $on,
         SerializableDateTime $athleteBirthday,
@@ -33,7 +33,7 @@ class AthleteTest extends TestCase
         );
     }
 
-    #[DataProvider(methodName: 'provideBlankNameData')]
+    #[DataProvider('provideBlankNameData')]
     public function testItFallsBackToAPlaceholderName(
         ?string $firstName,
         ?string $lastName,
@@ -57,6 +57,9 @@ class AthleteTest extends TestCase
         $this->assertSame($expectedIsMale, $athlete->isMale());
     }
 
+    /**
+     * @return array<string, array{?string, ?string, ?string, string, string, bool}>
+     */
     public static function provideBlankNameData(): array
     {
         return [
@@ -70,6 +73,9 @@ class AthleteTest extends TestCase
         ];
     }
 
+    /**
+     * @return list<array{SerializableDateTime, SerializableDateTime, int}>
+     */
     public static function provideDataAthleteAgeData(): array
     {
         return [

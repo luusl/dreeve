@@ -1,10 +1,19 @@
 {% autoescape false %}
     {% set extensions = extensions ?? supportedImageExtensions() %}
     {% set maxImages = maxImages ?? 1 %}
-    {% set maxFileSize = maxFileSize ?? 10 %}
-    {% set maxTotalSize = maxTotalSize ?? 30 %}
-    {% set name = name ?? 'images' %}
-    {% set existingImages = existingImages ?? [] %}
+    {% set maxFileSize = maxFileSize ?? 15 %}
+    {% set maxTotalSize = maxTotalSize ?? 45 %}
+    {% set existingImages = [] %}
+    {% for image in images ?? [] %}
+        {% set existingImage = { url: relativeUrl(image.mediaItem.getPath().toUrlPath()), name: image.mediaItem.getPath().getFilename(), id: image.mediaItem.getId() } %}
+        {% if image.editUrl is defined %}
+            {% set existingImage = existingImage|merge({ editUrl: image.editUrl }) %}
+        {% endif %}
+        {% if (image.metadata ?? []) is not empty %}
+            {% set existingImage = existingImage|merge({ metadata: image.metadata|map(item => { icon: svg(item.icon, 'size-3', 'shrink-0'), label: item.label, missing: item.missing }) }) %}
+        {% endif %}
+        {% set existingImages = existingImages|merge([existingImage]) %}
+    {% endfor %}
     {% set id = id ?? ('image-dropzone-' ~ name) %}
     {% set title = title ?? null %}
     {% set description = description ?? null %}
@@ -67,13 +76,25 @@
                 <span class="flex flex-col min-w-0 flex-1">
                     <span class="name text-sm font-medium text-gray-800 truncate"></span>
                     <span class="meta text-xs text-gray-500 in-[.is-invalid]:text-red-500"></span>
+                    <span data-metadata hidden class="flex items-center gap-3 text-xs"></span>
                 </span>
-                <button type="button" data-remove-file class="grid place-items-center size-9 shrink-0 p-0 rounded-lg border-0 bg-transparent text-gray-400 shadow-none cursor-pointer transition-colors hover:bg-gray-100 hover:text-gray-900" aria-label="{{ "Remove"|trans({}, 'admin') }}">
-                    <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-                        <path d="M6 6l12 12M18 6L6 18"/>
-                    </svg>
-                </button>
+                <div class="flex items-center shrink-0">
+                    <a data-edit-file hidden class="grid place-items-center size-9 shrink-0 p-0 rounded-lg border-0 bg-transparent text-gray-400 shadow-none cursor-pointer transition-colors hover:bg-gray-100 hover:text-gray-900" aria-label="{{ "Edit"|trans({}, 'admin') }}">
+                        {{ svg('pencil', 'size-4') }}
+                    </a>
+                    <button type="button" data-remove-file class="grid place-items-center size-9 shrink-0 p-0 rounded-lg border-0 bg-transparent text-gray-400 shadow-none cursor-pointer transition-colors hover:bg-gray-100 hover:text-gray-900" aria-label="{{ "Remove"|trans({}, 'admin') }}">
+                        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                            <path d="M6 6l12 12M18 6L6 18"/>
+                        </svg>
+                    </button>
+                </div>
             </li>
+        </template>
+        <template data-metadata-item-template>
+            <span class="flex items-center gap-1 text-gray-500 data-missing:text-gray-300">
+                <span data-icon class="contents"></span>
+                <span data-label></span>
+            </span>
         </template>
         <div class="mt-3">
             <button type="button" data-clear-btn class="hidden btn--secondary">{{ "Clear"|trans({}, 'admin') }}</button>

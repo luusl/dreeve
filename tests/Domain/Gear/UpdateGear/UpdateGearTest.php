@@ -6,6 +6,7 @@ namespace App\Tests\Domain\Gear\UpdateGear;
 
 use App\Domain\Gear\GearId;
 use App\Domain\Gear\UpdateGear\UpdateGear;
+use App\Domain\Media\MediaItemId;
 use App\Infrastructure\CQRS\Command\Deserialize\CouldNotDeserializeCommand;
 use Money\Money;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -21,12 +22,14 @@ class UpdateGearTest extends TestCase
             'status' => 'retired',
             'purchasePriceAmount' => '1500.00',
             'purchasePriceCurrency' => 'EUR',
+            'notes' => "  Bought in Ghent\nSize 54  ",
         ]);
 
         $this->assertEquals(GearId::fromUnprefixed('1'), $command->getGearId());
         $this->assertSame('My custom gear', $command->getName());
         $this->assertTrue($command->isRetired());
         $this->assertEquals(Money::EUR(150000), $command->getPurchasePrice());
+        $this->assertSame("Bought in Ghent\nSize 54", $command->getNotes());
     }
 
     public function testFromPayloadDefaultsToActiveWithoutPurchasePrice(): void
@@ -38,38 +41,38 @@ class UpdateGearTest extends TestCase
 
         $this->assertFalse($command->isRetired());
         $this->assertNull($command->getPurchasePrice());
-        $this->assertNull($command->getNewImage());
-        $this->assertNull($command->getRemovedImage());
+        $this->assertNull($command->getNewMediaItem());
+        $this->assertNull($command->getRemovedMediaItem());
     }
 
-    public function testFromPayloadWithNewImage(): void
+    public function testFromPayloadWithNewMediaItem(): void
     {
         $command = UpdateGear::fromPayload([
             'gearId' => 'gear-1',
             'name' => 'My custom gear',
-            'localImagePath' => json_encode([
+            'mediaItem' => json_encode([
                 ['status' => 'new', 'filename' => 'gear.png', 'content' => base64_encode('image-content')],
             ]),
         ]);
 
-        $this->assertNotNull($command->getNewImage());
-        $this->assertSame('gear.png', (string) $command->getNewImage()->getFilename());
-        $this->assertNull($command->getRemovedImage());
+        $this->assertNotNull($command->getNewMediaItem());
+        $this->assertSame('gear.png', (string) $command->getNewMediaItem()->getFilename());
+        $this->assertNull($command->getRemovedMediaItem());
     }
 
-    public function testFromPayloadWithRemovedImage(): void
+    public function testFromPayloadWithRemovedMediaItem(): void
     {
         $command = UpdateGear::fromPayload([
             'gearId' => 'gear-1',
             'name' => 'My custom gear',
-            'localImagePath' => json_encode([
-                ['status' => 'removed', 'path' => '/files/gear/old.jpg'],
+            'mediaItem' => json_encode([
+                ['status' => 'removed', 'id' => 'mediaItem-old'],
             ]),
         ]);
 
-        $this->assertNull($command->getNewImage());
-        $this->assertNotNull($command->getRemovedImage());
-        $this->assertSame('files/gear/old.jpg', $command->getRemovedImage()->getPath()->toLocalImagePath());
+        $this->assertNull($command->getNewMediaItem());
+        $this->assertNotNull($command->getRemovedMediaItem());
+        $this->assertEquals(MediaItemId::fromString('mediaItem-old'), $command->getRemovedMediaItem()->getId());
     }
 
     public function testFromPayloadTrimsName(): void
@@ -121,6 +124,11 @@ class UpdateGearTest extends TestCase
         yield 'invalid purchase price' => [
             ['gearId' => 'gear-1', 'name' => 'My custom gear', 'purchasePriceAmount' => 'not-a-number'],
             'The purchase price is invalid.',
+        ];
+
+        yield 'invalid notes' => [
+            ['gearId' => 'gear-1', 'name' => 'My custom gear', 'notes' => ['not-a-string']],
+            '"notes" must be a string.',
         ];
     }
 }

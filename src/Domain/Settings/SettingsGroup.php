@@ -18,6 +18,7 @@ enum SettingsGroup: string
     case DAEMON = 'daemon';
     case SECURITY = 'security';
     case ATHLETE_WEIGHT = 'athleteWeight';
+    case ATHLETE_FTP = 'athleteFtp';
 
     public static function fromSlug(string $slug): ?self
     {
@@ -27,6 +28,29 @@ enum SettingsGroup: string
     public function getSlug(): string
     {
         return (string) u($this->value)->kebab();
+    }
+
+    /**
+     * @return list<SettingsName>
+     */
+    public function getSettingsNames(): array
+    {
+        return array_values(array_filter(
+            SettingsName::cases(),
+            fn (SettingsName $name): bool => $this === $name->group(),
+        ));
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    public function assertOwnsSettings(array $data): void
+    {
+        foreach (array_keys($data) as $name) {
+            if ($this !== SettingsName::tryFrom((string) $name)?->group()) {
+                throw new \InvalidArgumentException(sprintf('Unknown setting "%s" for group "%s"', $name, $this->value));
+            }
+        }
     }
 
     /**
@@ -45,6 +69,7 @@ enum SettingsGroup: string
             self::DAEMON => DaemonSettings::fromArray($data),
             self::SECURITY => SecuritySettings::fromArray($data),
             self::ATHLETE_WEIGHT => AthleteWeightSettings::fromArray($data),
+            self::ATHLETE_FTP => AthleteFtpSettings::fromArray($data),
         };
     }
 }

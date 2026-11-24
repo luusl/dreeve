@@ -7,7 +7,7 @@ RUN go mod download
 COPY docker/fit-tool/ ./
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=${TARGETARCH} go build -ldflags="-s -w" -o /out/fit-tool .
 
-FROM dunglas/frankenphp:1-php8.5-alpine
+FROM dunglas/frankenphp:1-php8.6-alpine
 
 WORKDIR /var/www
 
@@ -18,9 +18,8 @@ ENV APP_DEBUG=0
 # hadolint ignore=DL3018
 RUN apk add --no-cache \
   bash \
-  curl \
-  file \
-  tzdata
+  tzdata \
+  zstd
 
 RUN set -eux; \
 	install-php-extensions \
@@ -28,6 +27,7 @@ RUN set -eux; \
         ctype \
         curl \
         dom \
+        exif \
         fileinfo \
         gd \
         intl \
@@ -64,7 +64,7 @@ RUN mkdir -p /var/www/var/log
 # Install Shoutrrr.
 ARG TARGETARCH
 ENV TARGETARCH=${TARGETARCH}
-ARG SHOUTRRR_VERSION="0.22.1"
+ARG SHOUTRRR_VERSION="0.25.0"
 
 RUN if [ "${TARGETARCH}" = "arm64" ]; then \
       curl -fL -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_arm64v8_${SHOUTRRR_VERSION}.tar.gz"; \
@@ -74,8 +74,8 @@ RUN if [ "${TARGETARCH}" = "arm64" ]; then \
       curl -fL -o shoutrrr.tar.gz "https://github.com/nicholas-fedor/shoutrrr/releases/download/v$SHOUTRRR_VERSION/shoutrrr_linux_armhf_${SHOUTRRR_VERSION}.tar.gz"; \
     else \
       echo "Error: Unsupported TARGETARCH '${TARGETARCH}'" >&2 && exit 1; \
-    fi
-RUN tar -xzf shoutrrr.tar.gz \
+    fi \
+    && tar -xzf shoutrrr.tar.gz shoutrrr \
     && chmod +x shoutrrr \
     && mv shoutrrr /usr/bin/shoutrrr && rm shoutrrr.tar.gz
 
